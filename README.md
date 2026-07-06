@@ -108,6 +108,7 @@ See [docs/PHYSICS.md](docs/PHYSICS.md) for the full convention.
 
 - [docs/DESIGN.md](docs/DESIGN.md): project design and boundaries
 - [docs/PHYSICS.md](docs/PHYSICS.md): physics formulas and conventions
+- [docs/INSTALL.md](docs/INSTALL.md): fresh-clone build and smoke-test guide
 - [docs/USAGE.md](docs/USAGE.md): intended user workflows
 - [docs/ALGORITHM.md](docs/ALGORITHM.md): sampling and algorithm notes
 - [docs/DECISIONS.md](docs/DECISIONS.md): recorded design decisions
