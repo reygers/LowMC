@@ -1,0 +1,13 @@
+# LowMC diagnostic particle input
+# columns: charge inOutSign mass p eta phi
+#
+# Four nearby charged pions create a compact local structure; four additional
+# wide-angle pions keep the event charge-conserving and inspectable.
++1 outgoing 0.13957039 180 0.82 1.04
+-1 outgoing 0.13957039 120 0.88 1.10
++1 outgoing 0.13957039 90 0.94 1.16
+-1 outgoing 0.13957039 60 0.76 0.98
++1 outgoing 0.13957039 45 -1.80 3.70
+-1 outgoing 0.13957039 35 2.60 4.90
++1 outgoing 0.13957039 25 -3.00 0.40
+-1 outgoing 0.13957039 18 0.10 5.80

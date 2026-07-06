@@ -1,0 +1,10 @@
+# LowMC diagnostic particle input
+# columns: charge inOutSign mass p eta phi
+#
+# This fixture tests the Low-current sign convention. The ordinary charge sum
+# is +4, but the signed Low sum is zero:
+# incoming particles carry eta_i = -1 and outgoing particles eta_i = +1.
++1 incoming 0.13957039 120 4.20 0.00
++1 incoming 0.13957039 120 -4.20 3.141592653589793
++1 outgoing 0.13957039 70 0.45 1.10
++1 outgoing 0.13957039 55 -0.65 4.20
