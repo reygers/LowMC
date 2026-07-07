@@ -218,12 +218,12 @@ if(LOWMC_ENABLE_HEPMC3)
 
     add_test(
         NAME lowmc_pythia8_hepmc3_crosscheck_softqcd
-        COMMAND lowmc_pythia8_hepmc3_crosscheck --events 1 --seed 12345
+        COMMAND lowmc_pythia8_hepmc3_crosscheck --events 3 --samples 4 --seed 12345
     )
     set_tests_properties(
         lowmc_pythia8_hepmc3_crosscheck_softqcd
         PROPERTIES
             PASS_REGULAR_EXPRESSION
-                "event_index=0 selection_status=match direct_selected_incoming_charged=2 hepmc3_selected_incoming_charged=2 .* weighted_status=match direct_samples=8 hepmc3_samples=8"
+                "aggregate_status=match events_compared=3 .* mismatch_count=0 .* max_relative_weighted_summary_difference=[0-9.e+-]+"
     )
 endif()

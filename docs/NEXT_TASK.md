@@ -4,28 +4,32 @@ This file should contain exactly one immediate task for Codex or another coding
 agent. Broader plans belong in `docs/ROADMAP.md`; project state belongs in
 `docs/STATUS.md`.
 
-Broaden the direct Pythia versus Pythia-to-HepMC3 cross-check beyond one event.
+Run a bounded multi-event HepMC3 afterburner validation on a Pythia-produced
+sample.
 
 Requirements:
 
 - review `docs/ADAPTER_CONTRACT.md`, `docs/ADAPTER_PLAN.md`,
   `docs/DECISIONS.md`, `docs/STATUS.md`, and `docs/USAGE.md`
-- reuse `lowmc_pythia8_hepmc3_crosscheck`
-- support checking more than one accepted Pythia event and/or more than one
-  seed in a bounded smoke configuration
-- keep the default CTest path quick
-- compare the same selected-particle diagnostics and weighted summary fields
-  already used in the one-event cross-check
-- print an aggregate summary with event count, mismatch count, and maximum
-  relative weighted-summary difference
-- document any expected differences caused by particle ordering or
-  Pythia-to-HepMC3 conversion rather than hiding them
-- keep this as a diagnostic/cross-check target, not a production dependency
-- add focused CTest coverage only when both optional adapters are enabled
+- use the existing Pythia-to-HepMC3 sample-generation helper or an equivalent
+  bounded build-tree path
+- run `lowmc_hepmc3_afterburner_diagnostic` on more than one generated event
+  with explicit photon phase space, seed, and enhancement settings
+- keep the validation bounded enough for manual use first; do not add a slow
+  default CTest path
+- summarize event count, skipped events, added LowMC photons, photon weights,
+  and runtime-relevant observations
+- inspect whether any naturally occurring selection, yield, or shape-envelope
+  failures appear in the generated sample
+- compare output-summary diagnostics against the afterburner text diagnostics
+  rather than relying on visual inspection
+- keep this as validation evidence for the diagnostic afterburner, not as a
+  production-readiness claim
 - update `docs/STATUS.md` and `docs/NEXT_TASK.md` afterward
 
 Open questions:
 
-- Should the first broader check use several events from one seed or one event
-  from several seeds?
-- What maximum runtime should be allowed for this optional CTest smoke check?
+- How many generated events and which enhancement factor give useful evidence
+  without making the manual validation slow?
+- Should this become a helper script after the first manual run, or remain a
+  documented command sequence?

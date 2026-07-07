@@ -112,15 +112,15 @@ production-style command or alias, the minimum readiness checklist is:
 - satisfied: first optional direct Pythia in-memory weighted-photon diagnostic
   calls the generator-independent weighted API and reports weighted summaries
   without HepMC3 output writing
-- satisfied: first direct Pythia versus Pythia-to-HepMC3 selected-particle and
-  weighted-summary cross-check matches for a deterministic one-event SoftQCD
+- satisfied: direct Pythia versus Pythia-to-HepMC3 selected-particle and
+  weighted-summary cross-check matches for a bounded three-event SoftQCD
   sample
 - open: final command naming should be settled before a production alias such
   as `lowmc_hepmc3_afterburner` is added
 
-The next adapter milestone should broaden the direct-vs-HepMC3 Pythia
-cross-check to a small multi-event or multi-seed sample while keeping it a
-bounded diagnostic, not a production dependency.
+The next adapter milestone should run a bounded multi-event HepMC3 afterburner
+validation on a Pythia-produced sample while keeping runtime and failure
+diagnostics visible.
 
 ## Milestone 4: Validation
 

@@ -121,11 +121,13 @@ cmake -S . -B build-pythia8-hepmc3 \
   -DCMAKE_PREFIX_PATH=$HOME/hepmc3
 cmake --build build-pythia8-hepmc3 --target lowmc_pythia8_hepmc3_crosscheck
 ./build-pythia8-hepmc3/adapters/pythia8/lowmc_pythia8_hepmc3_crosscheck \
-  --events 1 --seed 12345
+  --events 3 --samples 4 --seed 12345
 ```
 
-This diagnostic also compares weighted photon summaries for the same event
-using the same sampling seed and phase-space configuration.
+This diagnostic also compares weighted photon summaries for the same generated
+events using the same sampling seed and phase-space configuration. It compares
+selected-particle diagnostics and weighted summary fields, not event-record
+particle ordering, because the Pythia-to-HepMC3 conversion may reorder records.
 
 For manual validation with a local Pythia installation, LowMC provides an
 optional helper:
@@ -343,9 +345,9 @@ Still diagnostic or provisional:
 - naturally occurring shape-envelope failures in realistic files have not yet
   been characterized
 - direct Pythia in-memory selected-particle and weighted-photon diagnostics
-  exist, and the first one-event direct-vs-HepMC3 cross-check matches exactly
-  for both selected-particle diagnostics and weighted photon summaries with
-  seed `12345`; broader multi-event cross-checks remain open
+  exist, and the bounded three-event direct-vs-HepMC3 cross-check matches for
+  both selected-particle diagnostics and weighted photon summaries with seed
+  `12345`
 
 Therefore this is not yet a production afterburner. A production-style command
 or alias should wait for broader runtime validation, natural failure-mode

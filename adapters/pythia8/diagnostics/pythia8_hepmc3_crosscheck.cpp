@@ -6,6 +6,7 @@
 #include <Pythia8/Pythia.h>
 #include <Pythia8Plugins/HepMC3.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -42,7 +43,10 @@ void printUsage(std::ostream& os) {
        << "Generates deterministic Pythia8 events, runs the direct Pythia8\n"
        << "selected-particle path, converts the same event to HepMC3 in memory,\n"
        << "and compares the HepMC3 selected-particle path. This is a diagnostic\n"
-       << "cross-check only; it writes no event files and generates no photons.\n"
+       << "cross-check only; it writes no event files. Particle ordering is not\n"
+       << "compared, because the Pythia-to-HepMC3 conversion may reorder records;\n"
+       << "the checked contract is selected-particle diagnostics plus weighted\n"
+       << "summary agreement for the same generated event.\n"
        << "\n"
        << "Options:\n"
        << "  --events N   Number of accepted Pythia events to compare\n"
@@ -180,6 +184,11 @@ void initializeSoftQCDPythia(Pythia8::Pythia& pythia, const Options& options) {
     return std::abs(first - second) <= 1.0e-9 * scale;
 }
 
+[[nodiscard]] double relativeDifference(double first, double second) {
+    const double scale = std::max({1.0, std::abs(first), std::abs(second)});
+    return std::abs(first - second) / scale;
+}
+
 [[nodiscard]] bool diagnosticsMatch(
     const lowmc::AdapterSelectionDiagnostic& direct,
     const lowmc::AdapterSelectionDiagnostic& hepmc3) {
@@ -217,6 +226,33 @@ void initializeSoftQCDPythia(Pythia8::Pythia& pythia, const Options& options) {
                effectiveSampleFraction(directSummary),
                effectiveSampleFraction(hepmc3Summary)) &&
            nearlyEqualWeighted(direct.gridBuildKT, hepmc3.gridBuildKT);
+}
+
+[[nodiscard]] double maxWeightedSummaryRelativeDifference(
+    const lowmc::WeightedEventGenerationResult& direct,
+    const lowmc::WeightedEventGenerationResult& hepmc3) {
+    const lowmc::WeightSummary& directSummary = direct.weightSummary;
+    const lowmc::WeightSummary& hepmc3Summary = hepmc3.weightSummary;
+    double maximum = directSummary.count == hepmc3Summary.count ? 0.0 : 1.0;
+    maximum = std::max(
+        maximum,
+        relativeDifference(directSummary.sumWeight, hepmc3Summary.sumWeight));
+    maximum = std::max(
+        maximum,
+        relativeDifference(directSummary.meanWeight, hepmc3Summary.meanWeight));
+    maximum = std::max(
+        maximum,
+        relativeDifference(weightRms(directSummary), weightRms(hepmc3Summary)));
+    maximum = std::max(
+        maximum,
+        relativeDifference(directSummary.effectiveSampleSize, hepmc3Summary.effectiveSampleSize));
+    maximum = std::max(
+        maximum,
+        relativeDifference(
+            effectiveSampleFraction(directSummary),
+            effectiveSampleFraction(hepmc3Summary)));
+    maximum = std::max(maximum, relativeDifference(direct.gridBuildKT, hepmc3.gridBuildKT));
+    return maximum;
 }
 
 [[nodiscard]] lowmc::WeightedEventGeneratorConfig makeGeneratorConfig(const Options& options) {
@@ -278,6 +314,27 @@ void printComparisonLine(
               << '\n';
 }
 
+struct AggregateSummary {
+    int eventsCompared = 0;
+    int selectionMismatches = 0;
+    int weightedMismatches = 0;
+    double maxWeightedSummaryRelativeDifference = 0.0;
+};
+
+void printAggregateSummary(const AggregateSummary& summary, int attemptedEvents) {
+    const int totalMismatches = summary.selectionMismatches + summary.weightedMismatches;
+    std::cout << "aggregate_status=" << (totalMismatches == 0 ? "match" : "mismatch")
+              << " events_compared=" << summary.eventsCompared
+              << " attempted_events=" << attemptedEvents
+              << " mismatch_count=" << totalMismatches
+              << " selection_mismatch_count=" << summary.selectionMismatches
+              << " weighted_mismatch_count=" << summary.weightedMismatches
+              << " max_relative_weighted_summary_difference="
+              << summary.maxWeightedSummaryRelativeDifference
+              << " comparison_note=particle_ordering_not_compared"
+              << '\n';
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -290,7 +347,7 @@ int main(int argc, char** argv) {
 
         int acceptedEvents = 0;
         int attemptedEvents = 0;
-        bool allMatched = true;
+        AggregateSummary aggregate;
         while (acceptedEvents < options.events) {
             ++attemptedEvents;
             if (!pythia.next()) {
@@ -324,7 +381,8 @@ int main(int argc, char** argv) {
                     emptyHepMC3,
                     false,
                     false);
-                allMatched = false;
+                ++aggregate.selectionMismatches;
+                ++aggregate.eventsCompared;
                 ++acceptedEvents;
                 continue;
             }
@@ -346,11 +404,20 @@ int main(int argc, char** argv) {
                 hepmc3Weighted,
                 selectionMatch,
                 weightedMatch);
-            allMatched = allMatched && selectionMatch && weightedMatch;
+            if (!weightedMatch) {
+                ++aggregate.weightedMismatches;
+            }
+            aggregate.maxWeightedSummaryRelativeDifference = std::max(
+                aggregate.maxWeightedSummaryRelativeDifference,
+                maxWeightedSummaryRelativeDifference(directWeighted, hepmc3Weighted));
+            ++aggregate.eventsCompared;
             ++acceptedEvents;
         }
 
-        return allMatched ? EXIT_SUCCESS : EXIT_FAILURE;
+        printAggregateSummary(aggregate, attemptedEvents);
+        return aggregate.selectionMismatches == 0 && aggregate.weightedMismatches == 0
+            ? EXIT_SUCCESS
+            : EXIT_FAILURE;
     } catch (const std::exception& error) {
         std::cerr << "FAILED: " << error.what() << '\n';
         printUsage(std::cerr);

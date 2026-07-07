@@ -723,28 +723,29 @@ non-conserved toy mode is skipped with signed charge sum `-2`; and a one-event
 SoftQCD run with seed `12345` and `4` samples selects `46` outgoing charged
 particles, has signed charge conservation, and gives `sum_weight ~= 3.59379`.
 
-The first direct-Pythia versus Pythia-to-HepMC3 selected-particle cross-check
-is now implemented as `lowmc_pythia8_hepmc3_crosscheck`. It is built only when
-both `LOWMC_ENABLE_PYTHIA8=ON` and `LOWMC_ENABLE_HEPMC3=ON`. The diagnostic
-generates a deterministic Pythia8 SoftQCD event in memory, runs the direct
-Pythia selection, converts the same event to HepMC3 in memory with
+The direct-Pythia versus Pythia-to-HepMC3 selected-particle cross-check is now
+implemented as `lowmc_pythia8_hepmc3_crosscheck`. It is built only when both
+`LOWMC_ENABLE_PYTHIA8=ON` and `LOWMC_ENABLE_HEPMC3=ON`. The diagnostic
+generates deterministic Pythia8 SoftQCD events in memory, runs the direct
+Pythia selection, converts the same events to HepMC3 in memory with
 `Pythia8ToHepMC3`, runs the HepMC3 selection, and compares selected incoming
 charged count, selected outgoing charged count, ignored neutral candidates,
-rejected charged candidates, signed charge sum, and ordinary charge sum. For
-the checked seed `12345`, the two paths match exactly: two incoming charged
-particles, `46` outgoing charged particles, `25` ignored neutrals, `2`
-rejected charged candidates, signed charge sum `0`, and ordinary charge sum
-`4`.
+rejected charged candidates, signed charge sum, and ordinary charge sum. It
+also compares weighted photon summaries after the selection diagnostics match.
+Both paths call `generateWeightedPhotons(...)` with the same phase space, tuned
+grid configuration, sample count, oversampling factor, and photon seed. The
+diagnostic intentionally does not compare particle ordering, because
+Pythia-to-HepMC3 conversion may reorder event-record entries; the checked
+contract is selected-particle diagnostics plus weighted-summary agreement.
 
-The same cross-check now also compares weighted photon summaries after the
-selection diagnostics match. Both paths call `generateWeightedPhotons(...)`
-with the same phase space, tuned grid configuration, sample count,
-oversampling factor, and photon seed. For the checked seed `12345` with
-`8` weighted samples, the direct and HepMC3-converted paths match in sample
-count, weight sum, mean weight, weight RMS, effective sample size, effective
-sample fraction, and grid-build `k_T`. The shared summary is
-`sum_weight ~= 7.15094`, `mean_weight ~= 0.893867`, `weight_rms ~= 0.0934473`,
-and `ESS/N ~= 0.989`.
+The optional CTest smoke check now runs three accepted SoftQCD events with
+seed `12345` and four weighted samples per event. The three events select
+`46`, `200`, and `90` outgoing charged particles in both paths, with matching
+neutral and rejected-charged diagnostics, signed charge sum `0`, and ordinary
+charge sum `4`. All weighted summaries match within the diagnostic tolerance;
+the aggregate line reports `events_compared=3`, `mismatch_count=0`, and maximum
+relative weighted-summary difference about `1.4e-11`. The check remains a
+bounded optional diagnostic, not a production dependency.
 
 `docs/ROADMAP.md` now contains a concise HepMC3 production-afterburner
 readiness checklist. The checklist separates the current controlled usable
