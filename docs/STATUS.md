@@ -673,9 +673,18 @@ generator output; it mainly checks multi-event file handling, metadata,
 skipped-event behavior, and summary diagnostics without committing a bulky
 sample. A bounded Pythia-produced five-event afterburner validation now
 confirms the real-generator multi-event record path, but it took a few minutes
-and remains manual validation evidence. Remaining gaps before
-production-afterburner claims include repeatable helper/reporting support for
-bounded Pythia afterburner validation, naturally occurring shape-envelope
+and remains manual validation evidence. `scripts/validate_pythia_afterburner.py`
+now wraps the Pythia-to-HepMC3 sample helper, the HepMC3 afterburner
+diagnostic, and the read-only output-summary diagnostic. It writes generated
+input, afterburner output, afterburner and summary logs, and
+`validation_summary.csv` under a selected output directory; it prints runtime
+for sample generation, afterburning, and summary reading. A two-event helper
+check with enhancement factor `5` produced `8` enhanced LowMC photons, skipped
+no events, reported `shape_status=ok` for both events, matched the output
+summary diagnostic, and took about `4.3 s` for sample generation plus `22.2 s`
+for the afterburner step. The full five-event default remains manual and can
+take minutes. Remaining gaps before production-afterburner claims include
+broader bounded Pythia afterburner scans, naturally occurring shape-envelope
 failure cases in realistic files, and a decision on stable production command
 aliases.
 
@@ -754,9 +763,8 @@ bounded optional diagnostic, not a production dependency.
 `docs/ROADMAP.md` now contains a concise HepMC3 production-afterburner
 readiness checklist. The checklist separates the current controlled usable
 prototype from a future production afterburner, and names the remaining
-promotion blockers: repeatable reporting for bounded Pythia-produced
-afterburner validation, natural shape-envelope failure evidence, and final
-command naming.
+promotion blockers: broader bounded Pythia-produced afterburner scans, natural
+shape-envelope failure evidence, and final command naming.
 
 A first unweighting diagnostic now exists as `lowmc_unweighting_diagnostic`.
 It uses the direct two-pion toy input, estimates empirical maximum weights in a

@@ -446,6 +446,23 @@ python3 scripts/compare_fixed_grid_weighted.py \
 The script reports the grid integral, weighted-sample mean, standard error,
 relative difference, and pull.
 
+## Pythia-produced HepMC3 afterburner validation
+
+For an opt-in manual validation of the Pythia8-to-HepMC3 afterburner path, use:
+
+```sh
+python3 scripts/validate_pythia_afterburner.py \
+  --tool-dir build-pythia8-hepmc3/adapters/hepmc3 \
+  --output-dir build-pythia8-hepmc3/pythia_afterburner_validation
+```
+
+The helper wraps `generate_pythia_hepmc3_sample.py`,
+`lowmc_hepmc3_afterburner_diagnostic`, and
+`lowmc_hepmc3_output_summary_diagnostic`. It writes generated input,
+afterburner output, logs, and `validation_summary.csv` under the selected
+output directory. This can take minutes for multi-event samples and is not part
+of the default CTest path beyond a cheap `--help` test.
+
 ## Grid-vs-weighted stress study
 
 The stress-study helper runs matching fixed-grid and weighted-sample

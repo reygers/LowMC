@@ -133,6 +133,10 @@ if(Python3_Interpreter_FOUND)
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate_pythia_hepmc3_sample.py --help
     )
     add_test(
+        NAME lowmc_validate_pythia_afterburner_help
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/validate_pythia_afterburner.py --help
+    )
+    add_test(
         NAME lowmc_tune_event_yield_help
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/tune_event_yield.py --help
     )
