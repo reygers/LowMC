@@ -340,8 +340,8 @@ Still diagnostic or provisional:
 - the command name remains `lowmc_hepmc3_afterburner_diagnostic`
 - the stable-root-photon topology is the first durable convention, not a final
   claim about the best long-term HepMC3 topology
-- larger Pythia-produced multi-event afterburner runs can be slow and need
-  runtime validation
+- larger Pythia-produced multi-event afterburner runs can be slow and should
+  remain bounded/manual until repeatable reporting helpers exist
 - naturally occurring shape-envelope failures in realistic files have not yet
   been characterized
 - direct Pythia in-memory selected-particle and weighted-photon diagnostics
@@ -394,9 +394,12 @@ Implemented checks cover:
   `scripts/hepmc3_count_yield_highstat.py`, which generates a reproducible
   HepMC3 sample by default and prints an aggregate validation line suitable for
   manual logs
-- a manual Pythia8-to-HepMC3 validation path: a ten-event SoftQCD sample can be
-  generated with the local Pythia installation, adapter diagnostics read all
-  ten events, and the afterburner has been run successfully on the first event
+- a manual Pythia8-to-HepMC3 validation path: SoftQCD samples can be generated
+  with the local Pythia installation, adapter diagnostics read the generated
+  events, and a bounded five-event afterburner validation with enhancement
+  factor `10` has passed; all five events produced enhanced LowMC photons, all
+  shape diagnostics were `ok`, no events were skipped, and the read-only
+  output-summary diagnostic matched the afterburner text diagnostics
 - a boosted transverse `p = 100 GeV` HepMC3 fixture that produces enhanced
   LowMC photons with valid metadata and successful shape diagnostics
 - a forward pion fixture with `p_T = 1 GeV` and `|eta| = 5` that produces
@@ -414,8 +417,8 @@ Implemented checks cover:
 Remaining validation gaps before calling the afterburner a first usable
 prototype:
 
-- broader Pythia-produced multi-event afterburner validation beyond the first
-  validated event, with runtime kept under control
+- repeatable helper/reporting support for bounded Pythia-produced multi-event
+  afterburner validation, with runtime kept visible
 - validation of naturally occurring shape-envelope failures in realistic event
   files, beyond the current forced diagnostic-safety test
 - broader boosted-particle HepMC3 stress tests beyond the current single-event

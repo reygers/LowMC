@@ -528,50 +528,53 @@ three-sigma Poisson tolerance for the reproducibly generated sample. It is a
 manual validation log for multiplicity and HepMC3 bookkeeping, not evidence
 about an external generator's physical event distribution.
 
-A first manual Pythia-produced HepMC3 validation path is now in place. The
+The manual Pythia-produced HepMC3 validation path is now in place. The
 optional helper `scripts/generate_pythia_hepmc3_sample.py` compiles a tiny
 temporary Pythia8 + HepMC3 generator using the local `$HOME/pythia8317` and
 `$HOME/hepmc3` installations; it does not add a Pythia dependency to LowMC. A
-ten-event `SoftQCD:nonDiffractive` pp sample at `sqrt(s) = 13 TeV` was
-generated with:
+five-event `SoftQCD:nonDiffractive` pp sample at `sqrt(s) = 13 TeV` was
+generated with seed `24680`:
 
 ```sh
 python3 scripts/generate_pythia_hepmc3_sample.py \
-  --output build-hepmc3-fresh/adapters/hepmc3/pythia_softqcd_10.hepmc3 \
-  --work-dir build-hepmc3-fresh/adapters/hepmc3/pythia_sample_build \
-  --events 10 \
-  --seed 12345
+  --output build-pythia8-hepmc3/pythia_afterburner_validation/pythia_softqcd_5.hepmc3 \
+  --work-dir build-pythia8-hepmc3/pythia_afterburner_validation/generator \
+  --events 5 \
+  --seed 24680 \
+  --ecm 13000
 ```
 
-Adapter diagnostics read all ten Pythia-produced events as `GEV` HepMC3
-records with two selected incoming charged beams and signed charge conservation
-for the selected charged particles. A full ten-event afterburner run was too
-slow for an immediate manual validation because selected final charged
-multiplicities reached several hundred particles. The bounded first-event
-validation completed with:
+The bounded multi-event afterburner validation then processed all five events
+with explicit phase space, seeds, enhancement factor `10`, and atomic output:
 
 ```sh
 lowmc_hepmc3_afterburner_diagnostic \
-  --atomic-output \
-  --max-events 1 \
-  --multiplicity-seed 2 \
-  --shape-seed 67890 \
-  --min-shape-trials 800 \
-  --shape-trials-per-photon 120 \
+  --max-events 5 \
   --enhancement-factor 10 \
-  pythia_softqcd_10.hepmc3 \
-  pythia_softqcd_1_lowmc.hepmc3
+  --multiplicity-seed 13579 \
+  --shape-seed 97531 \
+  --kt-min 0.002 --kt-max 0.2 \
+  --eta-min -5 --eta-max 5 \
+  --phi-min 0 --phi-max 6.283185307179586 \
+  --atomic-output \
+  pythia_softqcd_5.hepmc3 \
+  pythia_softqcd_5_lowmc.hepmc3
 ```
 
-The first Pythia event selected `46` final charged particles, had
-`signed_charge_sum=0`, produced `8` enhanced LowMC photons with
-`lambda_event=0.839932`, `shape_status=ok`, and
-`max_trial_bound_ratio=0.338073`. The output-summary diagnostic reported
-`lowmc_photons=8`, `photon_mode=enhanced`, `enhancement_factor=10`,
-`photon_weight_sum=0.8`, `photon_weight_attributes=8`, and `event_metadata=1`.
-This validates the basic real-generator HepMC3 record path and metadata
-round-trip for one event; it does not yet validate production runtime or
-multi-event Pythia afterburner throughput.
+The run completed successfully after a few minutes, so it remains manual rather
+than a default CTest path. It read and wrote five events, added `111` enhanced
+LowMC photons, skipped no events, and reported `shape_status=ok` for every
+event. The selected outgoing charged multiplicities were `270`, `80`, `40`,
+`112`, and `52`, all with signed charge sum `0` and ordinary charge sum `4`.
+The requested and retained enhanced photon counts were `58`, `18`, `5`, `24`,
+and `6`, with maximum trial/bound ratios between about `0.35` and `0.39`. The
+read-only output-summary diagnostic independently reported matching LowMC
+photon counts, enhanced mode, enhancement factor `10`, per-photon weight
+attributes on every added photon, event-level metadata on every generated
+event, and photon weight sums `5.8`, `1.8`, `0.5`, `2.4`, and `0.6`. This
+validates the real-generator multi-event HepMC3 record path and metadata
+round-trip for a bounded manual sample. It does not make a production
+throughput claim.
 
 The first boosted-particle HepMC3 afterburner stress fixture now exists as
 `boosted_transverse_p100_event.hepmc3`. It uses 7 TeV incoming proton beams and
@@ -668,12 +671,13 @@ output-summary diagnostic, installed optional HepMC3 tools, and the repository
 quickstart helper. The generated sample is not a substitute for external
 generator output; it mainly checks multi-event file handling, metadata,
 skipped-event behavior, and summary diagnostics without committing a bulky
-sample. The first Pythia-produced HepMC3 validation confirms the
-real-generator record path for one afterburner event. Remaining gaps before
-production-afterburner claims include broader Pythia multi-event afterburner
-runtime validation, naturally occurring shape-envelope failure cases in
-realistic files, direct Pythia in-memory implementation/validation, and a
-decision on stable production command aliases.
+sample. A bounded Pythia-produced five-event afterburner validation now
+confirms the real-generator multi-event record path, but it took a few minutes
+and remains manual validation evidence. Remaining gaps before
+production-afterburner claims include repeatable helper/reporting support for
+bounded Pythia afterburner validation, naturally occurring shape-envelope
+failure cases in realistic files, and a decision on stable production command
+aliases.
 
 The command name decision is settled for now: keep
 `lowmc_hepmc3_afterburner_diagnostic` as the only executable name. A shorter
@@ -750,9 +754,9 @@ bounded optional diagnostic, not a production dependency.
 `docs/ROADMAP.md` now contains a concise HepMC3 production-afterburner
 readiness checklist. The checklist separates the current controlled usable
 prototype from a future production afterburner, and names the remaining
-promotion blockers: broader Pythia multi-event runtime validation, natural
-shape-envelope failure evidence, broader direct Pythia cross-checks against
-the Pythia-to-HepMC3 path, and final command naming.
+promotion blockers: repeatable reporting for bounded Pythia-produced
+afterburner validation, natural shape-envelope failure evidence, and final
+command naming.
 
 A first unweighting diagnostic now exists as `lowmc_unweighting_diagnostic`.
 It uses the direct two-pion toy input, estimates empirical maximum weights in a
