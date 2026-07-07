@@ -62,6 +62,25 @@ ctest --test-dir build-pythia8 -R pythia8 --output-on-failure
 LowMC also searches the common local prefix `$HOME/pythia8317/bin` for
 `pythia8-config`.
 
+### macOS Pythia8 Troubleshooting
+
+If the Pythia8 tests segfault very early, including in simple operations such
+as `Pythia8::Event::reset()` or `append()`, suspect an ABI or toolchain
+mismatch before assuming a LowMC physics bug.
+
+On macOS, the most reproducible validation path so far is:
+
+- build Pythia8 from source, for example Pythia 8.317 under `$HOME/pythia8317`
+- use the same compiler family for Pythia8 and LowMC
+- prefer `/usr/bin/clang++` for source builds on macOS, because it is the
+  SDK-aware Apple compiler driver
+- avoid mixing a package-manager Pythia8 build with a LowMC build that uses a
+  different compiler, standard library, or SDK setup
+
+MacPorts or Homebrew installations may work, but if adapter tests fail with
+early crashes, first repeat the check with a source-built Pythia8 using the
+same toolchain as LowMC.
+
 ## Combined Pythia8 And HepMC3 Check
 
 If both optional dependencies are available:
