@@ -404,6 +404,10 @@ Implemented checks cover:
 - `scripts/validate_pythia_afterburner.py`, an opt-in helper that wraps sample
   generation, the HepMC3 afterburner, and the output-summary diagnostic, then
   writes logs plus `validation_summary.csv`
+- a first three-seed helper scan with two Pythia-produced events per seed:
+  all six events passed with no skips, all shape statuses `ok`, matching
+  output-summary diagnostics, and visible afterburner runtime spread from
+  about `15 s` to `43 s` per two-event sample
 - a boosted transverse `p = 100 GeV` HepMC3 fixture that produces enhanced
   LowMC photons with valid metadata and successful shape diagnostics
 - a forward pion fixture with `p_T = 1 GeV` and `|eta| = 5` that produces
@@ -421,8 +425,8 @@ Implemented checks cover:
 Remaining validation gaps before calling the afterburner a first usable
 prototype:
 
-- broader bounded Pythia-produced afterburner scans over more seeds and event
-  samples, with runtime kept visible
+- better runtime/complexity reporting for bounded Pythia-produced afterburner
+  scans
 - validation of naturally occurring shape-envelope failures in realistic event
   files, beyond the current forced diagnostic-safety test
 - broader boosted-particle HepMC3 stress tests beyond the current single-event

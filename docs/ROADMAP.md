@@ -92,7 +92,9 @@ production-style command or alias, the minimum readiness checklist is:
 - partial: a Pythia-produced HepMC3 sample can be generated manually; a
   bounded five-event afterburner run has passed with matching output-summary
   diagnostics, and an opt-in helper now records logs, a CSV summary, and
-  runtime; broader seed/topology runtime characterization remains open
+  runtime; a first three-seed, two-event-per-seed scan passed with no skips,
+  no summary mismatches, all shape statuses `ok`, and visible afterburner
+  runtime spread; runtime/complexity characterization remains open
 - open: naturally occurring shape-envelope failures should be observed or
   bounded in realistic event files, not only forced by unsafe diagnostic knobs
 - satisfied: default count/yield checks include both a loose multi-fixture
@@ -119,9 +121,9 @@ production-style command or alias, the minimum readiness checklist is:
 - open: final command naming should be settled before a production alias such
   as `lowmc_hepmc3_afterburner` is added
 
-The next adapter milestone should use the helper for a small bounded
-multi-seed Pythia-produced afterburner scan and record whether any natural
-shape-envelope failures or runtime outliers appear.
+The next adapter milestone should add or derive runtime/complexity diagnostics
+for bounded Pythia-produced afterburner scans, so slow events can be connected
+to charged multiplicity, requested photon count, or shape-unweighting work.
 
 ## Milestone 4: Validation
 

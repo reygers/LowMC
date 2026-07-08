@@ -682,11 +682,26 @@ for sample generation, afterburning, and summary reading. A two-event helper
 check with enhancement factor `5` produced `8` enhanced LowMC photons, skipped
 no events, reported `shape_status=ok` for both events, matched the output
 summary diagnostic, and took about `4.3 s` for sample generation plus `22.2 s`
-for the afterburner step. The full five-event default remains manual and can
-take minutes. Remaining gaps before production-afterburner claims include
-broader bounded Pythia afterburner scans, naturally occurring shape-envelope
-failure cases in realistic files, and a decision on stable production command
-aliases.
+for the afterburner step.
+
+A first small bounded multi-seed scan with the helper used three two-event
+Pythia samples, enhancement factor `5`, and Pythia seeds `24681`, `24682`, and
+`24683`. All six events passed: no events were skipped, all shape statuses
+were `ok`, output-summary diagnostics matched the afterburner logs, and
+`mismatch_count=0` in every helper row. The three runs added `8`, `11`, and
+`10` enhanced LowMC photons, with photon weight sums `1.6`, `2.2`, and `2.0`.
+The maximum trial/bound ratios were `0.345`, `0.372`, and `0.352`. Generator
+times were about `2.2..3.0 s`, while afterburner times varied more strongly:
+about `15.2 s`, `42.8 s`, and `30.1 s` for the same two-event count. The
+helper's compact text plus CSV summaries are sufficient for manual validation
+logs at this stage. The runtime spread is now the main practical observation
+from this scan.
+
+The full five-event default remains manual and can take minutes. Remaining
+gaps before production-afterburner claims include understanding and reporting
+runtime versus event complexity for bounded Pythia afterburner scans, naturally
+occurring shape-envelope failure cases in realistic files, and a decision on
+stable production command aliases.
 
 The command name decision is settled for now: keep
 `lowmc_hepmc3_afterburner_diagnostic` as the only executable name. A shorter
