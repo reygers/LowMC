@@ -681,9 +681,11 @@ input, afterburner output, afterburner and summary logs, and
 directory. The summary CSV records aggregate maxima such as selected outgoing
 charged multiplicity, requested photons, retained photons, trial/bound ratio,
 and runtime. The per-event CSV records the same event-level complexity fields
-next to the output-summary comparison. Its time column is currently an
-estimate obtained by distributing the total afterburner runtime over events;
-true per-event timing would require instrumentation inside the C++ diagnostic.
+next to the output-summary comparison. The C++ afterburner diagnostic now
+prints `event_seconds` on each event line, so new helper runs can connect
+runtime directly to selected charged multiplicity, requested photons, retained
+photons, and shape diagnostics. The helper keeps its older estimated timing
+column for compatibility with logs produced before `event_seconds` existed.
 A two-event helper check with enhancement factor `5` produced `8` enhanced
 LowMC photons, skipped no events, reported `shape_status=ok` for both events,
 matched the output summary diagnostic, and took about `4.3 s` for sample
@@ -706,16 +708,17 @@ A one-event complexity check with Pythia seed `24684`, enhancement factor `5`,
 and the same bounded helper path selected `216` outgoing charged particles,
 requested and retained `16` LowMC photons, reported `shape_status=ok`, had
 `max_trial_bound_ratio ~= 0.371`, matched the output-summary diagnostic, and
-took about `67.2 s` in the afterburner step. This confirms that the helper now
-captures the main event-complexity proxies needed to interpret slow bounded
-Pythia-produced events, while leaving true per-event C++ timing as an optional
-next diagnostic refinement.
+measured `event_seconds ~= 65.2` against a total afterburner time of about
+`65.2 s`. This confirms that the helper now captures the main event-complexity
+proxies needed to interpret slow bounded Pythia-produced events; future scans
+should use the new true `event_seconds` field instead of the older evenly
+distributed time estimate.
 
 The full five-event default remains manual and can take minutes. Remaining
 gaps before production-afterburner claims include broader runtime/complexity
-characterization for bounded Pythia afterburner scans, naturally occurring
-shape-envelope failure cases in realistic files, and a decision on stable
-production command aliases.
+characterization for bounded Pythia afterburner scans using true per-event
+timing, naturally occurring shape-envelope failure cases in realistic files,
+and a decision on stable production command aliases.
 
 The command name decision is settled for now: keep
 `lowmc_hepmc3_afterburner_diagnostic` as the only executable name. A shorter

@@ -342,7 +342,7 @@ Still diagnostic or provisional:
   claim about the best long-term HepMC3 topology
 - larger Pythia-produced multi-event afterburner runs can be slow and should
   remain bounded/manual; use `scripts/validate_pythia_afterburner.py` for a
-  repeatable opt-in validation summary and per-event complexity CSV
+  repeatable opt-in validation summary and per-event timing/complexity CSV
 - naturally occurring shape-envelope failures in realistic files have not yet
   been characterized
 - direct Pythia in-memory selected-particle and weighted-photon diagnostics
@@ -404,6 +404,8 @@ Implemented checks cover:
 - `scripts/validate_pythia_afterburner.py`, an opt-in helper that wraps sample
   generation, the HepMC3 afterburner, and the output-summary diagnostic, then
   writes logs, `validation_summary.csv`, and `validation_events.csv`
+- true per-event timing in `lowmc_hepmc3_afterburner_diagnostic` through the
+  `event_seconds` key, which the helper records in `validation_events.csv`
 - a first three-seed helper scan with two Pythia-produced events per seed:
   all six events passed with no skips, all shape statuses `ok`, matching
   output-summary diagnostics, and visible afterburner runtime spread from
@@ -429,8 +431,7 @@ Remaining validation gaps before calling the afterburner a first usable
 prototype:
 
 - broader runtime/complexity characterization for bounded Pythia-produced
-  afterburner scans, including true per-event C++ timing if the helper-level
-  estimate is not enough
+  afterburner scans using the `event_seconds` field
 - validation of naturally occurring shape-envelope failures in realistic event
   files, beyond the current forced diagnostic-safety test
 - broader boosted-particle HepMC3 stress tests beyond the current single-event

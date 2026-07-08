@@ -463,10 +463,11 @@ afterburner output, logs, `validation_summary.csv`, and
 `validation_events.csv` under the selected output directory. The summary CSV
 contains aggregate runtime and maximum-complexity fields. The per-event CSV
 records selected charged multiplicity, requested and retained photon counts,
-shape-unweighting diagnostics, output-summary comparison fields, and an
-estimated afterburner time per event based on the total helper runtime. This
-can take minutes for multi-event samples and is not part of the default CTest
-path beyond a cheap `--help` test.
+shape-unweighting diagnostics, output-summary comparison fields, true
+`event_seconds` from the afterburner diagnostic when available, and the older
+estimated afterburner time per event for compatibility. This can take minutes
+for multi-event samples and is not part of the default CTest path beyond a
+cheap `--help` test.
 
 ## Grid-vs-weighted stress study
 

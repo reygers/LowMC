@@ -7,6 +7,7 @@
 #include <HepMC3/WriterAscii.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cerrno>
 #include <cmath>
 #include <cstdint>
@@ -370,6 +371,7 @@ int main(int argc, char** argv) {
                 break;
             }
 
+            const auto eventStart = std::chrono::steady_clock::now();
             const lowmc::AdapterParticleSelectionResult selection =
                 lowmc::hepmc3::selectChargedParticles(event);
             printAdapterDiagnosticPrefix(eventsRead, event.momentum_unit(), selection.diagnostic);
@@ -470,6 +472,9 @@ int main(int argc, char** argv) {
                 throw std::runtime_error("failed while writing HepMC3 output file");
             }
             ++eventsWritten;
+            const auto eventEnd = std::chrono::steady_clock::now();
+            const double eventSeconds =
+                std::chrono::duration<double>(eventEnd - eventStart).count();
 
             std::cout << " photon_status=" << status
                       << " photon_mode="
@@ -482,6 +487,7 @@ int main(int argc, char** argv) {
                       << " photons_added=" << photonsAdded
                       << " shape_status=" << shapeStatus
                       << " max_trial_bound_ratio=" << maxTrialBoundRatio
+                      << " event_seconds=" << eventSeconds
                       << '\n';
 
             ++eventsRead;

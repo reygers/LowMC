@@ -540,7 +540,7 @@ set_tests_properties(
     lowmc_hepmc3_afterburner_enhanced_charge_conserving_fixture
     PROPERTIES
         PASS_REGULAR_EXPRESSION
-            "event_index=0 momentum_unit=MEV selected_incoming_charged=2 selected_outgoing_charged=2 ignored_neutral_candidates=1 rejected_charged_candidates=0 signed_charge_sum=0 ordinary_charge_sum=4 photon_status=generated photon_mode=enhanced enhancement_factor=10 photon_weight=0.1.*requested_photons=4 retained_photons=4 photons_added=4"
+            "event_index=0 momentum_unit=MEV selected_incoming_charged=2 selected_outgoing_charged=2 ignored_neutral_candidates=1 rejected_charged_candidates=0 signed_charge_sum=0 ordinary_charge_sum=4 photon_status=generated photon_mode=enhanced enhancement_factor=10 photon_weight=0.1.*requested_photons=4 retained_photons=4 photons_added=4.*event_seconds=[0-9]"
 )
 
 add_test(

@@ -125,6 +125,9 @@ def compare_rows(
     max_requested_photons = 0
     max_retained_photons = 0
     max_trial_bound_ratio = 0.0
+    event_seconds_sum = 0.0
+    max_event_seconds = 0.0
+    event_seconds_count = 0
 
     if len(summary_by_event) != len(summary_rows):
         mismatches.append("duplicate event_index in output-summary diagnostic")
@@ -163,6 +166,13 @@ def compare_rows(
         if "max_trial_bound_ratio" in row:
             event_trial_bound_ratio = as_float(row, "max_trial_bound_ratio")
             max_trial_bound_ratio = max(max_trial_bound_ratio, event_trial_bound_ratio)
+        event_seconds: object = ""
+        if "event_seconds" in row:
+            event_seconds_value = as_float(row, "event_seconds")
+            event_seconds = event_seconds_value
+            event_seconds_sum += event_seconds_value
+            max_event_seconds = max(max_event_seconds, event_seconds_value)
+            event_seconds_count += 1
 
         event_summaries.append(
             {
@@ -182,6 +192,7 @@ def compare_rows(
                 "summary_photon_weight_sum": as_float(summary, "photon_weight_sum"),
                 "shape_status": shape_status,
                 "max_trial_bound_ratio": event_trial_bound_ratio,
+                "event_seconds": event_seconds,
                 "event_metadata": summary.get("event_metadata", "0"),
                 "photon_weight_attributes": summary.get("photon_weight_attributes", "0"),
             }
@@ -209,6 +220,9 @@ def compare_rows(
         "max_selected_outgoing_charged": max_selected_outgoing_charged,
         "max_requested_photons": max_requested_photons,
         "max_retained_photons": max_retained_photons,
+        "event_seconds_sum": event_seconds_sum,
+        "max_event_seconds": max_event_seconds,
+        "event_seconds_count": event_seconds_count,
         "shape_status_counts": ",".join(
             f"{key}:{shape_status_counts[key]}" for key in sorted(shape_status_counts)
         ),
@@ -352,6 +366,7 @@ def main() -> int:
         f"summary_photon_weight_sum={aggregate['summary_photon_weight_sum']:.12g} "
         f"max_selected_outgoing_charged={aggregate['max_selected_outgoing_charged']} "
         f"max_requested_photons={aggregate['max_requested_photons']} "
+        f"max_event_seconds={aggregate['max_event_seconds']:.6g} "
         f"shape_status_counts={aggregate['shape_status_counts']} "
         f"max_trial_bound_ratio={aggregate['max_trial_bound_ratio']:.12g} "
         f"mismatch_count={aggregate['mismatch_count']}"

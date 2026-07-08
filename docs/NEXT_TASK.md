@@ -4,9 +4,8 @@ This file should contain exactly one immediate task for Codex or another coding
 agent. Broader plans belong in `docs/ROADMAP.md`; project state belongs in
 `docs/STATUS.md`.
 
-Decide whether true per-event afterburner timing is needed for bounded
-Pythia-produced HepMC3 validation, and add it only if the helper-level estimate
-is not sufficient.
+Run a bounded Pythia-produced HepMC3 afterburner timing scan using true
+per-event `event_seconds` and summarize the runtime/complexity picture.
 
 Requirements:
 
@@ -15,20 +14,21 @@ Requirements:
 - use `scripts/validate_pythia_afterburner.py`, `validation_summary.csv`,
   `validation_events.csv`, and the afterburner logs from bounded runs
 - keep the workflow manual/opt-in; do not add slow default CTest coverage
-- inspect whether the current per-event complexity CSV plus aggregate runtime
-  is enough to diagnose slow bounded Pythia-produced events
-- if it is enough, document the decision and choose the next validation task
-- if it is not enough, add narrowly scoped timing around per-event work in
-  `lowmc_hepmc3_afterburner_diagnostic` and include an `event_seconds`-style
-  key in the existing compact text output
-- keep any new output backwards-compatible key-value text
-- add only cheap parser or `--help` tests unless the C++ timing change itself
-  needs a focused fixture test
+- run a small multi-seed or multi-event scan that is large enough to exercise
+  several charged multiplicities but still practical on a laptop
+- use the new true `event_seconds` field rather than the helper's older
+  evenly distributed timing estimate
+- summarize, at minimum, runtime versus selected outgoing charged multiplicity,
+  requested photons, retained photons, and `max_trial_bound_ratio`
+- decide whether a small aggregation script is useful or whether the existing
+  CSVs plus a documented manual summary are enough
+- do not tune physics or sampling parameters in this step unless the scan
+  exposes a clear failure
 - update `docs/USAGE.md`, `docs/STATUS.md`, and `docs/NEXT_TASK.md` afterward
 
 Open questions:
 
-- Should timing include HepMC3 reading and writing, or only LowMC event
-  selection, count sampling, and shape sampling?
-- Should true per-event timing always be printed by the diagnostic, or only
-  behind an explicit diagnostic flag?
+- What bounded scan size gives useful runtime spread without turning manual
+  validation into a long benchmark?
+- Should future runtime summaries report simple correlations, worst-event
+  rows, or both?
