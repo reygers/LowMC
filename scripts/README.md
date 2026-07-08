@@ -459,9 +459,14 @@ python3 scripts/validate_pythia_afterburner.py \
 The helper wraps `generate_pythia_hepmc3_sample.py`,
 `lowmc_hepmc3_afterburner_diagnostic`, and
 `lowmc_hepmc3_output_summary_diagnostic`. It writes generated input,
-afterburner output, logs, and `validation_summary.csv` under the selected
-output directory. This can take minutes for multi-event samples and is not part
-of the default CTest path beyond a cheap `--help` test.
+afterburner output, logs, `validation_summary.csv`, and
+`validation_events.csv` under the selected output directory. The summary CSV
+contains aggregate runtime and maximum-complexity fields. The per-event CSV
+records selected charged multiplicity, requested and retained photon counts,
+shape-unweighting diagnostics, output-summary comparison fields, and an
+estimated afterburner time per event based on the total helper runtime. This
+can take minutes for multi-event samples and is not part of the default CTest
+path beyond a cheap `--help` test.
 
 ## Grid-vs-weighted stress study
 

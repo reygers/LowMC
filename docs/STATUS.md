@@ -677,12 +677,17 @@ and remains manual validation evidence. `scripts/validate_pythia_afterburner.py`
 now wraps the Pythia-to-HepMC3 sample helper, the HepMC3 afterburner
 diagnostic, and the read-only output-summary diagnostic. It writes generated
 input, afterburner output, afterburner and summary logs, and
-`validation_summary.csv` under a selected output directory; it prints runtime
-for sample generation, afterburning, and summary reading. A two-event helper
-check with enhancement factor `5` produced `8` enhanced LowMC photons, skipped
-no events, reported `shape_status=ok` for both events, matched the output
-summary diagnostic, and took about `4.3 s` for sample generation plus `22.2 s`
-for the afterburner step.
+`validation_summary.csv` and `validation_events.csv` under a selected output
+directory. The summary CSV records aggregate maxima such as selected outgoing
+charged multiplicity, requested photons, retained photons, trial/bound ratio,
+and runtime. The per-event CSV records the same event-level complexity fields
+next to the output-summary comparison. Its time column is currently an
+estimate obtained by distributing the total afterburner runtime over events;
+true per-event timing would require instrumentation inside the C++ diagnostic.
+A two-event helper check with enhancement factor `5` produced `8` enhanced
+LowMC photons, skipped no events, reported `shape_status=ok` for both events,
+matched the output summary diagnostic, and took about `4.3 s` for sample
+generation plus `22.2 s` for the afterburner step.
 
 A first small bounded multi-seed scan with the helper used three two-event
 Pythia samples, enhancement factor `5`, and Pythia seeds `24681`, `24682`, and
@@ -697,11 +702,20 @@ helper's compact text plus CSV summaries are sufficient for manual validation
 logs at this stage. The runtime spread is now the main practical observation
 from this scan.
 
+A one-event complexity check with Pythia seed `24684`, enhancement factor `5`,
+and the same bounded helper path selected `216` outgoing charged particles,
+requested and retained `16` LowMC photons, reported `shape_status=ok`, had
+`max_trial_bound_ratio ~= 0.371`, matched the output-summary diagnostic, and
+took about `67.2 s` in the afterburner step. This confirms that the helper now
+captures the main event-complexity proxies needed to interpret slow bounded
+Pythia-produced events, while leaving true per-event C++ timing as an optional
+next diagnostic refinement.
+
 The full five-event default remains manual and can take minutes. Remaining
-gaps before production-afterburner claims include understanding and reporting
-runtime versus event complexity for bounded Pythia afterburner scans, naturally
-occurring shape-envelope failure cases in realistic files, and a decision on
-stable production command aliases.
+gaps before production-afterburner claims include broader runtime/complexity
+characterization for bounded Pythia afterburner scans, naturally occurring
+shape-envelope failure cases in realistic files, and a decision on stable
+production command aliases.
 
 The command name decision is settled for now: keep
 `lowmc_hepmc3_afterburner_diagnostic` as the only executable name. A shorter

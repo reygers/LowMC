@@ -342,7 +342,7 @@ Still diagnostic or provisional:
   claim about the best long-term HepMC3 topology
 - larger Pythia-produced multi-event afterburner runs can be slow and should
   remain bounded/manual; use `scripts/validate_pythia_afterburner.py` for a
-  repeatable opt-in validation summary
+  repeatable opt-in validation summary and per-event complexity CSV
 - naturally occurring shape-envelope failures in realistic files have not yet
   been characterized
 - direct Pythia in-memory selected-particle and weighted-photon diagnostics
@@ -403,11 +403,14 @@ Implemented checks cover:
   output-summary diagnostic matched the afterburner text diagnostics
 - `scripts/validate_pythia_afterburner.py`, an opt-in helper that wraps sample
   generation, the HepMC3 afterburner, and the output-summary diagnostic, then
-  writes logs plus `validation_summary.csv`
+  writes logs, `validation_summary.csv`, and `validation_events.csv`
 - a first three-seed helper scan with two Pythia-produced events per seed:
   all six events passed with no skips, all shape statuses `ok`, matching
   output-summary diagnostics, and visible afterburner runtime spread from
   about `15 s` to `43 s` per two-event sample
+- a one-event helper complexity check selecting `216` outgoing charged
+  particles, requesting and retaining `16` LowMC photons, matching the
+  output-summary diagnostic, and taking about `67 s` in the afterburner step
 - a boosted transverse `p = 100 GeV` HepMC3 fixture that produces enhanced
   LowMC photons with valid metadata and successful shape diagnostics
 - a forward pion fixture with `p_T = 1 GeV` and `|eta| = 5` that produces
@@ -425,8 +428,9 @@ Implemented checks cover:
 Remaining validation gaps before calling the afterburner a first usable
 prototype:
 
-- better runtime/complexity reporting for bounded Pythia-produced afterburner
-  scans
+- broader runtime/complexity characterization for bounded Pythia-produced
+  afterburner scans, including true per-event C++ timing if the helper-level
+  estimate is not enough
 - validation of naturally occurring shape-envelope failures in realistic event
   files, beyond the current forced diagnostic-safety test
 - broader boosted-particle HepMC3 stress tests beyond the current single-event

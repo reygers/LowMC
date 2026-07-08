@@ -109,10 +109,11 @@ def as_float(values: dict[str, str], key: str) -> float:
 def compare_rows(
     afterburner_rows: list[dict[str, str]],
     summary_rows: list[dict[str, str]],
-) -> tuple[dict[str, object], list[str]]:
+) -> tuple[dict[str, object], list[dict[str, object]], list[str]]:
     mismatches: list[str] = []
     summary_by_event = {as_int(row, "event_index"): row for row in summary_rows}
     shape_status_counts: dict[str, int] = {}
+    event_summaries: list[dict[str, object]] = []
     events = len(afterburner_rows)
     skipped = 0
     requested = 0
@@ -120,6 +121,9 @@ def compare_rows(
     photons_added = 0
     summary_photons = 0
     summary_weight_sum = 0.0
+    max_selected_outgoing_charged = 0
+    max_requested_photons = 0
+    max_retained_photons = 0
     max_trial_bound_ratio = 0.0
 
     if len(summary_by_event) != len(summary_rows):
@@ -133,6 +137,10 @@ def compare_rows(
             continue
 
         status = row["photon_status"]
+        selected_outgoing = as_int(row, "selected_outgoing_charged")
+        selected_incoming = as_int(row, "selected_incoming_charged")
+        ignored_neutral = as_int(row, "ignored_neutral_candidates")
+        rejected_charged = as_int(row, "rejected_charged_candidates")
         if status.startswith("skipped_"):
             skipped += 1
         requested_i = as_int(row, "requested_photons")
@@ -145,14 +153,39 @@ def compare_rows(
         photons_added += added_i
         summary_photons += summary_i
         summary_weight_sum += as_float(summary, "photon_weight_sum")
+        max_selected_outgoing_charged = max(max_selected_outgoing_charged, selected_outgoing)
+        max_requested_photons = max(max_requested_photons, requested_i)
+        max_retained_photons = max(max_retained_photons, retained_i)
 
         shape_status = row.get("shape_status", "none")
         shape_status_counts[shape_status] = shape_status_counts.get(shape_status, 0) + 1
+        event_trial_bound_ratio = 0.0
         if "max_trial_bound_ratio" in row:
-            max_trial_bound_ratio = max(
-                max_trial_bound_ratio,
-                as_float(row, "max_trial_bound_ratio"),
-            )
+            event_trial_bound_ratio = as_float(row, "max_trial_bound_ratio")
+            max_trial_bound_ratio = max(max_trial_bound_ratio, event_trial_bound_ratio)
+
+        event_summaries.append(
+            {
+                "event_index": event_index,
+                "photon_status": status,
+                "selected_incoming_charged": selected_incoming,
+                "selected_outgoing_charged": selected_outgoing,
+                "ignored_neutral_candidates": ignored_neutral,
+                "rejected_charged_candidates": rejected_charged,
+                "signed_charge_sum": row["signed_charge_sum"],
+                "ordinary_charge_sum": row["ordinary_charge_sum"],
+                "lambda_event": row["lambda_event"],
+                "requested_photons": requested_i,
+                "retained_photons": retained_i,
+                "photons_added": added_i,
+                "summary_lowmc_photons": summary_i,
+                "summary_photon_weight_sum": as_float(summary, "photon_weight_sum"),
+                "shape_status": shape_status,
+                "max_trial_bound_ratio": event_trial_bound_ratio,
+                "event_metadata": summary.get("event_metadata", "0"),
+                "photon_weight_attributes": summary.get("photon_weight_attributes", "0"),
+            }
+        )
 
         if retained_i != requested_i:
             mismatches.append(f"event {event_index}: retained != requested")
@@ -173,13 +206,16 @@ def compare_rows(
         "photons_added": photons_added,
         "summary_lowmc_photons": summary_photons,
         "summary_photon_weight_sum": summary_weight_sum,
+        "max_selected_outgoing_charged": max_selected_outgoing_charged,
+        "max_requested_photons": max_requested_photons,
+        "max_retained_photons": max_retained_photons,
         "shape_status_counts": ",".join(
             f"{key}:{shape_status_counts[key]}" for key in sorted(shape_status_counts)
         ),
         "max_trial_bound_ratio": max_trial_bound_ratio,
         "mismatch_count": len(mismatches),
     }
-    return aggregate, mismatches
+    return aggregate, event_summaries, mismatches
 
 
 def write_summary_csv(path: Path, row: dict[str, object]) -> None:
@@ -187,6 +223,15 @@ def write_summary_csv(path: Path, row: dict[str, object]) -> None:
         writer = csv.DictWriter(handle, fieldnames=list(row))
         writer.writeheader()
         writer.writerow(row)
+
+
+def write_event_csv(path: Path, rows: list[dict[str, object]]) -> None:
+    if not rows:
+        return
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)
 
 
 def main() -> int:
@@ -278,13 +323,15 @@ def main() -> int:
         raise ValueError("afterburner log contains no event rows")
     if not summary_rows:
         raise ValueError("summary log contains no event rows")
-    aggregate, mismatches = compare_rows(afterburner_rows, summary_rows)
+    aggregate, event_summaries, mismatches = compare_rows(afterburner_rows, summary_rows)
+    estimated_seconds_per_event = afterburner_seconds / float(aggregate["events"])
     aggregate.update(
         {
             "input": str(generated_input),
             "output": str(afterburner_output),
             "generator_seconds": generator_seconds,
             "afterburner_seconds": afterburner_seconds,
+            "afterburner_seconds_per_event": estimated_seconds_per_event,
             "summary_seconds": summary_seconds,
             "enhancement_factor": args.enhancement_factor,
             "pythia_seed": args.pythia_seed,
@@ -292,7 +339,10 @@ def main() -> int:
             "shape_seed": args.shape_seed,
         }
     )
+    for row in event_summaries:
+        row["estimated_afterburner_seconds_per_event"] = estimated_seconds_per_event
     write_summary_csv(args.output_dir / "validation_summary.csv", aggregate)
+    write_event_csv(args.output_dir / "validation_events.csv", event_summaries)
 
     print(
         "validation "
@@ -300,6 +350,8 @@ def main() -> int:
         f"photons_added={aggregate['photons_added']} "
         f"summary_lowmc_photons={aggregate['summary_lowmc_photons']} "
         f"summary_photon_weight_sum={aggregate['summary_photon_weight_sum']:.12g} "
+        f"max_selected_outgoing_charged={aggregate['max_selected_outgoing_charged']} "
+        f"max_requested_photons={aggregate['max_requested_photons']} "
         f"shape_status_counts={aggregate['shape_status_counts']} "
         f"max_trial_bound_ratio={aggregate['max_trial_bound_ratio']:.12g} "
         f"mismatch_count={aggregate['mismatch_count']}"
@@ -315,7 +367,8 @@ def main() -> int:
         f"input={generated_input} output={afterburner_output} "
         f"afterburner_log={args.output_dir / 'afterburner.log'} "
         f"summary_log={args.output_dir / 'summary.log'} "
-        f"summary_csv={args.output_dir / 'validation_summary.csv'}"
+        f"summary_csv={args.output_dir / 'validation_summary.csv'} "
+        f"event_csv={args.output_dir / 'validation_events.csv'}"
     )
     for mismatch in mismatches:
         print(f"mismatch {mismatch}")
