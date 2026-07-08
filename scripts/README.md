@@ -469,6 +469,22 @@ estimated afterburner time per event for compatibility. This can take minutes
 for multi-event samples and is not part of the default CTest path beyond a
 cheap `--help` test.
 
+To aggregate one or more helper runs by true per-event timing, use:
+
+```sh
+python3 scripts/summarize_pythia_afterburner_timing.py \
+  build-pythia8-hepmc3/pythia_afterburner_timing_scan_seed24681 \
+  build-pythia8-hepmc3/pythia_afterburner_timing_scan_seed24682 \
+  --output-csv build-pythia8-hepmc3/pythia_afterburner_timing_scan_events.csv \
+  --summary-md build-pythia8-hepmc3/pythia_afterburner_timing_scan_summary.md
+```
+
+The aggregator is read-only. It accepts either `validation_events.csv` paths or
+directories containing that file, then reports total and maximum event time,
+charged-multiplicity and photon-count ranges, simple correlations with event
+time, and the slowest event rows. These correlations are intended as compact
+manual diagnostics, not as a production performance model.
+
 ## Grid-vs-weighted stress study
 
 The stress-study helper runs matching fixed-grid and weighted-sample

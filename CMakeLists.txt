@@ -137,6 +137,10 @@ if(Python3_Interpreter_FOUND)
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/validate_pythia_afterburner.py --help
     )
     add_test(
+        NAME lowmc_summarize_pythia_afterburner_timing_help
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/summarize_pythia_afterburner_timing.py --help
+    )
+    add_test(
         NAME lowmc_tune_event_yield_help
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/tune_event_yield.py --help
     )

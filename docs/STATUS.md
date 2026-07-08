@@ -720,6 +720,22 @@ characterization for bounded Pythia afterburner scans using true per-event
 timing, naturally occurring shape-envelope failure cases in realistic files,
 and a decision on stable production command aliases.
 
+A first true per-event timing scan now combines four one-event Pythia-produced
+helper runs with seeds `24681`, `24682`, `24683`, and `24684`, enhancement
+factor `5`, multiplicity seed `13583`, and shape seed `97535`. All four
+events passed with no skips, all shape statuses were `ok`, all output-summary
+diagnostics matched, and the total measured event time was about `90.6 s`.
+Selected outgoing charged multiplicities ranged from `34` to `216`; requested
+and retained photons summed to `22`, with a maximum of `16` in the slowest
+event. The slowest event was the `24684` event with `216` outgoing charged
+particles, `16` requested photons, and `event_seconds ~= 65.2`. In this small
+sample, event time is strongly correlated with selected outgoing charged
+multiplicity and requested/retained photon count; the sample is too small to
+quote a general scaling law. The helper-level CSVs were sufficient once
+aggregated with the new optional
+`scripts/summarize_pythia_afterburner_timing.py` reader; no runner script or
+default test-suite timing benchmark is needed at this stage.
+
 The command name decision is settled for now: keep
 `lowmc_hepmc3_afterburner_diagnostic` as the only executable name. A shorter
 production alias should wait until validation gates and output-mode conventions
