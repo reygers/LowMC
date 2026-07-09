@@ -392,6 +392,22 @@ int main(int argc, char** argv) {
             double yieldSeconds = 0.0;
             double poissonSeconds = 0.0;
             double shapeSeconds = 0.0;
+            double shapeGridSeconds = 0.0;
+            double shapeBaseProbeSeconds = 0.0;
+            double shapeCalibrationSeconds = 0.0;
+            double shapeProbePlanSeconds = 0.0;
+            double shapeBoostedProbeSeconds = 0.0;
+            double shapeEnvelopeBuildSeconds = 0.0;
+            double shapeTrialSeconds = 0.0;
+            double shapeFinalizationSeconds = 0.0;
+            std::size_t shapeGridCellCount = 0;
+            std::size_t shapeProbeEvaluations = 0;
+            int shapeCalibrationCount = 0;
+            int shapeTrialCount = 0;
+            int shapeAcceptedCount = 0;
+            int shapeFailedEnvelopeCount = 0;
+            int shapeSuspectCellCount = 0;
+            int shapePromotedCellCount = 0;
             double writeSeconds = 0.0;
 
             if (selection.selectedParticles.empty()) {
@@ -445,6 +461,22 @@ int main(int argc, char** argv) {
                         shapeSeconds = secondsSince(shapeStart);
                         shapeStatus = shapeStatusName(shape.status);
                         maxTrialBoundRatio = shape.envelope.maxTrialBoundRatio;
+                        shapeGridSeconds = shape.envelope.gridSeconds;
+                        shapeBaseProbeSeconds = shape.envelope.baseProbeSeconds;
+                        shapeCalibrationSeconds = shape.envelope.calibrationSeconds;
+                        shapeProbePlanSeconds = shape.envelope.probePlanSeconds;
+                        shapeBoostedProbeSeconds = shape.envelope.boostedProbeSeconds;
+                        shapeEnvelopeBuildSeconds = shape.envelope.envelopeBuildSeconds;
+                        shapeTrialSeconds = shape.envelope.trialSeconds;
+                        shapeFinalizationSeconds = shape.envelope.finalizationSeconds;
+                        shapeGridCellCount = shape.envelope.gridCellCount;
+                        shapeProbeEvaluations = shape.envelope.probeEvaluations;
+                        shapeCalibrationCount = shape.envelope.calibrationCount;
+                        shapeTrialCount = shape.envelope.trialCount;
+                        shapeAcceptedCount = shape.envelope.acceptedCount;
+                        shapeFailedEnvelopeCount = shape.envelope.failedEnvelopeCount;
+                        shapeSuspectCellCount = shape.envelope.suspectCellCount;
+                        shapePromotedCellCount = shape.envelope.promotedCellCount;
                         retainedPhotons =
                             std::min(requestedPhotons, static_cast<int>(shape.candidates.size()));
                         const bool envelopeOk =
@@ -510,6 +542,22 @@ int main(int argc, char** argv) {
                       << " yield_seconds=" << yieldSeconds
                       << " poisson_seconds=" << poissonSeconds
                       << " shape_seconds=" << shapeSeconds
+                      << " shape_grid_seconds=" << shapeGridSeconds
+                      << " shape_base_probe_seconds=" << shapeBaseProbeSeconds
+                      << " shape_calibration_seconds=" << shapeCalibrationSeconds
+                      << " shape_probe_plan_seconds=" << shapeProbePlanSeconds
+                      << " shape_boosted_probe_seconds=" << shapeBoostedProbeSeconds
+                      << " shape_envelope_build_seconds=" << shapeEnvelopeBuildSeconds
+                      << " shape_trial_seconds=" << shapeTrialSeconds
+                      << " shape_finalization_seconds=" << shapeFinalizationSeconds
+                      << " shape_grid_cell_count=" << shapeGridCellCount
+                      << " shape_probe_evaluations=" << shapeProbeEvaluations
+                      << " shape_calibration_count=" << shapeCalibrationCount
+                      << " shape_trial_count=" << shapeTrialCount
+                      << " shape_accepted_count=" << shapeAcceptedCount
+                      << " shape_failed_envelope_count=" << shapeFailedEnvelopeCount
+                      << " shape_suspect_cell_count=" << shapeSuspectCellCount
+                      << " shape_promoted_cell_count=" << shapePromotedCellCount
                       << " write_seconds=" << writeSeconds
                       << '\n';
 

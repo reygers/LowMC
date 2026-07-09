@@ -1,6 +1,7 @@
 #include "lowmc/ShapeUnweighting.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <iterator>
 #include <limits>
@@ -42,6 +43,10 @@ struct ProbePlan {
     int promotedCellCount = 0;
     std::size_t probeEvaluations = 0;
 };
+
+[[nodiscard]] double secondsSince(std::chrono::steady_clock::time_point start) {
+    return std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+}
 
 [[nodiscard]] double cellArea(const GridAdaptiveEtaPhiCell& cell) {
     return (cell.etaMax - cell.etaMin) * (cell.phiMax - cell.phiMin);
@@ -686,6 +691,7 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
         return result;
     }
 
+    const auto gridStart = std::chrono::steady_clock::now();
     GridAdaptiveEtaPhiProposal gridProposal =
         makeGridAdaptiveEtaPhiProposal(
             current,
@@ -702,7 +708,9 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
     result.envelope.gridCellCount = gridProposal.cells.size();
     const PointCellIndex pointCellIndex = makePointCellIndex(gridProposal);
     const std::vector<int> baseProbeBins(gridProposal.cells.size(), config.probeBins);
+    result.envelope.gridSeconds = secondsSince(gridStart);
 
+    const auto baseProbeStart = std::chrono::steady_clock::now();
     const std::vector<double> probedCellMaxWeights =
         probeCellMaxWeights(
             current,
@@ -712,9 +720,11 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
             baseProbeBins,
             config.probeRule,
             alpha);
+    result.envelope.baseProbeSeconds = secondsSince(baseProbeStart);
 
     std::vector<double> calibrationCellMaxWeights(gridProposal.cells.size(), 0.0);
     std::mt19937_64 calibrationRng(config.seed);
+    const auto calibrationStart = std::chrono::steady_clock::now();
     for (int index = 0; index < config.calibrationTrials; ++index) {
         const TrialRecord record =
             makeTrialRecord(
@@ -728,7 +738,9 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
             calibrationCellMaxWeights[record.cellIndex],
             record.sample.weightedPhoton.photon.weight);
     }
+    result.envelope.calibrationSeconds = secondsSince(calibrationStart);
 
+    const auto probePlanStart = std::chrono::steady_clock::now();
     for (std::size_t index = 0; index < gridProposal.cells.size(); ++index) {
         if (calibrationCellMaxWeights[index] > probedCellMaxWeights[index]) {
             ++result.envelope.suspectCellCount;
@@ -743,7 +755,9 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
             config,
             probedCellMaxWeights,
             calibrationCellMaxWeights);
+    result.envelope.probePlanSeconds = secondsSince(probePlanStart);
     std::vector<double> finalProbedCellMaxWeights = probedCellMaxWeights;
+    const auto boostedProbeStart = std::chrono::steady_clock::now();
     if (config.probePolicy == ShapeUnweightingProbePolicy::BoostedCells) {
         for (std::size_t index = 0; index < gridProposal.cells.size(); ++index) {
             if (probePlan.bins[index] == config.probeBins) {
@@ -758,12 +772,14 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
                     gridProposal.cells[index],
                     probePlan.bins[index],
                     config.probeRule,
-                    alpha);
+                alpha);
         }
     }
+    result.envelope.boostedProbeSeconds = secondsSince(boostedProbeStart);
     result.envelope.promotedCellCount = probePlan.promotedCellCount;
     result.envelope.probeEvaluations = probePlan.probeEvaluations;
 
+    const auto envelopeBuildStart = std::chrono::steady_clock::now();
     const std::vector<EnvelopeCell> envelopeCells =
         makeEnvelopeCells(
             gridProposal,
@@ -776,12 +792,14 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
     }
     result.envelope.envelopeIntegral = envelopeMass;
     const EnvelopeCellSampler envelopeCellSampler = makeEnvelopeCellSampler(envelopeCells);
+    result.envelope.envelopeBuildSeconds = secondsSince(envelopeBuildStart);
 
     result.candidates.reserve(static_cast<std::size_t>(config.trials));
     std::mt19937_64 trialRng(config.seed + 1);
     std::mt19937_64 acceptRng(config.seed + 2);
     double cappedAcceptanceSum = 0.0;
 
+    const auto trialStart = std::chrono::steady_clock::now();
     for (int index = 0; index < config.trials; ++index) {
         const TrialRecord record =
             makeEnvelopeTrialRecord(
@@ -825,7 +843,9 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
             });
         }
     }
+    result.envelope.trialSeconds = secondsSince(trialStart);
 
+    const auto finalizationStart = std::chrono::steady_clock::now();
     result.envelope.acceptedCount = static_cast<int>(result.candidates.size());
     result.envelope.observedAcceptanceEfficiency =
         static_cast<double>(result.envelope.acceptedCount) / static_cast<double>(config.trials);
@@ -842,6 +862,7 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
     } else {
         result.status = ShapeUnweightingStatus::Ok;
     }
+    result.envelope.finalizationSeconds = secondsSince(finalizationStart);
 
     return result;
 }

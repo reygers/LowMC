@@ -810,6 +810,24 @@ the dominant cost at about `95.6%`. For the slow seed `24684`, `lambda_event`
 remained `2.86086`, the requested photon count remained `16`, and yield time
 dropped from about `4.84 s` to about `0.43 s`.
 
+The remaining shape stage is now instrumented inside
+`ShapeUnweightingEnvelopeDiagnostics` and surfaced through the HepMC3
+afterburner timing helpers. The shape timing split records
+grid/refinement/index setup, base probing, calibration trials, probe planning,
+boosted-cell probing, envelope construction, rejection trials, and
+finalization, plus counters such as grid cells, probe evaluations,
+calibration/trial counts, accepted candidates, suspect cells, and promoted
+cells. A refreshed four-seed Pythia-produced scan still passed with unchanged
+photon counts and maximum trial/bound ratio `0.371033`. Its total event time
+was about `17.8 s`, with shape time about `17.1 s`. Base probing is the
+dominant remaining substage: about `12.9 s`, or `75.5%` of shape time.
+Calibration trials are about `2.0 s` (`11.5%`), boosted-cell probing about
+`1.3 s` (`7.4%`), grid/refinement/index about `0.56 s` (`3.3%`), and final
+rejection trials only about `0.31 s` (`1.8%`). The current scan used
+`3310..11866` grid cells and `446815..1582639` probe evaluations per event.
+The next speed target should therefore be the full base-probe stage, not
+accepted-photon trial generation.
+
 The command name decision is settled for now: keep
 `lowmc_hepmc3_afterburner_diagnostic` as the only executable name. A shorter
 production alias should wait until validation gates and output-mode conventions

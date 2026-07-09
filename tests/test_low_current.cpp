@@ -1655,6 +1655,22 @@ void testShapeUnweightingReturnsDiagnosticsAndUnitWeightCandidates() {
     require(
         result.envelope.envelopeIntegral > 0.0,
         "shape unweighting should report positive envelope integral");
+    require(
+        result.envelope.gridSeconds >= 0.0 &&
+            result.envelope.baseProbeSeconds >= 0.0 &&
+            result.envelope.calibrationSeconds >= 0.0 &&
+            result.envelope.probePlanSeconds >= 0.0 &&
+            result.envelope.boostedProbeSeconds >= 0.0 &&
+            result.envelope.envelopeBuildSeconds >= 0.0 &&
+            result.envelope.trialSeconds >= 0.0 &&
+            result.envelope.finalizationSeconds >= 0.0,
+        "shape unweighting timing diagnostics should be non-negative");
+    require(
+        result.envelope.gridSeconds > 0.0 &&
+            result.envelope.baseProbeSeconds > 0.0 &&
+            result.envelope.calibrationSeconds > 0.0 &&
+            result.envelope.trialSeconds > 0.0,
+        "shape unweighting should report positive time for active work blocks");
 
     for (const lowmc::ShapeUnweightedPhotonCandidate& candidate : result.candidates) {
         requireNear(

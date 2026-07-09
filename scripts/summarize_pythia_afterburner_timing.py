@@ -14,7 +14,34 @@ STAGE_SECOND_KEYS = [
     "yield_seconds",
     "poisson_seconds",
     "shape_seconds",
+    "shape_grid_seconds",
+    "shape_base_probe_seconds",
+    "shape_calibration_seconds",
+    "shape_probe_plan_seconds",
+    "shape_boosted_probe_seconds",
+    "shape_envelope_build_seconds",
+    "shape_trial_seconds",
+    "shape_finalization_seconds",
     "write_seconds",
+]
+
+TOP_LEVEL_STAGE_LABELS = [
+    ("selection", "select_seconds"),
+    ("yield", "yield_seconds"),
+    ("poisson", "poisson_seconds"),
+    ("shape", "shape_seconds"),
+    ("write", "write_seconds"),
+]
+
+SHAPE_SUBSTAGE_LABELS = [
+    ("grid/refinement/index", "shape_grid_seconds"),
+    ("base probing", "shape_base_probe_seconds"),
+    ("calibration trials", "shape_calibration_seconds"),
+    ("probe planning", "shape_probe_plan_seconds"),
+    ("boosted-cell probing", "shape_boosted_probe_seconds"),
+    ("envelope build", "shape_envelope_build_seconds"),
+    ("rejection trials", "shape_trial_seconds"),
+    ("finalization", "shape_finalization_seconds"),
 ]
 
 
@@ -206,13 +233,7 @@ def write_summary_md(
                 "| --- | ---: | ---: | ---: |",
             ]
         )
-        for label, key in [
-            ("selection", "select_seconds"),
-            ("yield", "yield_seconds"),
-            ("poisson", "poisson_seconds"),
-            ("shape", "shape_seconds"),
-            ("write", "write_seconds"),
-        ]:
+        for label, key in TOP_LEVEL_STAGE_LABELS:
             lines.append(
                 "| "
                 f"{label} | "
@@ -221,6 +242,59 @@ def write_summary_md(
                 f"{summary[f'{key}_fraction']:.1%} |"
             )
         lines.append("")
+
+    if summary["shape_trial_seconds_count"] > 0:
+        lines.extend(
+            [
+                "## Shape Substage Timing",
+                "",
+                "| shape substage | total seconds | max event seconds | fraction of shape time |",
+                "| --- | ---: | ---: | ---: |",
+            ]
+        )
+        shape_total = summary["shape_seconds_sum"]
+        for label, key in SHAPE_SUBSTAGE_LABELS:
+            substage_sum = summary[f"{key}_sum"]
+            fraction = substage_sum / shape_total if shape_total > 0.0 else math.nan
+            fraction_text = "n/a" if math.isnan(fraction) else f"{fraction:.1%}"
+            lines.append(
+                "| "
+                f"{label} | "
+                f"{substage_sum:.3f} | "
+                f"{summary[f'{key}_max']:.3f} | "
+                f"{fraction_text} |"
+            )
+        lines.append("")
+
+        counter_ranges = []
+        for label, key in [
+            ("grid cells", "shape_grid_cell_count"),
+            ("probe evaluations", "shape_probe_evaluations"),
+            ("calibration trials", "shape_calibration_count"),
+            ("rejection trials", "shape_trial_count"),
+            ("accepted candidates", "shape_accepted_count"),
+            ("suspect cells", "shape_suspect_cell_count"),
+            ("promoted cells", "shape_promoted_cell_count"),
+        ]:
+            values = [
+                value
+                for row in rows
+                if (value := finite_float(row, key)) is not None
+            ]
+            if values:
+                counter_ranges.append((label, min(values), max(values)))
+        if counter_ranges:
+            lines.extend(
+                [
+                    "## Shape Counter Ranges",
+                    "",
+                    "| counter | min | max |",
+                    "| --- | ---: | ---: |",
+                ]
+            )
+            for label, minimum, maximum in counter_ranges:
+                lines.append(f"| {label} | {minimum:.0f} | {maximum:.0f} |")
+            lines.append("")
 
     lines.extend(
         [
@@ -281,6 +355,19 @@ def print_summary(summary: dict[str, float]) -> None:
     )
     shape_fraction = summary["shape_seconds_fraction"]
     shape_fraction_text = "nan" if math.isnan(shape_fraction) else f"{shape_fraction:.3g}"
+    dominant_shape_label = "none"
+    dominant_shape_seconds = math.nan
+    if summary["shape_trial_seconds_count"] > 0:
+        dominant_shape_label, dominant_shape_key = max(
+            SHAPE_SUBSTAGE_LABELS,
+            key=lambda item: summary[f"{item[1]}_sum"],
+        )
+        dominant_shape_seconds = summary[f"{dominant_shape_key}_sum"]
+    dominant_shape_text = (
+        "none"
+        if math.isnan(dominant_shape_seconds)
+        else f"{dominant_shape_label}:{dominant_shape_seconds:.6g}"
+    )
     print(
         f"events={int(summary['events'])} "
         f"event_seconds_sum={summary['event_seconds_sum']:.6g} "
@@ -292,6 +379,7 @@ def print_summary(summary: dict[str, float]) -> None:
         f"requested_photons_sum={summary['requested_photons_sum']:.0f} "
         f"max_trial_bound_ratio={summary['max_trial_bound_ratio_max']:.6g} "
         f"shape_seconds_fraction={shape_fraction_text} "
+        f"dominant_shape_substage={dominant_shape_text} "
         f"{correlation_text}"
     )
 

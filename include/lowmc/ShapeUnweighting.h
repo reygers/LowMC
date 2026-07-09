@@ -68,6 +68,14 @@ struct ShapeUnweightingEnvelopeDiagnostics {
     int promotedCellCount = 0;
     std::size_t gridCellCount = 0;
     std::size_t probeEvaluations = 0;
+    double gridSeconds = 0.0;
+    double baseProbeSeconds = 0.0;
+    double calibrationSeconds = 0.0;
+    double probePlanSeconds = 0.0;
+    double boostedProbeSeconds = 0.0;
+    double envelopeBuildSeconds = 0.0;
+    double trialSeconds = 0.0;
+    double finalizationSeconds = 0.0;
     double maxTrialBoundRatio = 0.0;
     double observedAcceptanceEfficiency = 0.0;
     double expectedAcceptanceEfficiency = 0.0;

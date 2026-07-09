@@ -819,6 +819,17 @@ should still be regarded as a semantics-preserving implementation detail: any
 future changes to cell lookup or envelope-cell sampling must continue to be
 tested against the linear reference.
 
+The shape-unweighting result also carries diagnostic timing and counters for
+the current envelope construction. The timings split grid/refinement/index
+setup, base cell probing, calibration trials, probe planning, boosted-cell
+probing, envelope construction, rejection trials, and finalization. The
+counters report the grid size, probe evaluations, calibration/trial counts,
+accepted candidates, suspect cells, and promoted cells. These are diagnostic
+measurements only; they do not affect the proposal, envelope, or acceptance
+probability. The first Pythia-produced scan with this split shows that the
+full base-probe pass over all cells dominates the remaining shape cost, while
+final rejection trials are small.
+
 Shape unweighting is separate from event multiplicity. After the photon shape
 can be sampled without weights, LowMC still needs a normalization rule for how
 many photons to add to a given input event in the configured phase space. The
