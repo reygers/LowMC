@@ -1708,6 +1708,9 @@ void testShapeUnweightingIndexMatchesLinearReference() {
     require(
         diagnostic.envelopeSamplingChecks > 0,
         "shape-unweighting index consistency should check envelope sampling");
+    require(
+        diagnostic.knownCellProbeWeightChecks > 0,
+        "shape-unweighting index consistency should compare known-cell probe weights");
 }
 
 void testShapeUnweightingBoostedCellPolicyPromotesCells() {

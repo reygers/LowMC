@@ -828,6 +828,24 @@ rejection trials only about `0.31 s` (`1.8%`). The current scan used
 The next speed target should therefore be the full base-probe stage, not
 accepted-photon trial generation.
 
+A first base-probe bookkeeping optimization is now implemented. For interior
+probe coordinates, the code already knows the cell being probed, so it can
+evaluate the proposal density from that known cell rather than using the
+eta-bucket point lookup to rediscover the same cell for every probe point.
+This does not change probe coordinates, weights, envelope masses, or safety
+factors. The existing shape-index consistency diagnostic now also compares
+known-cell probe weights against the indexed reference. In the four-seed
+Pythia-produced scan, all events again passed with unchanged photon counts,
+unchanged output-summary agreement, and maximum trial/bound ratio `0.371033`.
+Total event time dropped from about `17.8 s` to about `13.3 s`; shape time
+from about `17.1 s` to about `12.5 s`; and base probing from about `12.9 s`
+to about `8.6 s`. The slow seed `24684` is now about `9.7 s`, compared with
+about `12.4 s` after yield factorization and shape timing instrumentation.
+Base probing is still the dominant shape substage at about `69%` of shape
+time, so the next speed discussion should be about whether a reduced or
+targeted base-probe lattice can be validated safely against the full-probe
+reference.
+
 The command name decision is settled for now: keep
 `lowmc_hepmc3_afterburner_diagnostic` as the only executable name. A shorter
 production alias should wait until validation gates and output-mode conventions

@@ -830,6 +830,15 @@ probability. The first Pythia-produced scan with this split shows that the
 full base-probe pass over all cells dominates the remaining shape cost, while
 final rejection trials are small.
 
+The first base-probe optimization is a bookkeeping shortcut, not a reduced
+envelope. For `Interior` probe coordinates, the probe point is strictly inside
+the cell currently being probed, so the proposal density can be evaluated from
+that known cell instead of using the eta-bucket point lookup to find the same
+cell again. Edge probes keep the lookup path because boundary ownership is
+ambiguous. The consistency diagnostic compares the known-cell probe weight
+against the indexed reference. This shortcut keeps the probe lattice,
+cell-local bounds, envelope masses, and accepted shape unchanged.
+
 Shape unweighting is separate from event multiplicity. After the photon shape
 can be sampled without weights, LowMC still needs a normalization rule for how
 many photons to add to a given input event in the configured phase space. The

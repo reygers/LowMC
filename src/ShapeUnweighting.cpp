@@ -469,6 +469,30 @@ void refineGridNearChargedParticles(
     return sample.photon.weight;
 }
 
+[[nodiscard]] double exactWeightAtEtaPhiInKnownCell(
+    const LowCurrent& current,
+    const PhotonPhaseSpace& phaseSpace,
+    const GridAdaptiveEtaPhiProposal& gridProposal,
+    std::size_t cellIndex,
+    double kT,
+    double eta,
+    double phi,
+    double alpha) {
+    const double proposalDensity =
+        logUniformKTDensityPhysicalMeasure(phaseSpace, kT) *
+        etaPhiDensityForCell(gridProposal, gridProposal.cells[cellIndex]);
+    const WeightedPhotonSample sample =
+        makeWeightedPhotonSample(
+            current,
+            phaseSpace,
+            WeightedPhotonProposal{
+                photonMomentumFromKTEtaPhi(kT, eta, phi),
+                proposalDensity,
+            },
+            alpha);
+    return sample.photon.weight;
+}
+
 [[nodiscard]] std::vector<EnvelopeCell> makeEnvelopeCells(
     const GridAdaptiveEtaPhiProposal& gridProposal,
     const std::vector<double>& probedCellMaxWeights,
@@ -505,11 +529,12 @@ void refineGridNearChargedParticles(
     const PhotonPhaseSpace& phaseSpace,
     const GridAdaptiveEtaPhiProposal& gridProposal,
     const PointCellIndex& pointCellIndex,
-    const GridAdaptiveEtaPhiCell& cell,
+    std::size_t cellIndex,
     int probeBins,
     ShapeUnweightingProbeRule probeRule,
     double alpha) {
     const double kT = std::sqrt(phaseSpace.kTMin * phaseSpace.kTMax);
+    const GridAdaptiveEtaPhiCell& cell = gridProposal.cells[cellIndex];
     double maxWeight = 0.0;
     for (int etaIndex = 0; etaIndex < probeBins; ++etaIndex) {
         const double eta =
@@ -517,17 +542,27 @@ void refineGridNearChargedParticles(
         for (int phiIndex = 0; phiIndex < probeBins; ++phiIndex) {
             const double phi =
                 probeCoordinate(cell.phiMin, cell.phiMax, phiIndex, probeBins, probeRule);
-            maxWeight = std::max(
-                maxWeight,
-                exactWeightAtEtaPhi(
-                    current,
-                    phaseSpace,
-                    gridProposal,
-                    pointCellIndex,
-                    kT,
-                    eta,
-                    phi,
-                    alpha));
+            const double weight =
+                probeRule == ShapeUnweightingProbeRule::Interior
+                    ? exactWeightAtEtaPhiInKnownCell(
+                          current,
+                          phaseSpace,
+                          gridProposal,
+                          cellIndex,
+                          kT,
+                          eta,
+                          phi,
+                          alpha)
+                    : exactWeightAtEtaPhi(
+                          current,
+                          phaseSpace,
+                          gridProposal,
+                          pointCellIndex,
+                          kT,
+                          eta,
+                          phi,
+                          alpha);
+            maxWeight = std::max(maxWeight, weight);
         }
     }
     return maxWeight;
@@ -549,7 +584,7 @@ void refineGridNearChargedParticles(
                 phaseSpace,
                 gridProposal,
                 pointCellIndex,
-                gridProposal.cells[cellIndex],
+                cellIndex,
                 cellProbeBins[cellIndex],
                 probeRule,
                 alpha);
@@ -769,10 +804,10 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
                     config.phaseSpace,
                     gridProposal,
                     pointCellIndex,
-                    gridProposal.cells[index],
+                    index,
                     probePlan.bins[index],
                     config.probeRule,
-                alpha);
+                    alpha);
         }
     }
     result.envelope.boostedProbeSeconds = secondsSince(boostedProbeStart);
@@ -912,6 +947,51 @@ ShapeUnweightingIndexConsistencyDiagnostic validateShapeUnweightingIndexConsiste
         checkPoint(std::nextafter(cell.etaMax, cell.etaMin), 0.5 * (cell.phiMin + cell.phiMax));
         checkPoint(0.5 * (cell.etaMin + cell.etaMax), std::nextafter(cell.phiMin, cell.phiMax));
         checkPoint(0.5 * (cell.etaMin + cell.etaMax), std::nextafter(cell.phiMax, cell.phiMin));
+    }
+
+    const double probeKT = std::sqrt(config.phaseSpace.kTMin * config.phaseSpace.kTMax);
+    const int weightProbeBins = std::min(config.probeBins, 3);
+    for (std::size_t cellIndex = 0; cellIndex < gridProposal.cells.size(); ++cellIndex) {
+        const GridAdaptiveEtaPhiCell& cell = gridProposal.cells[cellIndex];
+        for (int etaIndex = 0; etaIndex < weightProbeBins; ++etaIndex) {
+            const double eta = probeCoordinate(
+                cell.etaMin,
+                cell.etaMax,
+                etaIndex,
+                weightProbeBins,
+                ShapeUnweightingProbeRule::Interior);
+            for (int phiIndex = 0; phiIndex < weightProbeBins; ++phiIndex) {
+                const double phi = probeCoordinate(
+                    cell.phiMin,
+                    cell.phiMax,
+                    phiIndex,
+                    weightProbeBins,
+                    ShapeUnweightingProbeRule::Interior);
+                const double reference = exactWeightAtEtaPhi(
+                    current,
+                    config.phaseSpace,
+                    gridProposal,
+                    pointCellIndex,
+                    probeKT,
+                    eta,
+                    phi,
+                    alpha);
+                const double knownCell = exactWeightAtEtaPhiInKnownCell(
+                    current,
+                    config.phaseSpace,
+                    gridProposal,
+                    cellIndex,
+                    probeKT,
+                    eta,
+                    phi,
+                    alpha);
+                ++diagnostic.knownCellProbeWeightChecks;
+                const double scale = std::max({1.0, std::abs(reference), std::abs(knownCell)});
+                if (std::abs(reference - knownCell) > 1.0e-12 * scale) {
+                    diagnostic.consistent = false;
+                }
+            }
+        }
     }
 
     std::vector<EnvelopeCell> envelopeCells;

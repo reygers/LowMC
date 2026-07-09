@@ -104,6 +104,7 @@ struct ShapeUnweightingIndexConsistencyDiagnostic {
     std::size_t gridCellCount = 0;
     std::size_t pointLookupChecks = 0;
     std::size_t envelopeSamplingChecks = 0;
+    std::size_t knownCellProbeWeightChecks = 0;
 };
 
 [[nodiscard]] ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
