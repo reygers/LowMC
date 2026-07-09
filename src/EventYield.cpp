@@ -104,6 +104,41 @@ double adaptiveIntegral(
     return sum * dLogKT;
 }
 
+double factorizedAdaptiveIntegral(
+    const LowCurrent& current,
+    const PhotonPhaseSpace& phaseSpace,
+    const AdaptiveEventYieldIntegrationConfig& config,
+    double alpha,
+    int& evaluations,
+    int& gridCells) {
+    const double logKTInterval = std::log(phaseSpace.kTMax / phaseSpace.kTMin);
+    const double kT = std::sqrt(phaseSpace.kTMin * phaseSpace.kTMax);
+    const double measureJacobian = kT * kT;
+    const GridAdaptiveEtaPhiProposal proposal =
+        makeGridAdaptiveEtaPhiProposal(current, phaseSpace, kT, config.gridConfig);
+    gridCells += static_cast<int>(proposal.cells.size());
+
+    double angularSum = 0.0;
+    for (const GridAdaptiveEtaPhiCell& cell : proposal.cells) {
+        const double dEta =
+            (cell.etaMax - cell.etaMin) / static_cast<double>(config.etaSubBins);
+        const double dPhi =
+            (cell.phiMax - cell.phiMin) / static_cast<double>(config.phiSubBins);
+        for (int etaIndex = 0; etaIndex < config.etaSubBins; ++etaIndex) {
+            const double eta = cell.etaMin + (static_cast<double>(etaIndex) + 0.5) * dEta;
+            for (int phiIndex = 0; phiIndex < config.phiSubBins; ++phiIndex) {
+                const double phi = cell.phiMin + (static_cast<double>(phiIndex) + 0.5) * dPhi;
+                const FourVector photon = photonMomentumFromKTEtaPhi(kT, eta, phi);
+                angularSum +=
+                    lowPhotonDensity(current, photon, alpha) * measureJacobian * dEta * dPhi;
+                ++evaluations;
+            }
+        }
+    }
+
+    return angularSum * logKTInterval;
+}
+
 EventYieldIntegrationConfig coarseConfig(EventYieldIntegrationConfig config) {
     config.logKTBins = std::max(1, config.logKTBins / 2);
     config.etaBins = std::max(1, config.etaBins / 2);
@@ -215,6 +250,67 @@ EventYieldEstimate estimateAdaptiveEventYield(
     const AdaptiveEventYieldIntegrationConfig& config,
     double alpha) {
     return estimateAdaptiveEventYield(LowCurrent(selectedParticles), phaseSpace, config, alpha);
+}
+
+EventYieldEstimate estimateFactorizedAdaptiveEventYield(
+    const LowCurrent& current,
+    const PhotonPhaseSpace& phaseSpace,
+    const AdaptiveEventYieldIntegrationConfig& config,
+    double alpha) {
+    if (!validatePhotonPhaseSpace(phaseSpace).valid()) {
+        throw std::invalid_argument("invalid photon phase space");
+    }
+    validateAdaptiveIntegrationConfig(config);
+    if (!std::isfinite(alpha) || alpha <= 0.0) {
+        throw std::invalid_argument("fine-structure constant must be positive and finite");
+    }
+
+    const AdaptiveEventYieldIntegrationConfig coarse = coarseConfig(config);
+    validateAdaptiveIntegrationConfig(coarse);
+
+    EventYieldEstimate estimate;
+    estimate.method = "factorized-adaptive-eta-phi-midpoint";
+    estimate.logKTBins = 1;
+    estimate.etaBins = config.etaSubBins;
+    estimate.phiBins = config.phiSubBins;
+    estimate.lambdaEvent =
+        factorizedAdaptiveIntegral(
+            current,
+            phaseSpace,
+            config,
+            alpha,
+            estimate.evaluations,
+            estimate.gridCells);
+
+    int coarseEvaluations = 0;
+    int coarseGridCells = 0;
+    estimate.coarseLambdaEvent =
+        factorizedAdaptiveIntegral(
+            current,
+            phaseSpace,
+            coarse,
+            alpha,
+            coarseEvaluations,
+            coarseGridCells);
+    estimate.absoluteDifference = std::abs(estimate.lambdaEvent - estimate.coarseLambdaEvent);
+    estimate.relativeDifference =
+        estimate.lambdaEvent != 0.0 ? estimate.absoluteDifference / std::abs(estimate.lambdaEvent)
+                                    : 0.0;
+    estimate.status =
+        std::isfinite(estimate.lambdaEvent) && estimate.lambdaEvent >= 0.0 ? "ok" : "invalid";
+    return estimate;
+}
+
+EventYieldEstimate estimateFactorizedAdaptiveEventYield(
+    const std::vector<ChargedParticle>& selectedParticles,
+    const PhotonPhaseSpace& phaseSpace,
+    const AdaptiveEventYieldIntegrationConfig& config,
+    double alpha) {
+    return estimateFactorizedAdaptiveEventYield(
+        LowCurrent(selectedParticles),
+        phaseSpace,
+        config,
+        alpha);
 }
 
 PhotonMultiplicityDiagnostic samplePhotonMultiplicity(

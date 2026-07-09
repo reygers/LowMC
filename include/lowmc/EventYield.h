@@ -76,6 +76,18 @@ struct PhotonMultiplicityDiagnostic {
     const AdaptiveEventYieldIntegrationConfig& config = {},
     double alpha = FineStructureConstant);
 
+[[nodiscard]] EventYieldEstimate estimateFactorizedAdaptiveEventYield(
+    const LowCurrent& current,
+    const PhotonPhaseSpace& phaseSpace,
+    const AdaptiveEventYieldIntegrationConfig& config = {},
+    double alpha = FineStructureConstant);
+
+[[nodiscard]] EventYieldEstimate estimateFactorizedAdaptiveEventYield(
+    const std::vector<ChargedParticle>& selectedParticles,
+    const PhotonPhaseSpace& phaseSpace,
+    const AdaptiveEventYieldIntegrationConfig& config = {},
+    double alpha = FineStructureConstant);
+
 [[nodiscard]] PhotonMultiplicityDiagnostic samplePhotonMultiplicity(
     double lambdaEvent,
     const PhotonMultiplicityConfig& config = {});

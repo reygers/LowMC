@@ -51,7 +51,8 @@ void printUsage(const char* programName) {
         << "  --log-kt-bins N               Midpoint bins in log(kT)\n"
         << "  --eta-bins N                  Midpoint bins in eta\n"
         << "  --phi-bins N                  Midpoint bins in phi\n"
-        << "  --method midpoint|adaptive    Yield integration method\n"
+        << "  --method midpoint|adaptive|factorized\n"
+        << "                                 Yield integration method\n"
         << "  --adaptive-eta-sub-bins N     Eta sub-bins per adaptive cell\n"
         << "  --adaptive-phi-sub-bins N     Phi sub-bins per adaptive cell\n"
         << "  --adaptive-grid-eta-bins N    Initial adaptive eta bins\n"
@@ -164,8 +165,9 @@ Options parseOptions(int argc, char** argv) {
         }
         if (argument == "--method") {
             options.method = readStringOption(index, argc, argv, argument);
-            if (options.method != "midpoint" && options.method != "adaptive") {
-                throw std::invalid_argument("--method must be midpoint or adaptive");
+            if (options.method != "midpoint" && options.method != "adaptive" &&
+                options.method != "factorized") {
+                throw std::invalid_argument("--method must be midpoint, adaptive, or factorized");
             }
             continue;
         }
@@ -255,14 +257,22 @@ int main(int argc, char** argv) {
             options.phiMax,
         };
         lowmc::EventYieldEstimate yield;
-        if (options.method == "adaptive") {
+        if (options.method == "adaptive" || options.method == "factorized") {
             const lowmc::AdaptiveEventYieldIntegrationConfig integrationConfig{
                 options.logKTBins,
                 options.adaptiveEtaSubBins,
                 options.adaptivePhiSubBins,
                 options.adaptiveGridConfig,
             };
-            yield = lowmc::estimateAdaptiveEventYield(particles, phaseSpace, integrationConfig);
+            if (options.method == "adaptive") {
+                yield = lowmc::estimateAdaptiveEventYield(particles, phaseSpace, integrationConfig);
+            } else {
+                yield =
+                    lowmc::estimateFactorizedAdaptiveEventYield(
+                        particles,
+                        phaseSpace,
+                        integrationConfig);
+            }
         } else {
             const lowmc::EventYieldIntegrationConfig integrationConfig{
                 options.logKTBins,

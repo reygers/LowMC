@@ -789,6 +789,27 @@ event-yield estimator, especially using the leading-Low `k_T` factorization and
 removing or making optional work whose diagnostics are not consumed by the
 afterburner.
 
+That next yield step is now implemented. LowMC has a
+`factorized-adaptive-eta-phi-midpoint` event-yield estimator that builds the
+adaptive angular grid once at the geometric-mean `k_T` and multiplies the
+result by `ln(kTMax / kTMin)`. The old
+`adaptive-log-kt-grid-eta-phi-midpoint` estimator remains available as a
+reference through the event-yield diagnostic. For the controlled two-pion
+checks at `p = 1`, `10`, `100`, and `1000 GeV`, the factorized and old adaptive
+estimators agree to numerical precision while reducing the L7 evaluation count
+from `413056` to `25816`.
+
+The HepMC3 afterburner diagnostic now uses the factorized estimator by default.
+On the same four one-event Pythia-produced timing scan, all events again passed
+with no skips, unchanged photon counts, unchanged output-summary agreement, and
+the same maximum trial/bound ratio `0.371033`. The four-event total measured
+event time is now about `17.8 s`, compared with about `25.2 s` after the
+spatial index and about `90.6 s` before the index. The yield stage is reduced
+to about `0.79 s` total, or `4.4%` of event time; shape unweighting is again
+the dominant cost at about `95.6%`. For the slow seed `24684`, `lambda_event`
+remained `2.86086`, the requested photon count remained `16`, and yield time
+dropped from about `4.84 s` to about `0.43 s`.
+
 The command name decision is settled for now: keep
 `lowmc_hepmc3_afterburner_diagnostic` as the only executable name. A shorter
 production alias should wait until validation gates and output-mode conventions

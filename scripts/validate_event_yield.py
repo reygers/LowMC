@@ -95,6 +95,7 @@ def grids() -> list[Grid]:
         Grid("adaptive_l3", "adaptive", 16, 2, 2, 3, 0.1),
         Grid("adaptive_l5", "adaptive", 16, 2, 2, 5, 0.1),
         Grid("adaptive_l7", "adaptive", 16, 2, 2, 7, 0.1),
+        Grid("factorized_l7", "factorized", 16, 2, 2, 7, 0.1),
     ]
 
 
@@ -165,7 +166,7 @@ def run_yield(args: argparse.Namespace, case: Case, grid: Grid) -> dict[str, str
         "--seed",
         str(args.seed),
     ]
-    if grid.method == "adaptive":
+    if grid.method in {"adaptive", "factorized"}:
         command.extend(
             [
                 "--adaptive-grid-eta-bins",
@@ -312,7 +313,9 @@ def write_markdown(path: Path, rows: list[dict[str, str]]) -> None:
         "- `lambda_event` is the deterministic midpoint estimate in "
         "`(log k_T, eta, phi)` for `method=log-kt-eta-phi-midpoint`, or the "
         "adaptive-cell deterministic estimate for "
-        "`method=adaptive-log-kt-grid-eta-phi-midpoint`."
+        "`method=adaptive-log-kt-grid-eta-phi-midpoint`. The factorized "
+        "adaptive method uses the same angular grid once at the geometric-mean "
+        "`k_T` and multiplies by `ln(kTMax / kTMin)`."
     )
     lines.append(
         "- `weighted mean` is the Monte Carlo mean photon weight from the existing "

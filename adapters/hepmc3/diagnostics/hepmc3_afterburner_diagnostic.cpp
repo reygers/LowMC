@@ -403,7 +403,7 @@ int main(int argc, char** argv) {
             } else {
                 const auto yieldStart = std::chrono::steady_clock::now();
                 const lowmc::EventYieldEstimate yield =
-                    lowmc::estimateAdaptiveEventYield(
+                    lowmc::estimateFactorizedAdaptiveEventYield(
                         selection.selectedParticles,
                         phaseSpace,
                         makeYieldConfig());
@@ -411,7 +411,7 @@ int main(int argc, char** argv) {
                 lambdaEvent = yield.lambdaEvent;
 
                 const bool yieldGateOk =
-                    yield.method == std::string("adaptive-log-kt-grid-eta-phi-midpoint") &&
+                    yield.method == std::string("factorized-adaptive-eta-phi-midpoint") &&
                     yield.gridCells > 0 &&
                     std::isfinite(yield.lambdaEvent) &&
                     yield.lambdaEvent >= 0.0;

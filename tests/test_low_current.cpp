@@ -1075,6 +1075,40 @@ void testAdaptiveEventYieldEstimateIsPositiveAndReportsCells() {
         "one sub-bin adaptive yield should evaluate once per reported grid cell");
 }
 
+void testFactorizedAdaptiveEventYieldMatchesAdaptiveReference() {
+    lowmc::AdaptiveEventYieldIntegrationConfig config;
+    config.logKTBins = 3;
+    config.etaSubBins = 1;
+    config.phiSubBins = 1;
+    config.gridConfig.etaBins = 4;
+    config.gridConfig.phiBins = 4;
+    config.gridConfig.refinementLevels = 1;
+    config.gridConfig.refineFraction = 0.25;
+
+    const lowmc::EventYieldEstimate adaptive =
+        lowmc::estimateAdaptiveEventYield(eventGeneratorToyParticles(), testPhaseSpace(), config);
+    const lowmc::EventYieldEstimate factorized =
+        lowmc::estimateFactorizedAdaptiveEventYield(
+            eventGeneratorToyParticles(),
+            testPhaseSpace(),
+            config);
+
+    require(
+        std::string(factorized.method) == "factorized-adaptive-eta-phi-midpoint",
+        "factorized adaptive event yield should report method name");
+    require(factorized.lambdaEvent > 0.0, "factorized adaptive yield should be positive");
+    require(std::isfinite(factorized.lambdaEvent), "factorized adaptive yield should be finite");
+    require(factorized.gridCells > 0, "factorized adaptive yield should report grid cells");
+    require(
+        factorized.evaluations == factorized.gridCells,
+        "one sub-bin factorized adaptive yield should evaluate once per reported grid cell");
+    requireNear(
+        factorized.lambdaEvent,
+        adaptive.lambdaEvent,
+        1.0e-12,
+        "factorized adaptive yield should match log-kT adaptive reference");
+}
+
 void estimateAdaptiveEventYieldWithInvalidConfig() {
     lowmc::AdaptiveEventYieldIntegrationConfig config;
     config.logKTBins = 0;
@@ -1082,10 +1116,23 @@ void estimateAdaptiveEventYieldWithInvalidConfig() {
         lowmc::estimateAdaptiveEventYield(eventGeneratorToyParticles(), testPhaseSpace(), config));
 }
 
+void estimateFactorizedAdaptiveEventYieldWithInvalidConfig() {
+    lowmc::AdaptiveEventYieldIntegrationConfig config;
+    config.etaSubBins = 0;
+    static_cast<void>(
+        lowmc::estimateFactorizedAdaptiveEventYield(
+            eventGeneratorToyParticles(),
+            testPhaseSpace(),
+            config));
+}
+
 void testAdaptiveEventYieldRejectsInvalidInputs() {
     requireThrowsInvalidArgument(
         estimateAdaptiveEventYieldWithInvalidConfig,
         "adaptive event yield should reject invalid config");
+    requireThrowsInvalidArgument(
+        estimateFactorizedAdaptiveEventYieldWithInvalidConfig,
+        "factorized adaptive event yield should reject invalid config");
 }
 
 void testPhotonMultiplicityUsesPoissonMeanAndOversamplingWeight() {
@@ -1858,6 +1905,7 @@ int main() {
     testEventYieldEstimateUsesLogKTMeasure();
     testEventYieldEstimateRejectsInvalidInputs();
     testAdaptiveEventYieldEstimateIsPositiveAndReportsCells();
+    testFactorizedAdaptiveEventYieldMatchesAdaptiveReference();
     testAdaptiveEventYieldRejectsInvalidInputs();
     testPhotonMultiplicityUsesPoissonMeanAndOversamplingWeight();
     testPhotonMultiplicityRejectsInvalidInputs();

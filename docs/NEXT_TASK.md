@@ -4,36 +4,39 @@ This file should contain exactly one immediate task for Codex or another coding
 agent. Broader plans belong in `docs/ROADMAP.md`; project state belongs in
 `docs/STATUS.md`.
 
-Audit and prototype a faster event-yield estimator using the leading-Low
-`k_T` factorization.
+Instrument the remaining shape-unweighting bottleneck inside the HepMC3
+afterburner diagnostic.
 
 Requirements:
 
 - review `docs/ADAPTER_CONTRACT.md`, `docs/ADAPTER_PLAN.md`,
   `docs/DECISIONS.md`, `docs/STATUS.md`, `docs/ALGORITHM.md`, and
   `docs/USAGE.md`
-- keep the spatial-indexed shape-unweighting path unchanged; this task is about
-  the yield estimator now visible in stage timing
-- use the leading-Low scaling in which the real-photon angular shape is
-  independent of `k_T` and the integrated yield factorizes into an angular
-  integral times `ln(kTMax / kTMin)`
-- compare the current adaptive `log k_T` midpoint estimator with a factorized
-  estimator that builds/integrates the angular grid once at a representative
-  `k_T`
-- preserve the existing estimator as a reference while validating numerical
-  agreement on toy and bounded Pythia-produced events
-- decide whether the afterburner can use the factorized estimator by default,
-  or whether it should remain a diagnostic option until broader validation
-- report any speed impact using `yield_seconds` and `event_seconds`
+- keep the factorized event-yield estimator and the spatial-indexed
+  shape-unweighting path as the current defaults; do not change physics
+  densities or envelope safety policy in this task
+- add timing and counter diagnostics that split the current `shape_seconds`
+  stage into the main pieces of `generateShapeUnweightedPhotonCandidates(...)`,
+  such as grid construction, envelope probing/calibration, trial generation,
+  accepted-candidate bookkeeping, and envelope-failure checks
+- make the new diagnostics available to the HepMC3 afterburner timing summary
+  without cluttering ordinary user-facing output more than necessary
+- rerun the bounded four-seed Pythia-produced timing scan and identify the
+  dominant remaining substage for seeds `24681`, `24682`, `24683`, and `24684`
+- preserve existing shape-envelope diagnostics, especially
+  `max_trial_bound_ratio`, accepted/retained counts, and failure status
+- use the result to choose the next optimization target, but avoid implementing
+  that optimization in the same step unless it is only a trivial bookkeeping
+  cleanup
 - update `docs/STATUS.md`, `docs/ALGORITHM.md`, and `docs/NEXT_TASK.md`
   afterward
 
 Open questions:
 
-- Does the existing adaptive-yield code intentionally keep multiple `k_T`
-  slices for future non-leading effects, or can the leading-Low afterburner use
-  an explicitly factorized path now?
-- Which angular grid configuration gives agreement with the current reference
-  without rebuilding maps at many `k_T` midpoints?
-- Should the currently unused coarse-yield comparison be made optional in the
-  afterburner path as part of the same change, or handled separately?
+- Is the current shape cost dominated by envelope setup/probing or by the
+  number of rejection trials needed for accepted photons?
+- Should shape diagnostics live directly in `ShapeUnweightingResult`, or should
+  they be exposed through a narrower diagnostic-only structure?
+- Once the dominant substage is known, is the next low-risk optimization a
+  bookkeeping/cache improvement, or does it require a sampling-policy change
+  that needs broader validation?

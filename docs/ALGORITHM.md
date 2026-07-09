@@ -909,6 +909,18 @@ and `100 GeV` two-pion cases and for the first text fixture. The
 between refinement levels, so it remains a convergence stress test rather than
 a settled production gate.
 
+For the leading-Low real-photon model, the angular shape is independent of
+`k_T` after multiplying by the physical-measure factor `k_T^2`. Therefore the
+same adaptive angular yield can be evaluated once at a representative
+`k_T`, chosen as the geometric mean of `kTMin` and `kTMax`, and then multiplied
+by `ln(kTMax / kTMin)`. LowMC implements this as
+`factorized-adaptive-eta-phi-midpoint`. It is mathematically equivalent to the
+multi-slice adaptive estimator for the present leading-Low density, while
+avoiding repeated eta-phi grid construction at each log-`k_T` midpoint. The
+multi-slice adaptive estimator remains available as an explicit reference and
+as a natural fallback if future non-leading effects introduce nontrivial
+`k_T` dependence.
+
 The first tuning scan uses the deeper adaptive L9 result as a deterministic
 reference for the current controlled fixtures. This is not an analytic truth;
 it is a practical convergence reference for choosing prototype settings. With
