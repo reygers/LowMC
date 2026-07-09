@@ -811,6 +811,14 @@ proposal density, envelope mass, acceptance probability, or accepted Low shape.
 Focused tests compare the indexed path against the linear reference before the
 optimization is trusted.
 
+A first four-seed Pythia-produced timing scan after this change keeps the same
+photon counts and envelope diagnostics as the pre-index checks while reducing
+total event time by roughly a factor of four for the tested seeds. The
+bookkeeping index is therefore part of the default shape-unweighting path. It
+should still be regarded as a semantics-preserving implementation detail: any
+future changes to cell lookup or envelope-cell sampling must continue to be
+tested against the linear reference.
+
 Shape unweighting is separate from event multiplicity. After the photon shape
 can be sampled without weights, LowMC still needs a normalization rule for how
 many photons to add to a given input event in the configured phase space. The

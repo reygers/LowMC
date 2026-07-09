@@ -769,6 +769,26 @@ about `16.3 s`. Its `shape_seconds` dropped from about `60.9 s` to about
 bookkeeping bottleneck, but it is still a small validation sample rather than
 a production performance benchmark.
 
+The spatial-index prototype has now been broadened to the same four one-event
+Pythia seeds used in the first timing snapshot: `24681`, `24682`, `24683`, and
+`24684`, with enhancement factor `5`, multiplicity seed `13583`, and shape
+seed `97535`. All four events passed with no skips, all shape statuses were
+`ok`, output-summary diagnostics matched, photon counts were unchanged from
+the pre-index checks, and the maximum trial/bound ratio remained `0.371033`.
+The four-event total measured event time is now about `25.2 s`, compared with
+about `90.6 s` in the pre-index timing snapshot. The slowest event, seed
+`24684`, is now about `16.3 s` instead of `65.2-65.9 s`; seed `24683` is
+about `4.64 s` instead of `12.1 s`; seed `24681` is about `2.26 s` instead of
+`6.6 s`; and seed `24682` is about `2.02 s` instead of `6.1 s`. Stage timing
+has also shifted: shape unweighting accounts for about `65%` of event time and
+yield integration for about `35%` in this post-index four-event scan. The
+spatial index is therefore kept as the default internal path; no runtime switch
+is needed at this stage, while the linear reference remains available through
+the focused consistency diagnostic. The next likely speed target is the
+event-yield estimator, especially using the leading-Low `k_T` factorization and
+removing or making optional work whose diagnostics are not consumed by the
+afterburner.
+
 The command name decision is settled for now: keep
 `lowmc_hepmc3_afterburner_diagnostic` as the only executable name. A shorter
 production alias should wait until validation gates and output-mode conventions
