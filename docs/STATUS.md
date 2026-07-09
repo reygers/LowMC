@@ -862,6 +862,24 @@ a targeted policy: keep full base probing in high-risk cells and reduce only
 low-risk cells, or add an explicit compensation factor that can be validated
 against the full-probe reference.
 
+A first targeted base-probe prototype is now implemented as another explicit
+diagnostic option: `--targeted-base-probes` keeps the full `11 x 11` base
+lattice in cells near selected charged-particle directions while using the
+reduced `--shape-base-probe-bins` lattice elsewhere. The diagnostic reports
+how many cells received full base probing. On the same four Pythia-produced
+seeds, the refreshed full-probe reference took about `13.1 s` total, with
+about `8.6 s` in base probing and maximum trial/bound ratio `0.371033`.
+Targeted `5 x 5` with zero neighbor halo took about `7.7 s`, but raised the
+maximum ratio to `0.425441`. A one-cell-scale halo took about `10.3 s` and
+still raised the maximum ratio to `0.396629`. A two-cell-scale halo nearly
+collapsed back to full probing for the high-multiplicity event
+(`11237/11866` cells full-probed), took about `12.6 s`, and still slightly
+raised the maximum ratio to `0.372990`. A three-cell-scale halo was no better,
+about `13.0 s` with maximum ratio `0.400562`. Thus charged-particle proximity
+alone is a useful diagnostic marker but not a sufficient reduced-probe policy.
+The next base-probe experiment should use evidence from the reduced probe pass
+and/or calibration, rather than only geometric proximity to charged particles.
+
 The command name decision is settled for now: keep
 `lowmc_hepmc3_afterburner_diagnostic` as the only executable name. A shorter
 production alias should wait until validation gates and output-mode conventions

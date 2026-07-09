@@ -959,6 +959,8 @@ lowmc::ShapeUnweightingConfig shapeUnweightingTestConfig(std::uint64_t seed) {
         12,
         2,
         0,
+        false,
+        0.0,
         lowmc::ShapeUnweightingProbeRule::Interior,
         lowmc::ShapeUnweightingProbePolicy::Fixed,
         4,
@@ -1644,6 +1646,10 @@ void testShapeUnweightingReturnsDiagnosticsAndUnitWeightCandidates() {
         result.envelope.baseProbeBins == config.probeBins,
         "default shape unweighting should use the full base probe lattice");
     require(
+        result.envelope.fullBaseProbeCellCount ==
+            static_cast<int>(result.envelope.gridCellCount),
+        "default shape unweighting should full-probe every grid cell");
+    require(
         result.envelope.promotedCellCount == 0,
         "fixed shape unweighting should not promote cells");
     require(
@@ -1688,6 +1694,47 @@ void testShapeUnweightingReturnsDiagnosticsAndUnitWeightCandidates() {
             1.0e-15,
             "shape-unweighted candidate kT should match photon momentum");
     }
+}
+
+void testShapeUnweightingTargetedBaseProbesFullProbeChargedCells() {
+    lowmc::ShapeUnweightingConfig config = shapeUnweightingTestConfig(123);
+    config.baseProbeBins = 1;
+    config.targetedBaseProbes = true;
+    config.targetedBaseProbeNeighborScale = 0.0;
+
+    const lowmc::ShapeUnweightingResult result =
+        lowmc::generateShapeUnweightedPhotonCandidates(eventGeneratorToyParticles(), config);
+
+    require(
+        result.status == lowmc::ShapeUnweightingStatus::Ok,
+        "targeted base probes should keep the conservative test envelope valid");
+    require(
+        result.envelope.baseProbeBins == config.baseProbeBins,
+        "targeted base-probe diagnostics should report the reduced base lattice");
+    require(
+        result.envelope.targetedBaseProbeNeighborScale ==
+            config.targetedBaseProbeNeighborScale,
+        "targeted base-probe diagnostics should report the neighbor scale");
+    require(
+        result.envelope.fullBaseProbeCellCount > 0,
+        "targeted base probes should full-probe cells containing charged-particle directions");
+    require(
+        result.envelope.fullBaseProbeCellCount <
+            static_cast<int>(result.envelope.gridCellCount),
+        "targeted base probes should leave low-risk cells on the reduced lattice");
+
+    const std::size_t allReducedEvaluations = result.envelope.gridCellCount *
+        static_cast<std::size_t>(config.baseProbeBins) *
+        static_cast<std::size_t>(config.baseProbeBins);
+    const std::size_t allFullEvaluations = result.envelope.gridCellCount *
+        static_cast<std::size_t>(config.probeBins) *
+        static_cast<std::size_t>(config.probeBins);
+    require(
+        result.envelope.probeEvaluations > allReducedEvaluations,
+        "targeted base probes should add work beyond the reduced lattice");
+    require(
+        result.envelope.probeEvaluations < allFullEvaluations,
+        "targeted base probes should save work versus full base probing");
 }
 
 void testShapeUnweightingIndexMatchesLinearReference() {
@@ -1799,6 +1846,13 @@ void generateShapeUnweightingWithInvalidBaseProbeBins() {
         lowmc::generateShapeUnweightedPhotonCandidates(eventGeneratorToyParticles(), config));
 }
 
+void generateShapeUnweightingWithInvalidTargetedBaseProbeNeighborScale() {
+    lowmc::ShapeUnweightingConfig config = shapeUnweightingTestConfig(123);
+    config.targetedBaseProbeNeighborScale = -1.0;
+    static_cast<void>(
+        lowmc::generateShapeUnweightedPhotonCandidates(eventGeneratorToyParticles(), config));
+}
+
 void testShapeUnweightingRejectsInvalidInputs() {
     requireThrowsInvalidArgument(
         generateShapeUnweightingWithInvalidProbeBins,
@@ -1809,6 +1863,9 @@ void testShapeUnweightingRejectsInvalidInputs() {
     requireThrowsInvalidArgument(
         generateShapeUnweightingWithInvalidBaseProbeBins,
         "shape unweighting should reject invalid base probe bins");
+    requireThrowsInvalidArgument(
+        generateShapeUnweightingWithInvalidTargetedBaseProbeNeighborScale,
+        "shape unweighting should reject invalid targeted base-probe neighbor scale");
 }
 
 void testWeightedPhotonSampleRejectsInvalidInputs() {
@@ -1959,6 +2016,7 @@ int main() {
     testWeightedEventGeneratorAppliesOversamplingFactor();
     testWeightedEventGeneratorRejectsInvalidInputs();
     testShapeUnweightingReturnsDiagnosticsAndUnitWeightCandidates();
+    testShapeUnweightingTargetedBaseProbesFullProbeChargedCells();
     testShapeUnweightingIndexMatchesLinearReference();
     testShapeUnweightingBoostedCellPolicyPromotesCells();
     testShapeUnweightingStrictFailureClearsCandidates();

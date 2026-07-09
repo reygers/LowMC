@@ -62,6 +62,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--multiplicity-seed", type=int, default=13579)
     parser.add_argument("--shape-seed", type=int, default=97531)
     parser.add_argument("--shape-base-probe-bins", type=int, default=11)
+    parser.add_argument("--targeted-base-probes", action="store_true")
+    parser.add_argument("--targeted-base-probe-neighbor-scale", type=float, default=0.0)
     parser.add_argument("--kt-min", type=float, default=0.002)
     parser.add_argument("--kt-max", type=float, default=0.2)
     parser.add_argument("--eta-min", type=float, default=-5.0)
@@ -232,6 +234,12 @@ def compare_rows(
                 "shape_suspect_cell_count": row.get("shape_suspect_cell_count", ""),
                 "shape_promoted_cell_count": row.get("shape_promoted_cell_count", ""),
                 "shape_base_probe_bins": row.get("shape_base_probe_bins", ""),
+                "shape_full_base_probe_cell_count": row.get(
+                    "shape_full_base_probe_cell_count", ""
+                ),
+                "shape_targeted_base_probe_neighbor_scale": row.get(
+                    "shape_targeted_base_probe_neighbor_scale", ""
+                ),
                 "event_metadata": summary.get("event_metadata", "0"),
                 "photon_weight_attributes": summary.get("photon_weight_attributes", "0"),
             }
@@ -300,6 +308,8 @@ def main() -> int:
         raise ValueError("--ecm must be positive")
     if args.shape_base_probe_bins <= 0:
         raise ValueError("--shape-base-probe-bins must be positive")
+    if args.targeted_base_probe_neighbor_scale < 0.0:
+        raise ValueError("--targeted-base-probe-neighbor-scale must be non-negative")
 
     script_dir = Path(__file__).resolve().parent
     sample_helper = script_dir / "generate_pythia_hepmc3_sample.py"
@@ -360,10 +370,22 @@ def main() -> int:
         f"{args.phi_min:.17g}",
         "--phi-max",
         f"{args.phi_max:.17g}",
-        "--atomic-output",
-        str(generated_input),
-        str(afterburner_output),
     ]
+    if args.targeted_base_probes:
+        afterburner_command.extend(
+            [
+                "--targeted-base-probes",
+                "--targeted-base-probe-neighbor-scale",
+                f"{args.targeted_base_probe_neighbor_scale:.17g}",
+            ]
+        )
+    afterburner_command.extend(
+        [
+            "--atomic-output",
+            str(generated_input),
+            str(afterburner_output),
+        ]
+    )
     afterburner_log, afterburner_seconds = run_logged(
         afterburner_command,
         args.output_dir / "afterburner.log",
@@ -398,6 +420,8 @@ def main() -> int:
             "multiplicity_seed": args.multiplicity_seed,
             "shape_seed": args.shape_seed,
             "shape_base_probe_bins": args.shape_base_probe_bins,
+            "targeted_base_probes": int(args.targeted_base_probes),
+            "targeted_base_probe_neighbor_scale": args.targeted_base_probe_neighbor_scale,
         }
     )
     for row in event_summaries:

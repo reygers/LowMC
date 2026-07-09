@@ -37,6 +37,8 @@ struct Options {
     int minShapeTrials = 10000;
     int shapeTrialsPerPhoton = 2000;
     int shapeBaseProbeBins = 11;
+    bool targetedBaseProbes = false;
+    double targetedBaseProbeNeighborScale = 0.0;
     double kTMin = 0.002;
     double kTMax = 0.2;
     double etaMin = -5.0;
@@ -65,6 +67,8 @@ void printUsage(std::ostream& out) {
         << "  --min-shape-trials N            Minimum shape-unweighting trials (default: 10000)\n"
         << "  --shape-trials-per-photon N     Extra trials per requested photon (default: 2000)\n"
         << "  --shape-base-probe-bins N       Base probe bins before boosted cells (default: 11)\n"
+        << "  --targeted-base-probes          Keep full base probes near charged particles\n"
+        << "  --targeted-base-probe-neighbor-scale X  Neighbor scale for targeted base probes (default: 0)\n"
         << "  --kt-min GeV                    Minimum photon k_T (default: 0.002)\n"
         << "  --kt-max GeV                    Maximum photon k_T (default: 0.2)\n"
         << "  --eta-min X                     Minimum photon eta (default: -5)\n"
@@ -174,6 +178,19 @@ Options parseOptions(int argc, char** argv) {
                 parsePositiveInt(readStringOption(index, argc, argv, argument), argument);
             continue;
         }
+        if (argument == "--targeted-base-probes") {
+            options.targetedBaseProbes = true;
+            continue;
+        }
+        if (argument == "--targeted-base-probe-neighbor-scale") {
+            options.targetedBaseProbeNeighborScale =
+                parseDouble(readStringOption(index, argc, argv, argument), argument);
+            if (options.targetedBaseProbeNeighborScale < 0.0) {
+                throw std::invalid_argument(
+                    "--targeted-base-probe-neighbor-scale must be non-negative");
+            }
+            continue;
+        }
         if (argument == "--kt-min") {
             options.kTMin = parseDouble(readStringOption(index, argc, argv, argument), argument);
             continue;
@@ -270,6 +287,8 @@ lowmc::ShapeUnweightingConfig makeShapeConfig(
     config.calibrationTrials = std::max(1000, std::min(20000, trials));
     config.probeBins = 11;
     config.baseProbeBins = options.shapeBaseProbeBins;
+    config.targetedBaseProbes = options.targetedBaseProbes;
+    config.targetedBaseProbeNeighborScale = options.targetedBaseProbeNeighborScale;
     config.probeRule = lowmc::ShapeUnweightingProbeRule::Interior;
     config.probePolicy = lowmc::ShapeUnweightingProbePolicy::BoostedCells;
     config.boostedProbeBins = 21;
@@ -417,6 +436,8 @@ int main(int argc, char** argv) {
             int shapeSuspectCellCount = 0;
             int shapePromotedCellCount = 0;
             int shapeBaseProbeBins = 0;
+            int shapeFullBaseProbeCellCount = 0;
+            double shapeTargetedBaseProbeNeighborScale = 0.0;
             double writeSeconds = 0.0;
 
             if (selection.selectedParticles.empty()) {
@@ -487,6 +508,9 @@ int main(int argc, char** argv) {
                         shapeSuspectCellCount = shape.envelope.suspectCellCount;
                         shapePromotedCellCount = shape.envelope.promotedCellCount;
                         shapeBaseProbeBins = shape.envelope.baseProbeBins;
+                        shapeFullBaseProbeCellCount = shape.envelope.fullBaseProbeCellCount;
+                        shapeTargetedBaseProbeNeighborScale =
+                            shape.envelope.targetedBaseProbeNeighborScale;
                         retainedPhotons =
                             std::min(requestedPhotons, static_cast<int>(shape.candidates.size()));
                         const bool envelopeOk =
@@ -569,6 +593,9 @@ int main(int argc, char** argv) {
                       << " shape_suspect_cell_count=" << shapeSuspectCellCount
                       << " shape_promoted_cell_count=" << shapePromotedCellCount
                       << " shape_base_probe_bins=" << shapeBaseProbeBins
+                      << " shape_full_base_probe_cell_count=" << shapeFullBaseProbeCellCount
+                      << " shape_targeted_base_probe_neighbor_scale="
+                      << shapeTargetedBaseProbeNeighborScale
                       << " write_seconds=" << writeSeconds
                       << '\n';
 

@@ -848,6 +848,17 @@ Pythia-produced events but increase the observed `max_trial_bound_ratio`, so
 they are not yet acceptable future defaults. Any reduced or targeted strategy
 must be judged against the full-probe reference, not only by photon counts.
 
+The first targeted reduced-base prototype marks cells near charged-particle
+directions as high risk and keeps the full base lattice there while using the
+reduced lattice elsewhere. This is still diagnostic-only. In the first
+four-seed Pythia-produced scan, small halos around charged directions saved
+time but increased `max_trial_bound_ratio`; larger halos mostly restored the
+full-probe cost without reliably restoring the full-probe ratio. The current
+lesson is that charged-particle proximity is not a sufficient high-risk marker
+by itself. A better targeted policy should use information from the reduced
+probe and/or calibration passes, then compare against the full-probe reference
+before it can be considered for broader validation.
+
 Shape unweighting is separate from event multiplicity. After the photon shape
 can be sampled without weights, LowMC still needs a normalization rule for how
 many photons to add to a given input event in the configured phase space. The

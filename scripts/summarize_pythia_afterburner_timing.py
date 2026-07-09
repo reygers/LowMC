@@ -276,6 +276,11 @@ def write_summary_md(
             ("suspect cells", "shape_suspect_cell_count"),
             ("promoted cells", "shape_promoted_cell_count"),
             ("base probe bins", "shape_base_probe_bins"),
+            ("full base-probed cells", "shape_full_base_probe_cell_count"),
+            (
+                "targeted base-probe neighbor scale",
+                "shape_targeted_base_probe_neighbor_scale",
+            ),
         ]:
             values = [
                 value

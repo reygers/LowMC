@@ -157,6 +157,40 @@ struct ProbePlan {
            wrappedPhiDistance <= neighborScale * phiWidth;
 }
 
+[[nodiscard]] std::vector<int> makeBaseProbeBins(
+    const std::vector<ChargedParticle>& selectedParticles,
+    const PhotonPhaseSpace& phaseSpace,
+    const GridAdaptiveEtaPhiProposal& gridProposal,
+    const ShapeUnweightingConfig& config) {
+    std::vector<int> bins(gridProposal.cells.size(), effectiveBaseProbeBins(config));
+    if (!config.targetedBaseProbes || effectiveBaseProbeBins(config) >= config.probeBins) {
+        return bins;
+    }
+
+    for (const ChargedParticle& particle : selectedParticles) {
+        double eta = 0.0;
+        double phi = 0.0;
+        if (!chargedParticleEtaPhi(particle, phaseSpace, eta, phi)) {
+            continue;
+        }
+        if (eta < phaseSpace.etaMin || eta > phaseSpace.etaMax ||
+            phi < phaseSpace.phiMin || phi >= phaseSpace.phiMax) {
+            continue;
+        }
+        for (std::size_t index = 0; index < gridProposal.cells.size(); ++index) {
+            if (cellNearCoordinate(
+                    gridProposal.cells[index],
+                    eta,
+                    phi,
+                    phaseSpace,
+                    config.targetedBaseProbeNeighborScale)) {
+                bins[index] = config.probeBins;
+            }
+        }
+    }
+    return bins;
+}
+
 [[nodiscard]] std::vector<GridAdaptiveEtaPhiCell> splitCell(
     const GridAdaptiveEtaPhiCell& cell) {
     const double etaMid = 0.5 * (cell.etaMin + cell.etaMax);
@@ -601,11 +635,11 @@ void refineGridNearChargedParticles(
     const PhotonPhaseSpace& phaseSpace,
     const GridAdaptiveEtaPhiProposal& gridProposal,
     const ShapeUnweightingConfig& config,
-    int baseProbeBins,
+    const std::vector<int>& baseProbeBins,
     const std::vector<double>& probedCellMaxWeights,
     const std::vector<double>& calibrationCellMaxWeights) {
     ProbePlan plan;
-    plan.bins.assign(gridProposal.cells.size(), baseProbeBins);
+    plan.bins = baseProbeBins;
     plan.safetyFactors.assign(gridProposal.cells.size(), config.safetyFactor);
 
     if (config.probePolicy == ShapeUnweightingProbePolicy::BoostedCells) {
@@ -642,18 +676,19 @@ void refineGridNearChargedParticles(
             if (!promote[index]) {
                 continue;
             }
-            plan.bins[index] = std::max(baseProbeBins, config.boostedProbeBins);
+            plan.bins[index] = std::max(baseProbeBins[index], config.boostedProbeBins);
             plan.safetyFactors[index] =
                 std::max(config.safetyFactor, config.boostedCellSafetyFactor);
             ++plan.promotedCellCount;
         }
     }
 
-    for (int bins : plan.bins) {
+    for (std::size_t index = 0; index < plan.bins.size(); ++index) {
+        const int bins = plan.bins[index];
         plan.probeEvaluations +=
-            static_cast<std::size_t>(baseProbeBins) *
-            static_cast<std::size_t>(baseProbeBins);
-        if (bins != baseProbeBins) {
+            static_cast<std::size_t>(baseProbeBins[index]) *
+            static_cast<std::size_t>(baseProbeBins[index]);
+        if (bins != baseProbeBins[index]) {
             plan.probeEvaluations +=
                 static_cast<std::size_t>(bins) * static_cast<std::size_t>(bins);
         }
@@ -676,6 +711,11 @@ void validateShapeUnweightingConfig(const ShapeUnweightingConfig& config) {
     }
     if (config.baseProbeBins < 0) {
         throw std::invalid_argument("shape-unweighting baseProbeBins must be non-negative");
+    }
+    if (!std::isfinite(config.targetedBaseProbeNeighborScale) ||
+        config.targetedBaseProbeNeighborScale < 0.0) {
+        throw std::invalid_argument(
+            "shape-unweighting targetedBaseProbeNeighborScale must be non-negative");
     }
     if (config.boostedProbeBins <= 0) {
         throw std::invalid_argument("shape-unweighting boostedProbeBins must be positive");
@@ -726,6 +766,7 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
     result.envelope.targetedRefinementNeighborScale = config.targetedRefinementNeighborScale;
     result.envelope.probeBins = config.probeBins;
     result.envelope.baseProbeBins = effectiveBaseProbeBins(config);
+    result.envelope.targetedBaseProbeNeighborScale = config.targetedBaseProbeNeighborScale;
     result.envelope.boostedProbeBins = config.boostedProbeBins;
     result.envelope.probeRule = config.probeRule;
     result.envelope.probePolicy = config.probePolicy;
@@ -751,9 +792,11 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
         gridProposal);
     result.envelope.gridCellCount = gridProposal.cells.size();
     const PointCellIndex pointCellIndex = makePointCellIndex(gridProposal);
-    const std::vector<int> baseProbeBins(
-        gridProposal.cells.size(),
-        effectiveBaseProbeBins(config));
+    const std::vector<int> baseProbeBins =
+        makeBaseProbeBins(selectedParticles, config.phaseSpace, gridProposal, config);
+    result.envelope.fullBaseProbeCellCount =
+        static_cast<int>(
+            std::count(baseProbeBins.begin(), baseProbeBins.end(), config.probeBins));
     result.envelope.gridSeconds = secondsSince(gridStart);
 
     const auto baseProbeStart = std::chrono::steady_clock::now();
@@ -799,7 +842,7 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
             config.phaseSpace,
             gridProposal,
             config,
-            effectiveBaseProbeBins(config),
+            baseProbeBins,
             probedCellMaxWeights,
             calibrationCellMaxWeights);
     result.envelope.probePlanSeconds = secondsSince(probePlanStart);
@@ -807,7 +850,7 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
     const auto boostedProbeStart = std::chrono::steady_clock::now();
     if (config.probePolicy == ShapeUnweightingProbePolicy::BoostedCells) {
         for (std::size_t index = 0; index < gridProposal.cells.size(); ++index) {
-            if (probePlan.bins[index] == effectiveBaseProbeBins(config)) {
+            if (probePlan.bins[index] == baseProbeBins[index]) {
                 continue;
             }
             finalProbedCellMaxWeights[index] =
