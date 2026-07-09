@@ -846,6 +846,22 @@ time, so the next speed discussion should be about whether a reduced or
 targeted base-probe lattice can be validated safely against the full-probe
 reference.
 
+The first reduced-base-lattice prototype is implemented as an explicit
+diagnostic option, not a default: the HepMC3 afterburner accepts
+`--shape-base-probe-bins N`, while the reference default remains the full
+`11 x 11` base lattice. Uniform reductions were tested on the same four
+Pythia-produced seeds. With `5 x 5` base probes, total event time fell from
+about `13.0 s` to about `7.6 s`, and base probing from about `8.4 s` to about
+`1.8 s`, with unchanged photon counts and no envelope failures. However the
+maximum trial/bound ratio increased from `0.371033` to `0.425441`. A milder
+`7 x 7` scan was also faster than the reference, about `8.9 s` total, but
+raised the maximum trial/bound ratio further to `0.450757`. These uniform
+reductions are therefore useful diagnostics but not acceptable candidates for
+a future default under the current criterion. The next promising direction is
+a targeted policy: keep full base probing in high-risk cells and reduce only
+low-risk cells, or add an explicit compensation factor that can be validated
+against the full-probe reference.
+
 The command name decision is settled for now: keep
 `lowmc_hepmc3_afterburner_diagnostic` as the only executable name. A shorter
 production alias should wait until validation gates and output-mode conventions

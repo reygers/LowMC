@@ -61,6 +61,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--enhancement-factor", type=float, default=10.0)
     parser.add_argument("--multiplicity-seed", type=int, default=13579)
     parser.add_argument("--shape-seed", type=int, default=97531)
+    parser.add_argument("--shape-base-probe-bins", type=int, default=11)
     parser.add_argument("--kt-min", type=float, default=0.002)
     parser.add_argument("--kt-max", type=float, default=0.2)
     parser.add_argument("--eta-min", type=float, default=-5.0)
@@ -230,6 +231,7 @@ def compare_rows(
                 "shape_failed_envelope_count": row.get("shape_failed_envelope_count", ""),
                 "shape_suspect_cell_count": row.get("shape_suspect_cell_count", ""),
                 "shape_promoted_cell_count": row.get("shape_promoted_cell_count", ""),
+                "shape_base_probe_bins": row.get("shape_base_probe_bins", ""),
                 "event_metadata": summary.get("event_metadata", "0"),
                 "photon_weight_attributes": summary.get("photon_weight_attributes", "0"),
             }
@@ -296,6 +298,8 @@ def main() -> int:
         raise ValueError("--enhancement-factor must be positive and finite")
     if args.ecm <= 0.0:
         raise ValueError("--ecm must be positive")
+    if args.shape_base_probe_bins <= 0:
+        raise ValueError("--shape-base-probe-bins must be positive")
 
     script_dir = Path(__file__).resolve().parent
     sample_helper = script_dir / "generate_pythia_hepmc3_sample.py"
@@ -342,6 +346,8 @@ def main() -> int:
         str(args.multiplicity_seed),
         "--shape-seed",
         str(args.shape_seed),
+        "--shape-base-probe-bins",
+        str(args.shape_base_probe_bins),
         "--kt-min",
         f"{args.kt_min:.17g}",
         "--kt-max",
@@ -391,6 +397,7 @@ def main() -> int:
             "pythia_seed": args.pythia_seed,
             "multiplicity_seed": args.multiplicity_seed,
             "shape_seed": args.shape_seed,
+            "shape_base_probe_bins": args.shape_base_probe_bins,
         }
     )
     for row in event_summaries:

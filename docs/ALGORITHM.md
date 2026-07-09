@@ -839,6 +839,15 @@ ambiguous. The consistency diagnostic compares the known-cell probe weight
 against the indexed reference. This shortcut keeps the probe lattice,
 cell-local bounds, envelope masses, and accepted shape unchanged.
 
+A reduced base-probe lattice is different: it intentionally changes the first
+cell-local bound estimate before calibration and boosted-cell promotion. LowMC
+therefore exposes it only as an explicit diagnostic/prototype setting through
+the afterburner, with the full `probeBins x probeBins` lattice retained as the
+reference default. Uniform `5 x 5` and `7 x 7` reductions speed up the tested
+Pythia-produced events but increase the observed `max_trial_bound_ratio`, so
+they are not yet acceptable future defaults. Any reduced or targeted strategy
+must be judged against the full-probe reference, not only by photon counts.
+
 Shape unweighting is separate from event multiplicity. After the photon shape
 can be sampled without weights, LowMC still needs a normalization rule for how
 many photons to add to a given input event in the configured phase space. The

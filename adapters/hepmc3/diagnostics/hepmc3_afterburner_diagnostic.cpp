@@ -36,6 +36,7 @@ struct Options {
     std::uint64_t shapeSeed = 67890;
     int minShapeTrials = 10000;
     int shapeTrialsPerPhoton = 2000;
+    int shapeBaseProbeBins = 11;
     double kTMin = 0.002;
     double kTMax = 0.2;
     double etaMin = -5.0;
@@ -63,6 +64,7 @@ void printUsage(std::ostream& out) {
         << "  --shape-seed N                  Shape RNG seed base (default: 67890)\n"
         << "  --min-shape-trials N            Minimum shape-unweighting trials (default: 10000)\n"
         << "  --shape-trials-per-photon N     Extra trials per requested photon (default: 2000)\n"
+        << "  --shape-base-probe-bins N       Base probe bins before boosted cells (default: 11)\n"
         << "  --kt-min GeV                    Minimum photon k_T (default: 0.002)\n"
         << "  --kt-max GeV                    Maximum photon k_T (default: 0.2)\n"
         << "  --eta-min X                     Minimum photon eta (default: -5)\n"
@@ -167,6 +169,11 @@ Options parseOptions(int argc, char** argv) {
                 parsePositiveInt(readStringOption(index, argc, argv, argument), argument);
             continue;
         }
+        if (argument == "--shape-base-probe-bins") {
+            options.shapeBaseProbeBins =
+                parsePositiveInt(readStringOption(index, argc, argv, argument), argument);
+            continue;
+        }
         if (argument == "--kt-min") {
             options.kTMin = parseDouble(readStringOption(index, argc, argv, argument), argument);
             continue;
@@ -262,6 +269,7 @@ lowmc::ShapeUnweightingConfig makeShapeConfig(
     config.gridConfig = lowmc::tunedMassGridAdaptiveEtaPhiConfig();
     config.calibrationTrials = std::max(1000, std::min(20000, trials));
     config.probeBins = 11;
+    config.baseProbeBins = options.shapeBaseProbeBins;
     config.probeRule = lowmc::ShapeUnweightingProbeRule::Interior;
     config.probePolicy = lowmc::ShapeUnweightingProbePolicy::BoostedCells;
     config.boostedProbeBins = 21;
@@ -408,6 +416,7 @@ int main(int argc, char** argv) {
             int shapeFailedEnvelopeCount = 0;
             int shapeSuspectCellCount = 0;
             int shapePromotedCellCount = 0;
+            int shapeBaseProbeBins = 0;
             double writeSeconds = 0.0;
 
             if (selection.selectedParticles.empty()) {
@@ -477,6 +486,7 @@ int main(int argc, char** argv) {
                         shapeFailedEnvelopeCount = shape.envelope.failedEnvelopeCount;
                         shapeSuspectCellCount = shape.envelope.suspectCellCount;
                         shapePromotedCellCount = shape.envelope.promotedCellCount;
+                        shapeBaseProbeBins = shape.envelope.baseProbeBins;
                         retainedPhotons =
                             std::min(requestedPhotons, static_cast<int>(shape.candidates.size()));
                         const bool envelopeOk =
@@ -558,6 +568,7 @@ int main(int argc, char** argv) {
                       << " shape_failed_envelope_count=" << shapeFailedEnvelopeCount
                       << " shape_suspect_cell_count=" << shapeSuspectCellCount
                       << " shape_promoted_cell_count=" << shapePromotedCellCount
+                      << " shape_base_probe_bins=" << shapeBaseProbeBins
                       << " write_seconds=" << writeSeconds
                       << '\n';
 

@@ -57,6 +57,10 @@ struct ProbePlan {
            (phaseSpace.phiMax - phaseSpace.phiMin);
 }
 
+[[nodiscard]] int effectiveBaseProbeBins(const ShapeUnweightingConfig& config) {
+    return config.baseProbeBins > 0 ? config.baseProbeBins : config.probeBins;
+}
+
 [[nodiscard]] double cellProposalMass(
     const GridAdaptiveEtaPhiProposal& proposal,
     const GridAdaptiveEtaPhiCell& cell) {
@@ -597,10 +601,11 @@ void refineGridNearChargedParticles(
     const PhotonPhaseSpace& phaseSpace,
     const GridAdaptiveEtaPhiProposal& gridProposal,
     const ShapeUnweightingConfig& config,
+    int baseProbeBins,
     const std::vector<double>& probedCellMaxWeights,
     const std::vector<double>& calibrationCellMaxWeights) {
     ProbePlan plan;
-    plan.bins.assign(gridProposal.cells.size(), config.probeBins);
+    plan.bins.assign(gridProposal.cells.size(), baseProbeBins);
     plan.safetyFactors.assign(gridProposal.cells.size(), config.safetyFactor);
 
     if (config.probePolicy == ShapeUnweightingProbePolicy::BoostedCells) {
@@ -637,7 +642,7 @@ void refineGridNearChargedParticles(
             if (!promote[index]) {
                 continue;
             }
-            plan.bins[index] = std::max(config.probeBins, config.boostedProbeBins);
+            plan.bins[index] = std::max(baseProbeBins, config.boostedProbeBins);
             plan.safetyFactors[index] =
                 std::max(config.safetyFactor, config.boostedCellSafetyFactor);
             ++plan.promotedCellCount;
@@ -646,9 +651,9 @@ void refineGridNearChargedParticles(
 
     for (int bins : plan.bins) {
         plan.probeEvaluations +=
-            static_cast<std::size_t>(config.probeBins) *
-            static_cast<std::size_t>(config.probeBins);
-        if (bins != config.probeBins) {
+            static_cast<std::size_t>(baseProbeBins) *
+            static_cast<std::size_t>(baseProbeBins);
+        if (bins != baseProbeBins) {
             plan.probeEvaluations +=
                 static_cast<std::size_t>(bins) * static_cast<std::size_t>(bins);
         }
@@ -668,6 +673,9 @@ void validateShapeUnweightingConfig(const ShapeUnweightingConfig& config) {
     }
     if (config.probeBins <= 0) {
         throw std::invalid_argument("shape-unweighting probeBins must be positive");
+    }
+    if (config.baseProbeBins < 0) {
+        throw std::invalid_argument("shape-unweighting baseProbeBins must be non-negative");
     }
     if (config.boostedProbeBins <= 0) {
         throw std::invalid_argument("shape-unweighting boostedProbeBins must be positive");
@@ -717,6 +725,7 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
     result.envelope.targetedRefinementLevels = config.targetedRefinementLevels;
     result.envelope.targetedRefinementNeighborScale = config.targetedRefinementNeighborScale;
     result.envelope.probeBins = config.probeBins;
+    result.envelope.baseProbeBins = effectiveBaseProbeBins(config);
     result.envelope.boostedProbeBins = config.boostedProbeBins;
     result.envelope.probeRule = config.probeRule;
     result.envelope.probePolicy = config.probePolicy;
@@ -742,7 +751,9 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
         gridProposal);
     result.envelope.gridCellCount = gridProposal.cells.size();
     const PointCellIndex pointCellIndex = makePointCellIndex(gridProposal);
-    const std::vector<int> baseProbeBins(gridProposal.cells.size(), config.probeBins);
+    const std::vector<int> baseProbeBins(
+        gridProposal.cells.size(),
+        effectiveBaseProbeBins(config));
     result.envelope.gridSeconds = secondsSince(gridStart);
 
     const auto baseProbeStart = std::chrono::steady_clock::now();
@@ -788,6 +799,7 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
             config.phaseSpace,
             gridProposal,
             config,
+            effectiveBaseProbeBins(config),
             probedCellMaxWeights,
             calibrationCellMaxWeights);
     result.envelope.probePlanSeconds = secondsSince(probePlanStart);
@@ -795,7 +807,7 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
     const auto boostedProbeStart = std::chrono::steady_clock::now();
     if (config.probePolicy == ShapeUnweightingProbePolicy::BoostedCells) {
         for (std::size_t index = 0; index < gridProposal.cells.size(); ++index) {
-            if (probePlan.bins[index] == config.probeBins) {
+            if (probePlan.bins[index] == effectiveBaseProbeBins(config)) {
                 continue;
             }
             finalProbedCellMaxWeights[index] =

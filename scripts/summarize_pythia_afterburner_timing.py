@@ -275,6 +275,7 @@ def write_summary_md(
             ("accepted candidates", "shape_accepted_count"),
             ("suspect cells", "shape_suspect_cell_count"),
             ("promoted cells", "shape_promoted_cell_count"),
+            ("base probe bins", "shape_base_probe_bins"),
         ]:
             values = [
                 value

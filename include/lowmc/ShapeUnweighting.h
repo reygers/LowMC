@@ -40,6 +40,7 @@ struct ShapeUnweightingConfig {
     GridAdaptiveEtaPhiProposalConfig gridConfig = tunedMassGridAdaptiveEtaPhiConfig();
     int calibrationTrials = 1000;
     int probeBins = 11;
+    int baseProbeBins = 0;
     ShapeUnweightingProbeRule probeRule = ShapeUnweightingProbeRule::Interior;
     ShapeUnweightingProbePolicy probePolicy = ShapeUnweightingProbePolicy::Fixed;
     int boostedProbeBins = 21;
@@ -86,6 +87,7 @@ struct ShapeUnweightingEnvelopeDiagnostics {
     int targetedRefinementLevels = 0;
     double targetedRefinementNeighborScale = 0.0;
     int probeBins = 0;
+    int baseProbeBins = 0;
     int boostedProbeBins = 0;
     ShapeUnweightingProbeRule probeRule = ShapeUnweightingProbeRule::Interior;
     ShapeUnweightingProbePolicy probePolicy = ShapeUnweightingProbePolicy::Fixed;

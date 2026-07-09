@@ -958,6 +958,7 @@ lowmc::ShapeUnweightingConfig shapeUnweightingTestConfig(std::uint64_t seed) {
         gridConfig,
         12,
         2,
+        0,
         lowmc::ShapeUnweightingProbeRule::Interior,
         lowmc::ShapeUnweightingProbePolicy::Fixed,
         4,
@@ -1640,6 +1641,9 @@ void testShapeUnweightingReturnsDiagnosticsAndUnitWeightCandidates() {
                 static_cast<std::size_t>(config.probeBins),
         "shape unweighting diagnostics should report probe evaluation count");
     require(
+        result.envelope.baseProbeBins == config.probeBins,
+        "default shape unweighting should use the full base probe lattice");
+    require(
         result.envelope.promotedCellCount == 0,
         "fixed shape unweighting should not promote cells");
     require(
@@ -1788,6 +1792,13 @@ void generateShapeUnweightingWithInvalidSafetyFactor() {
         lowmc::generateShapeUnweightedPhotonCandidates(eventGeneratorToyParticles(), config));
 }
 
+void generateShapeUnweightingWithInvalidBaseProbeBins() {
+    lowmc::ShapeUnweightingConfig config = shapeUnweightingTestConfig(123);
+    config.baseProbeBins = -1;
+    static_cast<void>(
+        lowmc::generateShapeUnweightedPhotonCandidates(eventGeneratorToyParticles(), config));
+}
+
 void testShapeUnweightingRejectsInvalidInputs() {
     requireThrowsInvalidArgument(
         generateShapeUnweightingWithInvalidProbeBins,
@@ -1795,6 +1806,9 @@ void testShapeUnweightingRejectsInvalidInputs() {
     requireThrowsInvalidArgument(
         generateShapeUnweightingWithInvalidSafetyFactor,
         "shape unweighting should reject invalid safety factor");
+    requireThrowsInvalidArgument(
+        generateShapeUnweightingWithInvalidBaseProbeBins,
+        "shape unweighting should reject invalid base probe bins");
 }
 
 void testWeightedPhotonSampleRejectsInvalidInputs() {
