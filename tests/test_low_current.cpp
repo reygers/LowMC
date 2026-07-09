@@ -1623,6 +1623,30 @@ void testShapeUnweightingReturnsDiagnosticsAndUnitWeightCandidates() {
     }
 }
 
+void testShapeUnweightingIndexMatchesLinearReference() {
+    lowmc::ShapeUnweightingConfig config = shapeUnweightingTestConfig(123);
+    config.gridConfig.etaBins = 8;
+    config.gridConfig.phiBins = 8;
+    config.gridConfig.refinementLevels = 2;
+    config.gridConfig.refineFraction = 0.25;
+    config.targetedRefinementLevels = 2;
+    config.targetedRefinementNeighborScale = 0.5;
+
+    const lowmc::ShapeUnweightingIndexConsistencyDiagnostic diagnostic =
+        lowmc::validateShapeUnweightingIndexConsistency(eventGeneratorToyParticles(), config);
+
+    require(diagnostic.consistent, "shape-unweighting index should match linear reference");
+    require(
+        diagnostic.gridCellCount > 0,
+        "shape-unweighting index consistency should build cells");
+    require(
+        diagnostic.pointLookupChecks >= 5 * diagnostic.gridCellCount,
+        "shape-unweighting index consistency should check representative cell points");
+    require(
+        diagnostic.envelopeSamplingChecks > 0,
+        "shape-unweighting index consistency should check envelope sampling");
+}
+
 void testShapeUnweightingBoostedCellPolicyPromotesCells() {
     lowmc::ShapeUnweightingConfig config = shapeUnweightingTestConfig(123);
     config.probePolicy = lowmc::ShapeUnweightingProbePolicy::BoostedCells;
@@ -1854,6 +1878,7 @@ int main() {
     testWeightedEventGeneratorAppliesOversamplingFactor();
     testWeightedEventGeneratorRejectsInvalidInputs();
     testShapeUnweightingReturnsDiagnosticsAndUnitWeightCandidates();
+    testShapeUnweightingIndexMatchesLinearReference();
     testShapeUnweightingBoostedCellPolicyPromotesCells();
     testShapeUnweightingStrictFailureClearsCandidates();
     testShapeUnweightingDiagnosticFailureKeepsCandidates();

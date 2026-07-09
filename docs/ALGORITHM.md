@@ -800,6 +800,17 @@ proportional to `q_c M_c`, where `q_c` is the original proposal probability in
 cell `c`, and then accepts with probability `w / M_c`. This preserves the target
 shape `f / lambda_event` when the envelope is valid.
 
+For speed, the current implementation keeps this corrected construction but
+avoids repeated full scans over the refined cell list. Envelope-cell sampling
+uses the same cumulative-mass rule as the linear reference, implemented with a
+prefix-sum table and binary search. Proposal-density lookup for sampled
+`eta-phi` points uses an eta-bucket cell index that returns the same first
+matching cell as the linear reference, including boundary-adjacent test points.
+This is intended as a bookkeeping optimization only: it must not change the
+proposal density, envelope mass, acceptance probability, or accepted Low shape.
+Focused tests compare the indexed path against the linear reference before the
+optimization is trusted.
+
 Shape unweighting is separate from event multiplicity. After the photon shape
 can be sampled without weights, LowMC still needs a normalization rule for how
 many photons to add to a given input event in the configured phase space. The

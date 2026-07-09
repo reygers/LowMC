@@ -91,7 +91,20 @@ struct ShapeUnweightingResult {
     ShapeUnweightingStatus status = ShapeUnweightingStatus::Ok;
 };
 
+struct ShapeUnweightingIndexConsistencyDiagnostic {
+    bool consistent = false;
+    std::size_t gridCellCount = 0;
+    std::size_t pointLookupChecks = 0;
+    std::size_t envelopeSamplingChecks = 0;
+};
+
 [[nodiscard]] ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
+    const std::vector<ChargedParticle>& selectedParticles,
+    const ShapeUnweightingConfig& config,
+    double alpha = FineStructureConstant);
+
+[[nodiscard]] ShapeUnweightingIndexConsistencyDiagnostic
+validateShapeUnweightingIndexConsistency(
     const std::vector<ChargedParticle>& selectedParticles,
     const ShapeUnweightingConfig& config,
     double alpha = FineStructureConstant);

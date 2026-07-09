@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iterator>
 #include <limits>
 #include <random>
 #include <stdexcept>
@@ -21,6 +22,18 @@ struct EnvelopeCell {
     double bound = 0.0;
     double proposalMass = 0.0;
     double envelopeMass = 0.0;
+};
+
+struct PointCellIndex {
+    double etaMin = 0.0;
+    double etaMax = 0.0;
+    double etaBinWidth = 0.0;
+    int etaBins = 0;
+    std::vector<std::vector<std::size_t>> etaBuckets;
+};
+
+struct EnvelopeCellSampler {
+    std::vector<double> cumulativeMasses;
 };
 
 struct ProbePlan {
@@ -45,6 +58,13 @@ struct ProbePlan {
     return proposal.config.uniformFraction *
                cellArea(cell) / totalEtaPhiArea(proposal.phaseSpace) +
            cell.mixtureWeight;
+}
+
+[[nodiscard]] double etaPhiDensityForCell(
+    const GridAdaptiveEtaPhiProposal& proposal,
+    const GridAdaptiveEtaPhiCell& cell) {
+    return proposal.config.uniformFraction / totalEtaPhiArea(proposal.phaseSpace) +
+           cell.mixtureWeight / cellArea(cell);
 }
 
 [[nodiscard]] double probeCoordinate(
@@ -230,10 +250,65 @@ void refineGridNearChargedParticles(
     throw std::runtime_error("sampled eta-phi point is outside all grid cells");
 }
 
+[[nodiscard]] PointCellIndex makePointCellIndex(const GridAdaptiveEtaPhiProposal& proposal) {
+    PointCellIndex index;
+    index.etaMin = proposal.phaseSpace.etaMin;
+    index.etaMax = proposal.phaseSpace.etaMax;
+    index.etaBins = std::max(
+        1,
+        static_cast<int>(std::sqrt(static_cast<double>(proposal.cells.size()))));
+    index.etaBinWidth = (index.etaMax - index.etaMin) / static_cast<double>(index.etaBins);
+    index.etaBuckets.resize(static_cast<std::size_t>(index.etaBins));
+
+    for (std::size_t cellIndex = 0; cellIndex < proposal.cells.size(); ++cellIndex) {
+        const GridAdaptiveEtaPhiCell& cell = proposal.cells[cellIndex];
+        const int firstBin = std::max(
+            0,
+            static_cast<int>(std::floor((cell.etaMin - index.etaMin) / index.etaBinWidth)));
+        const int lastBin = std::min(
+            index.etaBins - 1,
+            static_cast<int>(std::floor(
+                (std::nextafter(cell.etaMax, cell.etaMin) - index.etaMin) /
+                index.etaBinWidth)));
+        for (int bin = firstBin; bin <= lastBin; ++bin) {
+            index.etaBuckets[static_cast<std::size_t>(bin)].push_back(cellIndex);
+        }
+    }
+    return index;
+}
+
+[[nodiscard]] std::size_t findCellIndex(
+    const GridAdaptiveEtaPhiProposal& proposal,
+    const PointCellIndex& index,
+    double eta,
+    double phi) {
+    if (index.etaBins <= 0 || !(index.etaBinWidth > 0.0) ||
+        eta < index.etaMin || eta > index.etaMax) {
+        return findCellIndex(proposal, eta, phi);
+    }
+
+    int etaBin = static_cast<int>(std::floor((eta - index.etaMin) / index.etaBinWidth));
+    etaBin = std::clamp(etaBin, 0, index.etaBins - 1);
+    const std::vector<std::size_t>& candidates = index.etaBuckets[static_cast<std::size_t>(etaBin)];
+    std::size_t selected = proposal.cells.size();
+    for (const std::size_t cellIndex : candidates) {
+        const GridAdaptiveEtaPhiCell& cell = proposal.cells[cellIndex];
+        if (eta >= cell.etaMin && eta <= cell.etaMax &&
+            phi >= cell.phiMin && phi <= cell.phiMax) {
+            selected = std::min(selected, cellIndex);
+        }
+    }
+    if (selected != proposal.cells.size()) {
+        return selected;
+    }
+    return findCellIndex(proposal, eta, phi);
+}
+
 [[nodiscard]] TrialRecord makeTrialRecord(
     const LowCurrent& current,
     const PhotonPhaseSpace& phaseSpace,
     const GridAdaptiveEtaPhiProposal& gridProposal,
+    const PointCellIndex& pointCellIndex,
     std::mt19937_64& rng,
     double alpha) {
     const double unitKT = std::generate_canonical<double, 53>(rng);
@@ -254,8 +329,24 @@ void refineGridNearChargedParticles(
             unitPhi,
             alpha);
     const std::size_t cellIndex =
-        findCellIndex(gridProposal, sample.etaPhiProposal.eta, sample.etaPhiProposal.phi);
+        findCellIndex(
+            gridProposal,
+            pointCellIndex,
+            sample.etaPhiProposal.eta,
+            sample.etaPhiProposal.phi);
     return TrialRecord{sample, cellIndex};
+}
+
+[[nodiscard]] EnvelopeCellSampler makeEnvelopeCellSampler(
+    const std::vector<EnvelopeCell>& envelopeCells) {
+    EnvelopeCellSampler sampler;
+    sampler.cumulativeMasses.reserve(envelopeCells.size());
+    double cumulative = 0.0;
+    for (const EnvelopeCell& cell : envelopeCells) {
+        cumulative += cell.envelopeMass;
+        sampler.cumulativeMasses.push_back(cumulative);
+    }
+    return sampler;
 }
 
 [[nodiscard]] std::size_t sampleEnvelopeCell(
@@ -278,11 +369,31 @@ void refineGridNearChargedParticles(
     return selected;
 }
 
+[[nodiscard]] std::size_t sampleEnvelopeCell(
+    const EnvelopeCellSampler& sampler,
+    double totalEnvelopeMass,
+    double unitCell) {
+    if (!std::isfinite(unitCell) || unitCell < 0.0 || unitCell >= 1.0) {
+        throw std::invalid_argument("envelope cell unit random value must satisfy 0 <= u < 1");
+    }
+    const double target = unitCell * totalEnvelopeMass;
+    const auto selected = std::upper_bound(
+        sampler.cumulativeMasses.begin(),
+        sampler.cumulativeMasses.end(),
+        target);
+    if (selected == sampler.cumulativeMasses.end()) {
+        return sampler.cumulativeMasses.size() - 1;
+    }
+    return static_cast<std::size_t>(
+        std::distance(sampler.cumulativeMasses.begin(), selected));
+}
+
 [[nodiscard]] TrialRecord makeEnvelopeTrialRecord(
     const LowCurrent& current,
     const PhotonPhaseSpace& phaseSpace,
     const GridAdaptiveEtaPhiProposal& gridProposal,
-    const std::vector<EnvelopeCell>& envelopeCells,
+    const EnvelopeCellSampler& envelopeCellSampler,
+    const PointCellIndex& pointCellIndex,
     double totalEnvelopeMass,
     std::mt19937_64& rng,
     double alpha) {
@@ -292,7 +403,7 @@ void refineGridNearChargedParticles(
     const double unitPhi = std::generate_canonical<double, 53>(rng);
 
     const std::size_t cellIndex =
-        sampleEnvelopeCell(envelopeCells, totalEnvelopeMass, unitCell);
+        sampleEnvelopeCell(envelopeCellSampler, totalEnvelopeMass, unitCell);
     const GridAdaptiveEtaPhiCell& cell = gridProposal.cells[cellIndex];
 
     const LogUniformKTProposalPoint kTProposal = sampleLogUniformKT(phaseSpace, unitKT);
@@ -305,7 +416,9 @@ void refineGridNearChargedParticles(
         phi = std::nextafter(cell.phiMax, cell.phiMin);
     }
 
-    const double etaPhiDensity = gridAdaptiveEtaPhiDensity(gridProposal, eta, phi);
+    const std::size_t densityCellIndex = findCellIndex(gridProposal, pointCellIndex, eta, phi);
+    const double etaPhiDensity =
+        etaPhiDensityForCell(gridProposal, gridProposal.cells[densityCellIndex]);
     const double proposalDensity =
         kTProposal.densityPhysicalMeasure * etaPhiDensity;
     const FourVector momentum = photonMomentumFromKTEtaPhi(kTProposal.kT, eta, phi);
@@ -330,13 +443,15 @@ void refineGridNearChargedParticles(
     const LowCurrent& current,
     const PhotonPhaseSpace& phaseSpace,
     const GridAdaptiveEtaPhiProposal& gridProposal,
+    const PointCellIndex& pointCellIndex,
     double kT,
     double eta,
     double phi,
     double alpha) {
+    const std::size_t densityCellIndex = findCellIndex(gridProposal, pointCellIndex, eta, phi);
     const double proposalDensity =
         logUniformKTDensityPhysicalMeasure(phaseSpace, kT) *
-        gridAdaptiveEtaPhiDensity(gridProposal, eta, phi);
+        etaPhiDensityForCell(gridProposal, gridProposal.cells[densityCellIndex]);
     const WeightedPhotonSample sample =
         makeWeightedPhotonSample(
             current,
@@ -384,6 +499,7 @@ void refineGridNearChargedParticles(
     const LowCurrent& current,
     const PhotonPhaseSpace& phaseSpace,
     const GridAdaptiveEtaPhiProposal& gridProposal,
+    const PointCellIndex& pointCellIndex,
     const GridAdaptiveEtaPhiCell& cell,
     int probeBins,
     ShapeUnweightingProbeRule probeRule,
@@ -398,7 +514,15 @@ void refineGridNearChargedParticles(
                 probeCoordinate(cell.phiMin, cell.phiMax, phiIndex, probeBins, probeRule);
             maxWeight = std::max(
                 maxWeight,
-                exactWeightAtEtaPhi(current, phaseSpace, gridProposal, kT, eta, phi, alpha));
+                exactWeightAtEtaPhi(
+                    current,
+                    phaseSpace,
+                    gridProposal,
+                    pointCellIndex,
+                    kT,
+                    eta,
+                    phi,
+                    alpha));
         }
     }
     return maxWeight;
@@ -408,6 +532,7 @@ void refineGridNearChargedParticles(
     const LowCurrent& current,
     const PhotonPhaseSpace& phaseSpace,
     const GridAdaptiveEtaPhiProposal& gridProposal,
+    const PointCellIndex& pointCellIndex,
     const std::vector<int>& cellProbeBins,
     ShapeUnweightingProbeRule probeRule,
     double alpha) {
@@ -418,6 +543,7 @@ void refineGridNearChargedParticles(
                 current,
                 phaseSpace,
                 gridProposal,
+                pointCellIndex,
                 gridProposal.cells[cellIndex],
                 cellProbeBins[cellIndex],
                 probeRule,
@@ -574,6 +700,7 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
         config.targetedRefinementNeighborScale,
         gridProposal);
     result.envelope.gridCellCount = gridProposal.cells.size();
+    const PointCellIndex pointCellIndex = makePointCellIndex(gridProposal);
     const std::vector<int> baseProbeBins(gridProposal.cells.size(), config.probeBins);
 
     const std::vector<double> probedCellMaxWeights =
@@ -581,6 +708,7 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
             current,
             config.phaseSpace,
             gridProposal,
+            pointCellIndex,
             baseProbeBins,
             config.probeRule,
             alpha);
@@ -589,7 +717,13 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
     std::mt19937_64 calibrationRng(config.seed);
     for (int index = 0; index < config.calibrationTrials; ++index) {
         const TrialRecord record =
-            makeTrialRecord(current, config.phaseSpace, gridProposal, calibrationRng, alpha);
+            makeTrialRecord(
+                current,
+                config.phaseSpace,
+                gridProposal,
+                pointCellIndex,
+                calibrationRng,
+                alpha);
         calibrationCellMaxWeights[record.cellIndex] = std::max(
             calibrationCellMaxWeights[record.cellIndex],
             record.sample.weightedPhoton.photon.weight);
@@ -620,6 +754,7 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
                     current,
                     config.phaseSpace,
                     gridProposal,
+                    pointCellIndex,
                     gridProposal.cells[index],
                     probePlan.bins[index],
                     config.probeRule,
@@ -640,6 +775,7 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
         throw std::runtime_error("shape-unweighting envelope has zero total mass");
     }
     result.envelope.envelopeIntegral = envelopeMass;
+    const EnvelopeCellSampler envelopeCellSampler = makeEnvelopeCellSampler(envelopeCells);
 
     result.candidates.reserve(static_cast<std::size_t>(config.trials));
     std::mt19937_64 trialRng(config.seed + 1);
@@ -652,7 +788,8 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
                 current,
                 config.phaseSpace,
                 gridProposal,
-                envelopeCells,
+                envelopeCellSampler,
+                pointCellIndex,
                 envelopeMass,
                 trialRng,
                 alpha);
@@ -707,6 +844,90 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
     }
 
     return result;
+}
+
+ShapeUnweightingIndexConsistencyDiagnostic validateShapeUnweightingIndexConsistency(
+    const std::vector<ChargedParticle>& selectedParticles,
+    const ShapeUnweightingConfig& config,
+    double alpha) {
+    validateShapeUnweightingConfig(config);
+    if (!std::isfinite(alpha) || alpha <= 0.0) {
+        throw std::invalid_argument("fine-structure constant must be positive and finite");
+    }
+
+    const LowCurrent current(selectedParticles);
+    const double gridBuildKT = std::sqrt(config.phaseSpace.kTMin * config.phaseSpace.kTMax);
+    GridAdaptiveEtaPhiProposal gridProposal =
+        makeGridAdaptiveEtaPhiProposal(
+            current,
+            config.phaseSpace,
+            gridBuildKT,
+            config.gridConfig);
+    refineGridNearChargedParticles(
+        current,
+        selectedParticles,
+        gridBuildKT,
+        config.targetedRefinementLevels,
+        config.targetedRefinementNeighborScale,
+        gridProposal);
+    const PointCellIndex pointCellIndex = makePointCellIndex(gridProposal);
+
+    ShapeUnweightingIndexConsistencyDiagnostic diagnostic;
+    diagnostic.consistent = true;
+    diagnostic.gridCellCount = gridProposal.cells.size();
+
+    auto checkPoint = [&](double eta, double phi) {
+        const std::size_t reference = findCellIndex(gridProposal, eta, phi);
+        const std::size_t indexed = findCellIndex(gridProposal, pointCellIndex, eta, phi);
+        ++diagnostic.pointLookupChecks;
+        if (reference != indexed) {
+            diagnostic.consistent = false;
+        }
+    };
+
+    for (const GridAdaptiveEtaPhiCell& cell : gridProposal.cells) {
+        checkPoint(0.5 * (cell.etaMin + cell.etaMax), 0.5 * (cell.phiMin + cell.phiMax));
+        checkPoint(std::nextafter(cell.etaMin, cell.etaMax), 0.5 * (cell.phiMin + cell.phiMax));
+        checkPoint(std::nextafter(cell.etaMax, cell.etaMin), 0.5 * (cell.phiMin + cell.phiMax));
+        checkPoint(0.5 * (cell.etaMin + cell.etaMax), std::nextafter(cell.phiMin, cell.phiMax));
+        checkPoint(0.5 * (cell.etaMin + cell.etaMax), std::nextafter(cell.phiMax, cell.phiMin));
+    }
+
+    std::vector<EnvelopeCell> envelopeCells;
+    envelopeCells.reserve(gridProposal.cells.size());
+    for (std::size_t index = 0; index < gridProposal.cells.size(); ++index) {
+        const double envelopeMass =
+            static_cast<double>((index % 17) + 1) *
+            cellProposalMass(gridProposal, gridProposal.cells[index]);
+        envelopeCells.push_back(EnvelopeCell{1.0, envelopeMass, envelopeMass});
+    }
+    const double envelopeMass = totalEnvelopeMass(envelopeCells);
+    const EnvelopeCellSampler sampler = makeEnvelopeCellSampler(envelopeCells);
+
+    auto checkEnvelope = [&](double unitCell) {
+        const std::size_t reference = sampleEnvelopeCell(envelopeCells, envelopeMass, unitCell);
+        const std::size_t indexed = sampleEnvelopeCell(sampler, envelopeMass, unitCell);
+        ++diagnostic.envelopeSamplingChecks;
+        if (reference != indexed) {
+            diagnostic.consistent = false;
+        }
+    };
+
+    checkEnvelope(0.0);
+    checkEnvelope(std::nextafter(1.0, 0.0));
+    double cumulative = 0.0;
+    for (std::size_t index = 0; index < std::min<std::size_t>(gridProposal.cells.size(), 128);
+         ++index) {
+        cumulative += envelopeCells[index].envelopeMass;
+        const double unit = cumulative / envelopeMass;
+        if (unit > 0.0 && unit < 1.0) {
+            checkEnvelope(std::nextafter(unit, 0.0));
+            checkEnvelope(unit);
+            checkEnvelope(std::nextafter(unit, 1.0));
+        }
+    }
+
+    return diagnostic;
 }
 
 }  // namespace lowmc

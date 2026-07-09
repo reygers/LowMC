@@ -4,34 +4,35 @@ This file should contain exactly one immediate task for Codex or another coding
 agent. Broader plans belong in `docs/ROADMAP.md`; project state belongs in
 `docs/STATUS.md`.
 
-Prototype a validated spatial index for shape-unweighting cell lookup and
-envelope-cell sampling.
+Broaden validation of the shape-unweighting spatial-index prototype and measure
+its speed impact on a bounded Pythia-produced scan.
 
 Requirements:
 
 - review `docs/ADAPTER_CONTRACT.md`, `docs/ADAPTER_PLAN.md`,
   `docs/DECISIONS.md`, `docs/STATUS.md`, `docs/ALGORITHM.md`, and
   `docs/USAGE.md`
-- focus on the shape-unweighting hot path identified by stage timing, not on
-  changing physics, envelope safety factors, or yield-integration accuracy
-- identify the current linear cell operations in `src/ShapeUnweighting.cpp`,
-  especially sampled-point cell lookup and envelope-cell sampling
-- implement the smallest internal index/data structure that can replace those
-  linear scans without changing the public API or sampled distribution
-- add focused tests proving the indexed path agrees with the existing linear
-  behavior for representative refined grids and boundary points
-- keep a linear/reference path or helper available for tests until confidence
-  is high
-- rerun focused shape-unweighting and HepMC3 afterburner checks after the
-  prototype
+- treat the current spatial index as a bookkeeping optimization; do not change
+  physics densities, envelope safety factors, or yield-integration settings
+- rerun a bounded multi-seed Pythia-produced afterburner scan with stage timing
+  and compare against the pre-index timing notes in `docs/STATUS.md`
+- include at least the known seeds `24681`, `24683`, and `24684`; add more
+  seeds only if runtime remains practical
+- check that photon counts, `shape_status`, `max_trial_bound_ratio`, skipped
+  events, and output-summary agreement remain consistent with the pre-index
+  validation expectations
+- report `event_seconds`, `shape_seconds`, and `yield_seconds` before/after
+  where direct comparison data exists
+- decide whether the spatial index is ready to keep as the default internal
+  path or whether it needs a runtime switch/reference mode for more testing
 - update `docs/STATUS.md`, `docs/ALGORITHM.md`, and `docs/NEXT_TASK.md`
   afterward
 
 Open questions:
 
-- Is a tree over the existing refined cells enough, or is there a simpler
-  regular-bin acceleration compatible with the current split pattern?
-- Can envelope-cell sampling use a prefix-sum/binary-search table without
-  changing candidate probabilities?
-- Which exact validation run is sufficient to claim the prototype is a
-  bookkeeping speedup rather than a sampling change?
+- How many realistic Pythia seeds are enough before calling this a stable
+  bookkeeping speedup?
+- Should the diagnostic consistency helper remain public, or should it move to
+  a narrower test-support interface later?
+- After the spatial-index speedup, is yield integration now the next meaningful
+  bottleneck?

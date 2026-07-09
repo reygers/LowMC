@@ -752,6 +752,23 @@ inside the main repository: the first speed work should target shape
 unweighting, especially repeated cell lookup/sampling, before smaller yield
 integration cleanups.
 
+The first shape-unweighting indexing prototype is now implemented as an
+internal bookkeeping optimization. It adds an eta-bucket point-to-cell index
+for proposal-density lookup, a prefix-sum/binary-search sampler for envelope
+cell masses, and a diagnostic consistency helper that compares indexed lookup
+and sampling against the existing linear reference on representative refined
+grids and boundary-adjacent points. The public generation API is unchanged,
+and the existing linear helpers remain available internally as references for
+tests. In a first two-event bounded Pythia check with seeds `24681` and
+`24684`, all events passed with no skips or output-summary mismatches, the
+photon counts and `max_trial_bound_ratio` values matched the previous stage
+timing runs, and the known slow `24684` event dropped from about `65.9 s` to
+about `16.3 s`. Its `shape_seconds` dropped from about `60.9 s` to about
+`11.5 s`; the modest `24681` event dropped from about `6.6 s` to about
+`2.3 s`. This is strong evidence that the prototype removes a major
+bookkeeping bottleneck, but it is still a small validation sample rather than
+a production performance benchmark.
+
 The command name decision is settled for now: keep
 `lowmc_hepmc3_afterburner_diagnostic` as the only executable name. A shorter
 production alias should wait until validation gates and output-mode conventions
