@@ -406,6 +406,8 @@ Implemented checks cover:
   writes logs, `validation_summary.csv`, and `validation_events.csv`
 - true per-event timing in `lowmc_hepmc3_afterburner_diagnostic` through the
   `event_seconds` key, which the helper records in `validation_events.csv`
+- stage timing in the same event line through `select_seconds`,
+  `yield_seconds`, `poisson_seconds`, `shape_seconds`, and `write_seconds`
 - `scripts/summarize_pythia_afterburner_timing.py`, a read-only optional
   aggregator for one or more helper `validation_events.csv` files
 - a first three-seed helper scan with two Pythia-produced events per seed:
@@ -416,6 +418,9 @@ Implemented checks cover:
   all events passed, selected outgoing charged multiplicity ranged from `34`
   to `216`, requested photons summed to `22`, and the slowest event took about
   `65 s`
+- a first three-event stage-timing scan: all events passed, shape unweighting
+  accounted for about `90%` of measured event time, and yield integration for
+  about `9%`
 - a one-event helper complexity check selecting `216` outgoing charged
   particles, requesting and retaining `16` LowMC photons, matching the
   output-summary diagnostic, and taking about `67 s` in the afterburner step
@@ -437,7 +442,7 @@ Remaining validation gaps before calling the afterburner a first usable
 prototype:
 
 - broader runtime/complexity characterization on more realistic samples after
-  the first bounded `event_seconds` scan
+  the first bounded `event_seconds` and stage-timing scans
 - validation of naturally occurring shape-envelope failures in realistic event
   files, beyond the current forced diagnostic-safety test
 - broader boosted-particle HepMC3 stress tests beyond the current single-event

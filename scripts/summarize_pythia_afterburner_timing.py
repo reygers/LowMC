@@ -9,6 +9,14 @@ import math
 import sys
 from pathlib import Path
 
+STAGE_SECOND_KEYS = [
+    "select_seconds",
+    "yield_seconds",
+    "poisson_seconds",
+    "shape_seconds",
+    "write_seconds",
+]
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -108,7 +116,7 @@ def numeric_summary(rows: list[dict[str, str]]) -> dict[str, float]:
     requested = [require_float(row, "requested_photons") for row in rows]
     retained = [require_float(row, "retained_photons") for row in rows]
     ratios = [require_float(row, "max_trial_bound_ratio") for row in rows]
-    return {
+    summary = {
         "events": float(len(rows)),
         "event_seconds_sum": sum(seconds),
         "event_seconds_mean": sum(seconds) / len(seconds),
@@ -125,6 +133,21 @@ def numeric_summary(rows: list[dict[str, str]]) -> dict[str, float]:
         "corr_seconds_retained_photons": pearson(rows, "retained_photons"),
         "corr_seconds_max_trial_bound_ratio": pearson(rows, "max_trial_bound_ratio"),
     }
+    for key in STAGE_SECOND_KEYS:
+        values = [
+            value
+            for row in rows
+            if (value := finite_float(row, key)) is not None
+        ]
+        stage_sum = sum(values)
+        summary[f"{key}_sum"] = stage_sum
+        summary[f"{key}_max"] = max(values) if values else math.nan
+        summary[f"{key}_fraction"] = (
+            stage_sum / summary["event_seconds_sum"]
+            if values and summary["event_seconds_sum"] > 0.0 else math.nan
+        )
+        summary[f"{key}_count"] = float(len(values))
+    return summary
 
 
 def write_combined_csv(path: Path, rows: list[dict[str, str]]) -> None:
@@ -172,11 +195,41 @@ def write_summary_md(
         ),
         f"- Maximum trial/bound ratio: `{summary['max_trial_bound_ratio_max']:.3g}`.",
         "",
-        "## Correlations With Event Time",
-        "",
-        "| proxy | Pearson r |",
-        "| --- | ---: |",
     ]
+
+    if summary["shape_seconds_count"] > 0:
+        lines.extend(
+            [
+                "## Stage Timing",
+                "",
+                "| stage | total seconds | max event seconds | fraction of event time |",
+                "| --- | ---: | ---: | ---: |",
+            ]
+        )
+        for label, key in [
+            ("selection", "select_seconds"),
+            ("yield", "yield_seconds"),
+            ("poisson", "poisson_seconds"),
+            ("shape", "shape_seconds"),
+            ("write", "write_seconds"),
+        ]:
+            lines.append(
+                "| "
+                f"{label} | "
+                f"{summary[f'{key}_sum']:.3f} | "
+                f"{summary[f'{key}_max']:.3f} | "
+                f"{summary[f'{key}_fraction']:.1%} |"
+            )
+        lines.append("")
+
+    lines.extend(
+        [
+            "## Correlations With Event Time",
+            "",
+            "| proxy | Pearson r |",
+            "| --- | ---: |",
+        ]
+    )
     for label, key in [
         ("selected outgoing charged", "corr_seconds_selected_outgoing_charged"),
         ("requested photons", "corr_seconds_requested_photons"),
@@ -226,6 +279,8 @@ def print_summary(summary: dict[str, float]) -> None:
         f"corr_{name}={'nan' if math.isnan(value) else f'{value:.3g}'}"
         for name, value in correlations
     )
+    shape_fraction = summary["shape_seconds_fraction"]
+    shape_fraction_text = "nan" if math.isnan(shape_fraction) else f"{shape_fraction:.3g}"
     print(
         f"events={int(summary['events'])} "
         f"event_seconds_sum={summary['event_seconds_sum']:.6g} "
@@ -236,6 +291,7 @@ def print_summary(summary: dict[str, float]) -> None:
         f"{summary['selected_outgoing_charged_max']:.0f} "
         f"requested_photons_sum={summary['requested_photons_sum']:.0f} "
         f"max_trial_bound_ratio={summary['max_trial_bound_ratio_max']:.6g} "
+        f"shape_seconds_fraction={shape_fraction_text} "
         f"{correlation_text}"
     )
 

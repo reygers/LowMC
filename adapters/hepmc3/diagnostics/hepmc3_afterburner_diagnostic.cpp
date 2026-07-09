@@ -327,6 +327,10 @@ void publishAtomicOutput(const std::string& temporaryPath, const std::string& ou
     }
 }
 
+double secondsSince(std::chrono::steady_clock::time_point start) {
+    return std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -372,8 +376,10 @@ int main(int argc, char** argv) {
             }
 
             const auto eventStart = std::chrono::steady_clock::now();
+            const auto selectStart = std::chrono::steady_clock::now();
             const lowmc::AdapterParticleSelectionResult selection =
                 lowmc::hepmc3::selectChargedParticles(event);
+            const double selectSeconds = secondsSince(selectStart);
             printAdapterDiagnosticPrefix(eventsRead, event.momentum_unit(), selection.diagnostic);
 
             int photonsAdded = 0;
@@ -383,6 +389,10 @@ int main(int argc, char** argv) {
             int retainedPhotons = 0;
             double maxTrialBoundRatio = 0.0;
             const char* shapeStatus = "not_run";
+            double yieldSeconds = 0.0;
+            double poissonSeconds = 0.0;
+            double shapeSeconds = 0.0;
+            double writeSeconds = 0.0;
 
             if (selection.selectedParticles.empty()) {
                 status = "skipped_invalid_selection";
@@ -391,11 +401,13 @@ int main(int argc, char** argv) {
                 status = "skipped_nonconserved_charge";
                 (void)failOrSkip(options, "selected Low current is not charge conserving");
             } else {
+                const auto yieldStart = std::chrono::steady_clock::now();
                 const lowmc::EventYieldEstimate yield =
                     lowmc::estimateAdaptiveEventYield(
                         selection.selectedParticles,
                         phaseSpace,
                         makeYieldConfig());
+                yieldSeconds = secondsSince(yieldStart);
                 lambdaEvent = yield.lambdaEvent;
 
                 const bool yieldGateOk =
@@ -408,6 +420,7 @@ int main(int argc, char** argv) {
                     status = "skipped_failed_yield_gate";
                     (void)failOrSkip(options, "adaptive yield gate failed");
                 } else {
+                    const auto poissonStart = std::chrono::steady_clock::now();
                     const lowmc::PhotonMultiplicityDiagnostic multiplicity =
                         lowmc::samplePhotonMultiplicity(
                             yield.lambdaEvent,
@@ -415,6 +428,7 @@ int main(int argc, char** argv) {
                                 options.enhancementFactor,
                                 options.multiplicitySeed + static_cast<std::uint64_t>(eventsRead),
                             });
+                    poissonSeconds = secondsSince(poissonStart);
                     requestedPhotons = multiplicity.sampledPhotons;
 
                     if (requestedPhotons == 0) {
@@ -423,10 +437,12 @@ int main(int argc, char** argv) {
                         const int shapeTrials = std::max(
                             options.minShapeTrials,
                             requestedPhotons * options.shapeTrialsPerPhoton);
+                        const auto shapeStart = std::chrono::steady_clock::now();
                         const lowmc::ShapeUnweightingResult shape =
                             lowmc::generateShapeUnweightedPhotonCandidates(
                                 selection.selectedParticles,
                                 makeShapeConfig(phaseSpace, options, shapeTrials, eventsRead));
+                        shapeSeconds = secondsSince(shapeStart);
                         shapeStatus = shapeStatusName(shape.status);
                         maxTrialBoundRatio = shape.envelope.maxTrialBoundRatio;
                         retainedPhotons =
@@ -467,10 +483,12 @@ int main(int argc, char** argv) {
                 }
             }
 
+            const auto writeStart = std::chrono::steady_clock::now();
             writer.write_event(event);
             if (writer.failed()) {
                 throw std::runtime_error("failed while writing HepMC3 output file");
             }
+            writeSeconds = secondsSince(writeStart);
             ++eventsWritten;
             const auto eventEnd = std::chrono::steady_clock::now();
             const double eventSeconds =
@@ -488,6 +506,11 @@ int main(int argc, char** argv) {
                       << " shape_status=" << shapeStatus
                       << " max_trial_bound_ratio=" << maxTrialBoundRatio
                       << " event_seconds=" << eventSeconds
+                      << " select_seconds=" << selectSeconds
+                      << " yield_seconds=" << yieldSeconds
+                      << " poisson_seconds=" << poissonSeconds
+                      << " shape_seconds=" << shapeSeconds
+                      << " write_seconds=" << writeSeconds
                       << '\n';
 
             ++eventsRead;

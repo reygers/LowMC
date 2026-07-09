@@ -469,6 +469,11 @@ estimated afterburner time per event for compatibility. This can take minutes
 for multi-event samples and is not part of the default CTest path beyond a
 cheap `--help` test.
 
+New afterburner diagnostics also write per-stage timing keys:
+`select_seconds`, `yield_seconds`, `poisson_seconds`, `shape_seconds`, and
+`write_seconds`. The validation helper preserves these fields in both
+`validation_events.csv` and aggregate sums/maxima in `validation_summary.csv`.
+
 To aggregate one or more helper runs by true per-event timing, use:
 
 ```sh
@@ -481,9 +486,10 @@ python3 scripts/summarize_pythia_afterburner_timing.py \
 
 The aggregator is read-only. It accepts either `validation_events.csv` paths or
 directories containing that file, then reports total and maximum event time,
-charged-multiplicity and photon-count ranges, simple correlations with event
-time, and the slowest event rows. These correlations are intended as compact
-manual diagnostics, not as a production performance model.
+charged-multiplicity and photon-count ranges, stage-time totals when present,
+simple correlations with event time, and the slowest event rows. These
+correlations are intended as compact manual diagnostics, not as a production
+performance model.
 
 ## Grid-vs-weighted stress study
 

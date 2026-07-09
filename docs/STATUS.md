@@ -736,6 +736,22 @@ aggregated with the new optional
 `scripts/summarize_pythia_afterburner_timing.py` reader; no runner script or
 default test-suite timing benchmark is needed at this stage.
 
+After Stefan's external speed review, the afterburner diagnostic now also
+prints a five-stage timing split:
+`select_seconds`, `yield_seconds`, `poisson_seconds`, `shape_seconds`, and
+`write_seconds`. A first reproduced three-event stage-timing check used
+one-event Pythia-produced helper runs with seeds `24681`, `24683`, and
+`24684`, enhancement factor `5`, multiplicity seed `13583`, and shape seed
+`97535`. All three events passed with no skips or output-summary mismatches.
+The total measured `event_seconds` was about `84.6 s`; shape unweighting took
+about `76.6 s`, or `90.5%`, while adaptive event-yield integration took about
+`8.0 s`, or `9.4%`. The slowest event, seed `24684`, selected `216` outgoing
+charged particles, requested `16` photons, and spent about `60.9 s` of
+`65.9 s` in shape unweighting. This reproduces the review's central conclusion
+inside the main repository: the first speed work should target shape
+unweighting, especially repeated cell lookup/sampling, before smaller yield
+integration cleanups.
+
 The command name decision is settled for now: keep
 `lowmc_hepmc3_afterburner_diagnostic` as the only executable name. A shorter
 production alias should wait until validation gates and output-mode conventions

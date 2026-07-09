@@ -12,6 +12,14 @@ import sys
 import time
 from pathlib import Path
 
+STAGE_SECOND_KEYS = [
+    "select_seconds",
+    "yield_seconds",
+    "poisson_seconds",
+    "shape_seconds",
+    "write_seconds",
+]
+
 
 KEY_VALUE_RE = re.compile(r"([A-Za-z_][A-Za-z0-9_]*)=([^ \n]+)")
 
@@ -128,6 +136,9 @@ def compare_rows(
     event_seconds_sum = 0.0
     max_event_seconds = 0.0
     event_seconds_count = 0
+    stage_seconds_sum = {key: 0.0 for key in STAGE_SECOND_KEYS}
+    max_stage_seconds = {key: 0.0 for key in STAGE_SECOND_KEYS}
+    stage_seconds_count = {key: 0 for key in STAGE_SECOND_KEYS}
 
     if len(summary_by_event) != len(summary_rows):
         mismatches.append("duplicate event_index in output-summary diagnostic")
@@ -173,6 +184,15 @@ def compare_rows(
             event_seconds_sum += event_seconds_value
             max_event_seconds = max(max_event_seconds, event_seconds_value)
             event_seconds_count += 1
+        stage_seconds: dict[str, object] = {}
+        for key in STAGE_SECOND_KEYS:
+            stage_seconds[key] = ""
+            if key in row:
+                value = as_float(row, key)
+                stage_seconds[key] = value
+                stage_seconds_sum[key] += value
+                max_stage_seconds[key] = max(max_stage_seconds[key], value)
+                stage_seconds_count[key] += 1
 
         event_summaries.append(
             {
@@ -193,6 +213,7 @@ def compare_rows(
                 "shape_status": shape_status,
                 "max_trial_bound_ratio": event_trial_bound_ratio,
                 "event_seconds": event_seconds,
+                **stage_seconds,
                 "event_metadata": summary.get("event_metadata", "0"),
                 "photon_weight_attributes": summary.get("photon_weight_attributes", "0"),
             }
@@ -223,6 +244,9 @@ def compare_rows(
         "event_seconds_sum": event_seconds_sum,
         "max_event_seconds": max_event_seconds,
         "event_seconds_count": event_seconds_count,
+        **{f"{key}_sum": stage_seconds_sum[key] for key in STAGE_SECOND_KEYS},
+        **{f"max_{key}": max_stage_seconds[key] for key in STAGE_SECOND_KEYS},
+        **{f"{key}_count": stage_seconds_count[key] for key in STAGE_SECOND_KEYS},
         "shape_status_counts": ",".join(
             f"{key}:{shape_status_counts[key]}" for key in sorted(shape_status_counts)
         ),
@@ -367,6 +391,7 @@ def main() -> int:
         f"max_selected_outgoing_charged={aggregate['max_selected_outgoing_charged']} "
         f"max_requested_photons={aggregate['max_requested_photons']} "
         f"max_event_seconds={aggregate['max_event_seconds']:.6g} "
+        f"max_shape_seconds={aggregate['max_shape_seconds']:.6g} "
         f"shape_status_counts={aggregate['shape_status_counts']} "
         f"max_trial_bound_ratio={aggregate['max_trial_bound_ratio']:.12g} "
         f"mismatch_count={aggregate['mismatch_count']}"

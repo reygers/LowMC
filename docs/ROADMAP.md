@@ -98,7 +98,9 @@ production-style command or alias, the minimum readiness checklist is:
   aggregate maxima for selected charged multiplicity, requested/retained
   photons, shape diagnostics, and true per-event afterburner timing; a first
   four-event timing scan passed and showed the expected association between
-  runtime, selected charged multiplicity, and requested photons
+  runtime, selected charged multiplicity, and requested photons; a first
+  three-event stage-timing scan shows shape unweighting accounts for about
+  `90%` of measured event time
 - open: naturally occurring shape-envelope failures should be observed or
   bounded in realistic event files, not only forced by unsafe diagnostic knobs
 - satisfied: default count/yield checks include both a loose multi-fixture
@@ -125,9 +127,9 @@ production-style command or alias, the minimum readiness checklist is:
 - open: final command naming should be settled before a production alias such
   as `lowmc_hepmc3_afterburner` is added
 
-The next adapter milestone should look for naturally occurring shape-envelope
-failures or near-failures in realistic Pythia-produced files, using bounded
-manual scans rather than default test-suite jobs.
+The next speed milestone should prototype a validated spatial index for
+shape-unweighting cell lookup/sampling, because stage timing now shows shape
+unweighting dominates bounded Pythia-produced afterburner runtime.
 
 ## Milestone 4: Validation
 

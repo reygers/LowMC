@@ -4,33 +4,34 @@ This file should contain exactly one immediate task for Codex or another coding
 agent. Broader plans belong in `docs/ROADMAP.md`; project state belongs in
 `docs/STATUS.md`.
 
-Search for naturally occurring shape-envelope failures or near-failures in
-bounded realistic Pythia-produced HepMC3 afterburner validation runs.
+Prototype a validated spatial index for shape-unweighting cell lookup and
+envelope-cell sampling.
 
 Requirements:
 
 - review `docs/ADAPTER_CONTRACT.md`, `docs/ADAPTER_PLAN.md`,
-  `docs/DECISIONS.md`, `docs/STATUS.md`, and `docs/USAGE.md`
-- use `scripts/validate_pythia_afterburner.py`, `validation_summary.csv`,
-  `validation_events.csv`, afterburner logs, and output-summary logs from
-  bounded runs
-- keep the workflow manual/opt-in; do not add slow default CTest coverage
-- run a small bounded seed scan that is likely to include varied realistic
-  charged multiplicities but remains practical on a laptop
-- keep the default safe envelope settings first; do not start by weakening
-  safety factors
-- report counts of `shape_status`, `max_trial_bound_ratio`, skipped events,
-  and any mismatches with the output-summary diagnostic
-- if no natural failures appear, document the observed upper bound for this
-  small scan and decide whether a larger manual scan or a targeted stress case
-  is the next sensible step
-- if a natural failure or near-failure appears, preserve the seed, event
-  number, logs, and CSV rows needed to reproduce it
-- update `docs/USAGE.md`, `docs/STATUS.md`, and `docs/NEXT_TASK.md` afterward
+  `docs/DECISIONS.md`, `docs/STATUS.md`, `docs/ALGORITHM.md`, and
+  `docs/USAGE.md`
+- focus on the shape-unweighting hot path identified by stage timing, not on
+  changing physics, envelope safety factors, or yield-integration accuracy
+- identify the current linear cell operations in `src/ShapeUnweighting.cpp`,
+  especially sampled-point cell lookup and envelope-cell sampling
+- implement the smallest internal index/data structure that can replace those
+  linear scans without changing the public API or sampled distribution
+- add focused tests proving the indexed path agrees with the existing linear
+  behavior for representative refined grids and boundary points
+- keep a linear/reference path or helper available for tests until confidence
+  is high
+- rerun focused shape-unweighting and HepMC3 afterburner checks after the
+  prototype
+- update `docs/STATUS.md`, `docs/ALGORITHM.md`, and `docs/NEXT_TASK.md`
+  afterward
 
 Open questions:
 
-- How large should the first natural-failure scan be before it becomes too slow
-  for ordinary collaborator validation?
-- Should near-failures be defined by `max_trial_bound_ratio` alone, or also by
-  low acceptance/retained-candidate margin once those fields are exposed?
+- Is a tree over the existing refined cells enough, or is there a simpler
+  regular-bin acceleration compatible with the current split pattern?
+- Can envelope-cell sampling use a prefix-sum/binary-search table without
+  changing candidate probabilities?
+- Which exact validation run is sufficient to claim the prototype is a
+  bookkeeping speedup rather than a sampling change?
