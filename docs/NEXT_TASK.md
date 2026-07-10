@@ -4,7 +4,7 @@ This file should contain exactly one immediate task for Codex or another coding
 agent. Broader plans belong in `docs/ROADMAP.md`; project state belongs in
 `docs/STATUS.md`.
 
-Prototype an evidence-based targeted base-probe policy.
+Prototype a neighbor-aware evidence base-probe policy.
 
 Requirements:
 
@@ -17,32 +17,32 @@ Requirements:
   multiplicity conventions, or failure policy semantics
 - keep all reduced or targeted base-probe modes behind explicit diagnostic
   options; do not make them defaults
-- start from the current evidence: uniform `5 x 5` and `7 x 7` reductions are
-  fast but raise `max_trial_bound_ratio`, and charged-particle-proximity
-  targeting alone is not sufficient
-- design a two-pass diagnostic policy that first uses a reduced base lattice,
-  then promotes cells to full probing using evidence from the reduced probe
-  pass and/or calibration
-- candidate high-risk evidence may include calibration exceeding the reduced
-  probe maximum, large reduced-probe variation within a cell, high estimated
-  envelope contribution, small cells near sharp structures, or neighboring
-  cells with suspicious reduced-probe behavior
-- keep the comparison against the full-probe reference explicit: accepted and
-  retained photon counts, envelope failures, `max_trial_bound_ratio`,
-  suspect/promoted-cell counts, probe evaluations, full-probed-cell counts,
-  and substage timings
-- run controlled toy checks plus the bounded Pythia-produced seeds `24681`,
-  `24682`, `24683`, and `24684`
+- start from the current evidence: charged-particle proximity alone is not
+  sufficient, and calibration-suspect-cell promotion alone is too sparse
+- extend the evidence-targeted diagnostic so suspicious cells can promote
+  nearby cells to the full `11 x 11` base lattice
+- define the neighborhood rule explicitly, for example by cell adjacency,
+  eta-phi distance in units of local cell size, or reuse of the existing
+  `cellNearCoordinate` style with suspicious-cell centers
+- compare at least two neighborhood strengths against the full-probe reference
+  on the bounded Pythia-produced seeds `24681`, `24682`, `24683`, and `24684`
+- record accepted and retained photon counts, envelope failures,
+  `max_trial_bound_ratio`, suspect/promoted/full-probed-cell counts, probe
+  evaluations, and substage timings
 - require no new envelope failures, unchanged accepted/retained photon counts
   for fixed seeds, and no larger accepted `max_trial_bound_ratio` before
   treating the prototype as a candidate for broader validation
+- if neighbor expansion cannot satisfy the criterion without losing the speed
+  advantage, propose a direct reduced-versus-full probe audit as the next
+  diagnostic instead of adding more tuning knobs
 - update `docs/STATUS.md`, `docs/ALGORITHM.md`, and `docs/NEXT_TASK.md`
   afterward
 
 Open questions:
 
-- Which reduced-pass evidence best predicts cells where full probing matters?
-- Is a separate compensation/safety factor still needed after evidence-based
-  promotion?
-- How much speedup remains once the prototype matches the full-probe reference
-  on the bounded Pythia seeds?
+- Which neighborhood definition best catches under-bounded nearby cells without
+  collapsing back to full probing?
+- Should suspicious-cell expansion depend on reduced-probe severity, such as
+  `calibrationMax / reducedProbeMax`, rather than a fixed radius?
+- Would a small direct audit of reduced-versus-full probe maxima be more
+  informative than another heuristic promotion rule?

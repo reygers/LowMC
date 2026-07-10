@@ -281,6 +281,7 @@ def write_summary_md(
                 "targeted base-probe neighbor scale",
                 "shape_targeted_base_probe_neighbor_scale",
             ),
+            ("evidence base-probed cells", "shape_evidence_base_probe_cell_count"),
         ]:
             values = [
                 value

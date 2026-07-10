@@ -859,6 +859,18 @@ by itself. A better targeted policy should use information from the reduced
 probe and/or calibration passes, then compare against the full-probe reference
 before it can be considered for broader validation.
 
+The first evidence-targeted variant uses calibration as the high-risk marker:
+start with a reduced base lattice, then re-probe cells whose calibration
+maximum exceeds the reduced probe maximum with the full `11 x 11` base lattice.
+This policy is also diagnostic-only. It substantially reduces runtime when
+boosted-cell reprobing is disabled, but in the first bounded Pythia scan it
+still increases `max_trial_bound_ratio` because the suspect set is too sparse.
+Adding a small charged-direction halo improves some events but either remains
+less safe than the full-probe reference or gives up the speed advantage. The
+next evidence-based idea should therefore promote neighborhoods of suspicious
+cells or use a direct reduced-versus-full probe audit to learn which reduced
+cells are under-bounded.
+
 Shape unweighting is separate from event multiplicity. After the photon shape
 can be sampled without weights, LowMC still needs a normalization rule for how
 many photons to add to a given input event in the configured phase space. The

@@ -40,6 +40,7 @@ struct EnvelopeCellSampler {
 struct ProbePlan {
     std::vector<int> bins;
     std::vector<double> safetyFactors;
+    int evidenceCellCount = 0;
     int promotedCellCount = 0;
     std::size_t probeEvaluations = 0;
 };
@@ -642,6 +643,19 @@ void refineGridNearChargedParticles(
     plan.bins = baseProbeBins;
     plan.safetyFactors.assign(gridProposal.cells.size(), config.safetyFactor);
 
+    if (config.evidenceTargetedBaseProbes &&
+        effectiveBaseProbeBins(config) < config.probeBins) {
+        for (std::size_t index = 0; index < gridProposal.cells.size(); ++index) {
+            if (calibrationCellMaxWeights[index] <= probedCellMaxWeights[index]) {
+                continue;
+            }
+            if (plan.bins[index] < config.probeBins) {
+                plan.bins[index] = config.probeBins;
+                ++plan.evidenceCellCount;
+            }
+        }
+    }
+
     if (config.probePolicy == ShapeUnweightingProbePolicy::BoostedCells) {
         std::vector<bool> promote(gridProposal.cells.size(), false);
         for (std::size_t index = 0; index < gridProposal.cells.size(); ++index) {
@@ -767,6 +781,7 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
     result.envelope.probeBins = config.probeBins;
     result.envelope.baseProbeBins = effectiveBaseProbeBins(config);
     result.envelope.targetedBaseProbeNeighborScale = config.targetedBaseProbeNeighborScale;
+    result.envelope.evidenceBaseProbeCellCount = 0;
     result.envelope.boostedProbeBins = config.boostedProbeBins;
     result.envelope.probeRule = config.probeRule;
     result.envelope.probePolicy = config.probePolicy;
@@ -866,6 +881,7 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
         }
     }
     result.envelope.boostedProbeSeconds = secondsSince(boostedProbeStart);
+    result.envelope.evidenceBaseProbeCellCount = probePlan.evidenceCellCount;
     result.envelope.promotedCellCount = probePlan.promotedCellCount;
     result.envelope.probeEvaluations = probePlan.probeEvaluations;
 

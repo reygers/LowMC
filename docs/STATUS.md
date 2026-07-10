@@ -880,6 +880,26 @@ alone is a useful diagnostic marker but not a sufficient reduced-probe policy.
 The next base-probe experiment should use evidence from the reduced probe pass
 and/or calibration, rather than only geometric proximity to charged particles.
 
+An evidence-targeted base-probe prototype is now implemented as an explicit
+diagnostic option: `--evidence-targeted-base-probes` starts from the reduced
+base lattice and re-probes calibration-suspect cells with the full `11 x 11`
+base lattice. The afterburner also has `--disable-boosted-cell-probes` so this
+policy can be studied without the heavier `21 x 21` boosted-cell path. On the
+same four Pythia-produced seeds, the default full-probe reference again took
+about `13.1 s` total, with maximum trial/bound ratio `0.371033`. Isolated
+evidence targeting with `5 x 5` base probes was very fast, about `5.6 s`
+total, but raised the maximum ratio to `0.454328`; the slow event promoted
+only `530/11866` cells by calibration evidence. With `7 x 7` base probes, the
+same policy took about `7.3 s` and lowered the maximum ratio to `0.412530`,
+still above the reference. Combining evidence targeting with a one-cell-scale
+charged-direction halo did not solve the problem: `5 x 5` plus halo took about
+`8.6 s` with maximum ratio `0.403866`, while `7 x 7` plus halo was slower than
+the reference at about `15.4 s` and still had maximum ratio `0.392943`.
+Calibration-exceeds-probe is therefore useful evidence, but too sparse by
+itself. The next probe-reduction experiment should propagate suspicion to
+neighboring cells or directly audit where reduced and full probe lattices
+disagree.
+
 The command name decision is settled for now: keep
 `lowmc_hepmc3_afterburner_diagnostic` as the only executable name. A shorter
 production alias should wait until validation gates and output-mode conventions

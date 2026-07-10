@@ -961,6 +961,7 @@ lowmc::ShapeUnweightingConfig shapeUnweightingTestConfig(std::uint64_t seed) {
         0,
         false,
         0.0,
+        false,
         lowmc::ShapeUnweightingProbeRule::Interior,
         lowmc::ShapeUnweightingProbePolicy::Fixed,
         4,
@@ -1737,6 +1738,38 @@ void testShapeUnweightingTargetedBaseProbesFullProbeChargedCells() {
         "targeted base probes should save work versus full base probing");
 }
 
+void testShapeUnweightingEvidenceTargetedBaseProbesFullProbeSuspectCells() {
+    lowmc::ShapeUnweightingConfig config = shapeUnweightingTestConfig(123);
+    config.baseProbeBins = 1;
+    config.probeBins = 3;
+    config.calibrationTrials = 200;
+    config.evidenceTargetedBaseProbes = true;
+    config.probePolicy = lowmc::ShapeUnweightingProbePolicy::Fixed;
+
+    const lowmc::ShapeUnweightingResult result =
+        lowmc::generateShapeUnweightedPhotonCandidates(eventGeneratorToyParticles(), config);
+
+    require(
+        result.status == lowmc::ShapeUnweightingStatus::Ok,
+        "evidence-targeted base probes should keep the conservative test envelope valid");
+    require(
+        result.envelope.suspectCellCount > 0,
+        "evidence-targeted test should produce calibration-suspect cells");
+    require(
+        result.envelope.evidenceBaseProbeCellCount == result.envelope.suspectCellCount,
+        "evidence-targeted base probes should full-probe calibration-suspect cells");
+    require(
+        result.envelope.promotedCellCount == 0,
+        "evidence-targeted base probes should be independent of boosted-cell promotion");
+
+    const std::size_t allReducedEvaluations = result.envelope.gridCellCount *
+        static_cast<std::size_t>(config.baseProbeBins) *
+        static_cast<std::size_t>(config.baseProbeBins);
+    require(
+        result.envelope.probeEvaluations > allReducedEvaluations,
+        "evidence-targeted base probes should add work beyond the reduced lattice");
+}
+
 void testShapeUnweightingIndexMatchesLinearReference() {
     lowmc::ShapeUnweightingConfig config = shapeUnweightingTestConfig(123);
     config.gridConfig.etaBins = 8;
@@ -2017,6 +2050,7 @@ int main() {
     testWeightedEventGeneratorRejectsInvalidInputs();
     testShapeUnweightingReturnsDiagnosticsAndUnitWeightCandidates();
     testShapeUnweightingTargetedBaseProbesFullProbeChargedCells();
+    testShapeUnweightingEvidenceTargetedBaseProbesFullProbeSuspectCells();
     testShapeUnweightingIndexMatchesLinearReference();
     testShapeUnweightingBoostedCellPolicyPromotesCells();
     testShapeUnweightingStrictFailureClearsCandidates();

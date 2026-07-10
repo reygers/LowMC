@@ -39,6 +39,8 @@ struct Options {
     int shapeBaseProbeBins = 11;
     bool targetedBaseProbes = false;
     double targetedBaseProbeNeighborScale = 0.0;
+    bool evidenceTargetedBaseProbes = false;
+    bool disableBoostedCellProbes = false;
     double kTMin = 0.002;
     double kTMax = 0.2;
     double etaMin = -5.0;
@@ -69,6 +71,8 @@ void printUsage(std::ostream& out) {
         << "  --shape-base-probe-bins N       Base probe bins before boosted cells (default: 11)\n"
         << "  --targeted-base-probes          Keep full base probes near charged particles\n"
         << "  --targeted-base-probe-neighbor-scale X  Neighbor scale for targeted base probes (default: 0)\n"
+        << "  --evidence-targeted-base-probes Keep full base probes in calibration-suspect cells\n"
+        << "  --disable-boosted-cell-probes   Disable diagnostic boosted-cell reprobing\n"
         << "  --kt-min GeV                    Minimum photon k_T (default: 0.002)\n"
         << "  --kt-max GeV                    Maximum photon k_T (default: 0.2)\n"
         << "  --eta-min X                     Minimum photon eta (default: -5)\n"
@@ -182,6 +186,14 @@ Options parseOptions(int argc, char** argv) {
             options.targetedBaseProbes = true;
             continue;
         }
+        if (argument == "--evidence-targeted-base-probes") {
+            options.evidenceTargetedBaseProbes = true;
+            continue;
+        }
+        if (argument == "--disable-boosted-cell-probes") {
+            options.disableBoostedCellProbes = true;
+            continue;
+        }
         if (argument == "--targeted-base-probe-neighbor-scale") {
             options.targetedBaseProbeNeighborScale =
                 parseDouble(readStringOption(index, argc, argv, argument), argument);
@@ -289,8 +301,12 @@ lowmc::ShapeUnweightingConfig makeShapeConfig(
     config.baseProbeBins = options.shapeBaseProbeBins;
     config.targetedBaseProbes = options.targetedBaseProbes;
     config.targetedBaseProbeNeighborScale = options.targetedBaseProbeNeighborScale;
+    config.evidenceTargetedBaseProbes = options.evidenceTargetedBaseProbes;
     config.probeRule = lowmc::ShapeUnweightingProbeRule::Interior;
-    config.probePolicy = lowmc::ShapeUnweightingProbePolicy::BoostedCells;
+    config.probePolicy =
+        options.disableBoostedCellProbes
+            ? lowmc::ShapeUnweightingProbePolicy::Fixed
+            : lowmc::ShapeUnweightingProbePolicy::BoostedCells;
     config.boostedProbeBins = 21;
     config.boostedCellSafetyFactor = options.boostedShapeSafetyFactor;
     config.boostedCellNeighborScale = 0.0;
@@ -438,6 +454,7 @@ int main(int argc, char** argv) {
             int shapeBaseProbeBins = 0;
             int shapeFullBaseProbeCellCount = 0;
             double shapeTargetedBaseProbeNeighborScale = 0.0;
+            int shapeEvidenceBaseProbeCellCount = 0;
             double writeSeconds = 0.0;
 
             if (selection.selectedParticles.empty()) {
@@ -511,6 +528,8 @@ int main(int argc, char** argv) {
                         shapeFullBaseProbeCellCount = shape.envelope.fullBaseProbeCellCount;
                         shapeTargetedBaseProbeNeighborScale =
                             shape.envelope.targetedBaseProbeNeighborScale;
+                        shapeEvidenceBaseProbeCellCount =
+                            shape.envelope.evidenceBaseProbeCellCount;
                         retainedPhotons =
                             std::min(requestedPhotons, static_cast<int>(shape.candidates.size()));
                         const bool envelopeOk =
@@ -596,6 +615,8 @@ int main(int argc, char** argv) {
                       << " shape_full_base_probe_cell_count=" << shapeFullBaseProbeCellCount
                       << " shape_targeted_base_probe_neighbor_scale="
                       << shapeTargetedBaseProbeNeighborScale
+                      << " shape_evidence_base_probe_cell_count="
+                      << shapeEvidenceBaseProbeCellCount
                       << " write_seconds=" << writeSeconds
                       << '\n';
 

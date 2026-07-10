@@ -64,6 +64,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--shape-base-probe-bins", type=int, default=11)
     parser.add_argument("--targeted-base-probes", action="store_true")
     parser.add_argument("--targeted-base-probe-neighbor-scale", type=float, default=0.0)
+    parser.add_argument("--evidence-targeted-base-probes", action="store_true")
+    parser.add_argument("--disable-boosted-cell-probes", action="store_true")
     parser.add_argument("--kt-min", type=float, default=0.002)
     parser.add_argument("--kt-max", type=float, default=0.2)
     parser.add_argument("--eta-min", type=float, default=-5.0)
@@ -240,6 +242,9 @@ def compare_rows(
                 "shape_targeted_base_probe_neighbor_scale": row.get(
                     "shape_targeted_base_probe_neighbor_scale", ""
                 ),
+                "shape_evidence_base_probe_cell_count": row.get(
+                    "shape_evidence_base_probe_cell_count", ""
+                ),
                 "event_metadata": summary.get("event_metadata", "0"),
                 "photon_weight_attributes": summary.get("photon_weight_attributes", "0"),
             }
@@ -379,6 +384,10 @@ def main() -> int:
                 f"{args.targeted_base_probe_neighbor_scale:.17g}",
             ]
         )
+    if args.evidence_targeted_base_probes:
+        afterburner_command.append("--evidence-targeted-base-probes")
+    if args.disable_boosted_cell_probes:
+        afterburner_command.append("--disable-boosted-cell-probes")
     afterburner_command.extend(
         [
             "--atomic-output",
@@ -422,6 +431,8 @@ def main() -> int:
             "shape_base_probe_bins": args.shape_base_probe_bins,
             "targeted_base_probes": int(args.targeted_base_probes),
             "targeted_base_probe_neighbor_scale": args.targeted_base_probe_neighbor_scale,
+            "evidence_targeted_base_probes": int(args.evidence_targeted_base_probes),
+            "disable_boosted_cell_probes": int(args.disable_boosted_cell_probes),
         }
     )
     for row in event_summaries:
