@@ -865,11 +865,11 @@ maximum exceeds the reduced probe maximum with the full `11 x 11` base lattice.
 This policy is also diagnostic-only. It substantially reduces runtime when
 boosted-cell reprobing is disabled, but in the first bounded Pythia scan it
 still increases `max_trial_bound_ratio` because the suspect set is too sparse.
-Adding a small charged-direction halo improves some events but either remains
-less safe than the full-probe reference or gives up the speed advantage. The
-next evidence-based idea should therefore promote neighborhoods of suspicious
-cells or use a direct reduced-versus-full probe audit to learn which reduced
-cells are under-bounded.
+Expanding neighborhoods around suspicious-cell centers improves the result but
+does not clear the high-multiplicity bounded Pythia event before promoting many
+thousands of cells. The next diagnostic should therefore stop adding heuristic
+promotion rules and directly compare reduced and full probe maxima, so LowMC
+can learn which reduced-probe cells are actually under-bounded.
 
 Shape unweighting is separate from event multiplicity. After the photon shape
 can be sampled without weights, LowMC still needs a normalization rule for how

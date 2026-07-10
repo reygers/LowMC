@@ -962,6 +962,7 @@ lowmc::ShapeUnweightingConfig shapeUnweightingTestConfig(std::uint64_t seed) {
         false,
         0.0,
         false,
+        0.0,
         lowmc::ShapeUnweightingProbeRule::Interior,
         lowmc::ShapeUnweightingProbePolicy::Fixed,
         4,
@@ -1758,6 +1759,11 @@ void testShapeUnweightingEvidenceTargetedBaseProbesFullProbeSuspectCells() {
     require(
         result.envelope.evidenceBaseProbeCellCount == result.envelope.suspectCellCount,
         "evidence-targeted base probes should full-probe calibration-suspect cells");
+    requireNear(
+        result.envelope.evidenceTargetedBaseProbeNeighborScale,
+        config.evidenceTargetedBaseProbeNeighborScale,
+        1.0e-15,
+        "evidence-targeted base probes should report the neighbor scale");
     require(
         result.envelope.promotedCellCount == 0,
         "evidence-targeted base probes should be independent of boosted-cell promotion");
@@ -1768,6 +1774,32 @@ void testShapeUnweightingEvidenceTargetedBaseProbesFullProbeSuspectCells() {
     require(
         result.envelope.probeEvaluations > allReducedEvaluations,
         "evidence-targeted base probes should add work beyond the reduced lattice");
+}
+
+void testShapeUnweightingEvidenceTargetedNeighborsExpandFullProbeCells() {
+    lowmc::ShapeUnweightingConfig baseConfig = shapeUnweightingTestConfig(123);
+    baseConfig.baseProbeBins = 1;
+    baseConfig.probeBins = 3;
+    baseConfig.calibrationTrials = 200;
+    baseConfig.evidenceTargetedBaseProbes = true;
+    baseConfig.probePolicy = lowmc::ShapeUnweightingProbePolicy::Fixed;
+
+    lowmc::ShapeUnweightingConfig neighborConfig = baseConfig;
+    neighborConfig.evidenceTargetedBaseProbeNeighborScale = 1.0;
+
+    const lowmc::ShapeUnweightingResult baseResult =
+        lowmc::generateShapeUnweightedPhotonCandidates(eventGeneratorToyParticles(), baseConfig);
+    const lowmc::ShapeUnweightingResult neighborResult =
+        lowmc::generateShapeUnweightedPhotonCandidates(
+            eventGeneratorToyParticles(), neighborConfig);
+
+    require(
+        neighborResult.envelope.evidenceBaseProbeCellCount >=
+            baseResult.envelope.evidenceBaseProbeCellCount,
+        "evidence-targeted neighbor expansion should not reduce full-probed cells");
+    require(
+        neighborResult.envelope.probeEvaluations >= baseResult.envelope.probeEvaluations,
+        "evidence-targeted neighbor expansion should not reduce probe evaluations");
 }
 
 void testShapeUnweightingIndexMatchesLinearReference() {
@@ -1886,6 +1918,13 @@ void generateShapeUnweightingWithInvalidTargetedBaseProbeNeighborScale() {
         lowmc::generateShapeUnweightedPhotonCandidates(eventGeneratorToyParticles(), config));
 }
 
+void generateShapeUnweightingWithInvalidEvidenceTargetedBaseProbeNeighborScale() {
+    lowmc::ShapeUnweightingConfig config = shapeUnweightingTestConfig(123);
+    config.evidenceTargetedBaseProbeNeighborScale = -1.0;
+    static_cast<void>(
+        lowmc::generateShapeUnweightedPhotonCandidates(eventGeneratorToyParticles(), config));
+}
+
 void testShapeUnweightingRejectsInvalidInputs() {
     requireThrowsInvalidArgument(
         generateShapeUnweightingWithInvalidProbeBins,
@@ -1899,6 +1938,9 @@ void testShapeUnweightingRejectsInvalidInputs() {
     requireThrowsInvalidArgument(
         generateShapeUnweightingWithInvalidTargetedBaseProbeNeighborScale,
         "shape unweighting should reject invalid targeted base-probe neighbor scale");
+    requireThrowsInvalidArgument(
+        generateShapeUnweightingWithInvalidEvidenceTargetedBaseProbeNeighborScale,
+        "shape unweighting should reject invalid evidence-targeted base-probe neighbor scale");
 }
 
 void testWeightedPhotonSampleRejectsInvalidInputs() {
@@ -2051,6 +2093,7 @@ int main() {
     testShapeUnweightingReturnsDiagnosticsAndUnitWeightCandidates();
     testShapeUnweightingTargetedBaseProbesFullProbeChargedCells();
     testShapeUnweightingEvidenceTargetedBaseProbesFullProbeSuspectCells();
+    testShapeUnweightingEvidenceTargetedNeighborsExpandFullProbeCells();
     testShapeUnweightingIndexMatchesLinearReference();
     testShapeUnweightingBoostedCellPolicyPromotesCells();
     testShapeUnweightingStrictFailureClearsCandidates();

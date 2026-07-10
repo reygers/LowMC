@@ -44,6 +44,7 @@ struct ShapeUnweightingConfig {
     bool targetedBaseProbes = false;
     double targetedBaseProbeNeighborScale = 0.0;
     bool evidenceTargetedBaseProbes = false;
+    double evidenceTargetedBaseProbeNeighborScale = 0.0;
     ShapeUnweightingProbeRule probeRule = ShapeUnweightingProbeRule::Interior;
     ShapeUnweightingProbePolicy probePolicy = ShapeUnweightingProbePolicy::Fixed;
     int boostedProbeBins = 21;
@@ -94,6 +95,7 @@ struct ShapeUnweightingEnvelopeDiagnostics {
     int fullBaseProbeCellCount = 0;
     double targetedBaseProbeNeighborScale = 0.0;
     int evidenceBaseProbeCellCount = 0;
+    double evidenceTargetedBaseProbeNeighborScale = 0.0;
     int boostedProbeBins = 0;
     ShapeUnweightingProbeRule probeRule = ShapeUnweightingProbeRule::Interior;
     ShapeUnweightingProbePolicy probePolicy = ShapeUnweightingProbePolicy::Fixed;

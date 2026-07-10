@@ -65,6 +65,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--targeted-base-probes", action="store_true")
     parser.add_argument("--targeted-base-probe-neighbor-scale", type=float, default=0.0)
     parser.add_argument("--evidence-targeted-base-probes", action="store_true")
+    parser.add_argument("--evidence-targeted-base-probe-neighbor-scale", type=float, default=0.0)
     parser.add_argument("--disable-boosted-cell-probes", action="store_true")
     parser.add_argument("--kt-min", type=float, default=0.002)
     parser.add_argument("--kt-max", type=float, default=0.2)
@@ -245,6 +246,9 @@ def compare_rows(
                 "shape_evidence_base_probe_cell_count": row.get(
                     "shape_evidence_base_probe_cell_count", ""
                 ),
+                "shape_evidence_targeted_base_probe_neighbor_scale": row.get(
+                    "shape_evidence_targeted_base_probe_neighbor_scale", ""
+                ),
                 "event_metadata": summary.get("event_metadata", "0"),
                 "photon_weight_attributes": summary.get("photon_weight_attributes", "0"),
             }
@@ -315,6 +319,8 @@ def main() -> int:
         raise ValueError("--shape-base-probe-bins must be positive")
     if args.targeted_base_probe_neighbor_scale < 0.0:
         raise ValueError("--targeted-base-probe-neighbor-scale must be non-negative")
+    if args.evidence_targeted_base_probe_neighbor_scale < 0.0:
+        raise ValueError("--evidence-targeted-base-probe-neighbor-scale must be non-negative")
 
     script_dir = Path(__file__).resolve().parent
     sample_helper = script_dir / "generate_pythia_hepmc3_sample.py"
@@ -385,7 +391,13 @@ def main() -> int:
             ]
         )
     if args.evidence_targeted_base_probes:
-        afterburner_command.append("--evidence-targeted-base-probes")
+        afterburner_command.extend(
+            [
+                "--evidence-targeted-base-probes",
+                "--evidence-targeted-base-probe-neighbor-scale",
+                f"{args.evidence_targeted_base_probe_neighbor_scale:.17g}",
+            ]
+        )
     if args.disable_boosted_cell_probes:
         afterburner_command.append("--disable-boosted-cell-probes")
     afterburner_command.extend(
@@ -432,6 +444,9 @@ def main() -> int:
             "targeted_base_probes": int(args.targeted_base_probes),
             "targeted_base_probe_neighbor_scale": args.targeted_base_probe_neighbor_scale,
             "evidence_targeted_base_probes": int(args.evidence_targeted_base_probes),
+            "evidence_targeted_base_probe_neighbor_scale": (
+                args.evidence_targeted_base_probe_neighbor_scale
+            ),
             "disable_boosted_cell_probes": int(args.disable_boosted_cell_probes),
         }
     )

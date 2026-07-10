@@ -645,11 +645,30 @@ void refineGridNearChargedParticles(
 
     if (config.evidenceTargetedBaseProbes &&
         effectiveBaseProbeBins(config) < config.probeBins) {
+        std::vector<bool> evidence(gridProposal.cells.size(), false);
         for (std::size_t index = 0; index < gridProposal.cells.size(); ++index) {
-            if (calibrationCellMaxWeights[index] <= probedCellMaxWeights[index]) {
+            if (calibrationCellMaxWeights[index] > probedCellMaxWeights[index]) {
+                evidence[index] = true;
+            }
+        }
+        for (std::size_t evidenceIndex = 0; evidenceIndex < gridProposal.cells.size();
+             ++evidenceIndex) {
+            if (!evidence[evidenceIndex]) {
                 continue;
             }
-            if (plan.bins[index] < config.probeBins) {
+            const GridAdaptiveEtaPhiCell& evidenceCell = gridProposal.cells[evidenceIndex];
+            const double etaCenter = 0.5 * (evidenceCell.etaMin + evidenceCell.etaMax);
+            const double phiCenter = 0.5 * (evidenceCell.phiMin + evidenceCell.phiMax);
+            for (std::size_t index = 0; index < gridProposal.cells.size(); ++index) {
+                if (plan.bins[index] >= config.probeBins ||
+                    !cellNearCoordinate(
+                        gridProposal.cells[index],
+                        etaCenter,
+                        phiCenter,
+                        phaseSpace,
+                        config.evidenceTargetedBaseProbeNeighborScale)) {
+                    continue;
+                }
                 plan.bins[index] = config.probeBins;
                 ++plan.evidenceCellCount;
             }
@@ -731,6 +750,11 @@ void validateShapeUnweightingConfig(const ShapeUnweightingConfig& config) {
         throw std::invalid_argument(
             "shape-unweighting targetedBaseProbeNeighborScale must be non-negative");
     }
+    if (!std::isfinite(config.evidenceTargetedBaseProbeNeighborScale) ||
+        config.evidenceTargetedBaseProbeNeighborScale < 0.0) {
+        throw std::invalid_argument(
+            "shape-unweighting evidenceTargetedBaseProbeNeighborScale must be non-negative");
+    }
     if (config.boostedProbeBins <= 0) {
         throw std::invalid_argument("shape-unweighting boostedProbeBins must be positive");
     }
@@ -782,6 +806,8 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
     result.envelope.baseProbeBins = effectiveBaseProbeBins(config);
     result.envelope.targetedBaseProbeNeighborScale = config.targetedBaseProbeNeighborScale;
     result.envelope.evidenceBaseProbeCellCount = 0;
+    result.envelope.evidenceTargetedBaseProbeNeighborScale =
+        config.evidenceTargetedBaseProbeNeighborScale;
     result.envelope.boostedProbeBins = config.boostedProbeBins;
     result.envelope.probeRule = config.probeRule;
     result.envelope.probePolicy = config.probePolicy;
@@ -863,22 +889,20 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
     result.envelope.probePlanSeconds = secondsSince(probePlanStart);
     std::vector<double> finalProbedCellMaxWeights = probedCellMaxWeights;
     const auto boostedProbeStart = std::chrono::steady_clock::now();
-    if (config.probePolicy == ShapeUnweightingProbePolicy::BoostedCells) {
-        for (std::size_t index = 0; index < gridProposal.cells.size(); ++index) {
-            if (probePlan.bins[index] == baseProbeBins[index]) {
-                continue;
-            }
-            finalProbedCellMaxWeights[index] =
-                probeSingleCellMaxWeight(
-                    current,
-                    config.phaseSpace,
-                    gridProposal,
-                    pointCellIndex,
-                    index,
-                    probePlan.bins[index],
-                    config.probeRule,
-                    alpha);
+    for (std::size_t index = 0; index < gridProposal.cells.size(); ++index) {
+        if (probePlan.bins[index] == baseProbeBins[index]) {
+            continue;
         }
+        finalProbedCellMaxWeights[index] =
+            probeSingleCellMaxWeight(
+                current,
+                config.phaseSpace,
+                gridProposal,
+                pointCellIndex,
+                index,
+                probePlan.bins[index],
+                config.probeRule,
+                alpha);
     }
     result.envelope.boostedProbeSeconds = secondsSince(boostedProbeStart);
     result.envelope.evidenceBaseProbeCellCount = probePlan.evidenceCellCount;
