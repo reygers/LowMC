@@ -936,6 +936,24 @@ policy. The next step should inspect sparse severe-cell records or compare
 severe-cell feature distributions against all cells before proposing a
 promotion rule.
 
+The sparse severe-cell audit report is now available as an opt-in diagnostic.
+The core can return the highest-ratio severe cells, the HepMC3 afterburner can
+print them as machine-readable `shape_audit_cell` rows, and
+`scripts/validate_pythia_afterburner.py` writes them to `audit_cells.csv`. On
+the high-multiplicity bounded seed `24684`, a 40-row report for `5 x 5` and
+`7 x 7` reduced probes shows that the worst cells are stable across the two
+reduced lattices: `36/37` `7 x 7` severe cells are also in the top-40 `5 x 5`
+list, and `9/10` of the top cells overlap. The top cells have small proposal
+mass, are mostly but not universally near charged-particle directions, and are
+mostly not calibration-suspect. For `5 x 5`, the top-40 rows have ratio range
+`1.22..1.43`, proposal-mass sum `0.0058`, `30/40` charged-near rows, and
+`5/40` calibration-suspect rows. For `7 x 7`, all `37` severe rows have ratio
+range `1.10..1.18`, proposal-mass sum `0.0051`, `28/37` charged-near rows, and
+`3/37` calibration-suspect rows. This argues against a simple feature-only
+promotion rule as the next move. A small conservative compensation factor for
+reduced-probed cells is now the more natural diagnostic prototype to test
+against the full-probe reference.
+
 The command name decision is settled for now: keep
 `lowmc_hepmc3_afterburner_diagnostic` as the only executable name. A shorter
 production alias should wait until validation gates and output-mode conventions

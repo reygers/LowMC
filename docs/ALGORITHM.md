@@ -891,6 +891,16 @@ most severe cells, while charged-particle proximity is suggestive but not
 sufficient. A future promotion rule needs either a stronger feature comparison
 or a different envelope construction.
 
+The optional sparse severe-cell report records the highest-ratio audit cells
+above the configured severity threshold. It is intended for diagnosis, not for
+normal event output. In the high-multiplicity bounded Pythia event, the severe
+cells are reproducible across `5 x 5` and `7 x 7` reduced probe lattices but
+are not cleanly selected by calibration or charged-particle proximity. Because
+the missed structure is sparse and low-mass, a conservative compensation factor
+for reduced-probed cells may be a simpler next prototype than another geometric
+promotion rule. Such a factor would still need to be judged against the
+full-probe reference and kept out of defaults until validated.
+
 Shape unweighting is separate from event multiplicity. After the photon shape
 can be sampled without weights, LowMC still needs a normalization rule for how
 many photons to add to a given input event in the configured phase space. The

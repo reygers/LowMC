@@ -38,6 +38,8 @@ struct Options {
     int shapeTrialsPerPhoton = 2000;
     int shapeBaseProbeBins = 11;
     bool auditFullBaseProbes = false;
+    double auditSevereRatioThreshold = 1.1;
+    int auditSevereCellReportMaxRows = 0;
     bool targetedBaseProbes = false;
     double targetedBaseProbeNeighborScale = 0.0;
     bool evidenceTargetedBaseProbes = false;
@@ -72,6 +74,8 @@ void printUsage(std::ostream& out) {
         << "  --shape-trials-per-photon N     Extra trials per requested photon (default: 2000)\n"
         << "  --shape-base-probe-bins N       Base probe bins before boosted cells (default: 11)\n"
         << "  --audit-full-base-probes        Compare reduced and full base probe maxima\n"
+        << "  --audit-severe-ratio-threshold X  Sparse audit threshold (default: 1.1)\n"
+        << "  --audit-severe-cell-report-max N  Print up to N severe audit cells per event\n"
         << "  --targeted-base-probes          Keep full base probes near charged particles\n"
         << "  --targeted-base-probe-neighbor-scale X  Neighbor scale for targeted base probes (default: 0)\n"
         << "  --evidence-targeted-base-probes Keep full base probes in calibration-suspect cells\n"
@@ -188,6 +192,20 @@ Options parseOptions(int argc, char** argv) {
         }
         if (argument == "--audit-full-base-probes") {
             options.auditFullBaseProbes = true;
+            continue;
+        }
+        if (argument == "--audit-severe-ratio-threshold") {
+            options.auditSevereRatioThreshold =
+                parsePositiveDouble(readStringOption(index, argc, argv, argument), argument);
+            if (options.auditSevereRatioThreshold <= 1.0) {
+                throw std::invalid_argument(
+                    "--audit-severe-ratio-threshold must be greater than one");
+            }
+            continue;
+        }
+        if (argument == "--audit-severe-cell-report-max") {
+            options.auditSevereCellReportMaxRows =
+                parsePositiveInt(readStringOption(index, argc, argv, argument), argument);
             continue;
         }
         if (argument == "--targeted-base-probes") {
@@ -317,6 +335,8 @@ lowmc::ShapeUnweightingConfig makeShapeConfig(
     config.probeBins = 11;
     config.baseProbeBins = options.shapeBaseProbeBins;
     config.auditFullBaseProbes = options.auditFullBaseProbes;
+    config.auditSevereRatioThreshold = options.auditSevereRatioThreshold;
+    config.auditSevereCellReportMaxRows = options.auditSevereCellReportMaxRows;
     config.targetedBaseProbes = options.targetedBaseProbes;
     config.targetedBaseProbeNeighborScale = options.targetedBaseProbeNeighborScale;
     config.evidenceTargetedBaseProbes = options.evidenceTargetedBaseProbes;
@@ -489,6 +509,7 @@ int main(int argc, char** argv) {
             double shapeAuditSevereMeanEtaWidth = 0.0;
             double shapeAuditSevereMeanPhiWidth = 0.0;
             double shapeAuditSevereMaxCalibrationOverBaseProbeRatio = 0.0;
+            std::vector<lowmc::ShapeUnweightingAuditCellDiagnostic> shapeAuditCells;
             int shapeFullBaseProbeCellCount = 0;
             double shapeTargetedBaseProbeNeighborScale = 0.0;
             int shapeEvidenceBaseProbeCellCount = 0;
@@ -594,6 +615,7 @@ int main(int argc, char** argv) {
                             shape.envelope.auditSevereMeanPhiWidth;
                         shapeAuditSevereMaxCalibrationOverBaseProbeRatio =
                             shape.envelope.auditSevereMaxCalibrationOverBaseProbeRatio;
+                        shapeAuditCells = shape.auditCells;
                         shapeFullBaseProbeCellCount = shape.envelope.fullBaseProbeCellCount;
                         shapeTargetedBaseProbeNeighborScale =
                             shape.envelope.targetedBaseProbeNeighborScale;
@@ -723,6 +745,26 @@ int main(int argc, char** argv) {
                       << shapeEvidenceTargetedBaseProbeNeighborScale
                       << " write_seconds=" << writeSeconds
                       << '\n';
+            for (const lowmc::ShapeUnweightingAuditCellDiagnostic& cell : shapeAuditCells) {
+                std::cout << "shape_audit_cell"
+                          << " event_index=" << eventsRead
+                          << " cell_index=" << cell.cellIndex
+                          << " eta_center=" << cell.etaCenter
+                          << " phi_center=" << cell.phiCenter
+                          << " eta_width=" << cell.etaWidth
+                          << " phi_width=" << cell.phiWidth
+                          << " area=" << cell.area
+                          << " proposal_mass=" << cell.proposalMass
+                          << " reduced_max_weight=" << cell.reducedMaxWeight
+                          << " full_max_weight=" << cell.fullMaxWeight
+                          << " full_over_reduced_ratio=" << cell.fullOverReducedRatio
+                          << " calibration_max_weight=" << cell.calibrationMaxWeight
+                          << " calibration_over_reduced_ratio="
+                          << cell.calibrationOverReducedRatio
+                          << " calibration_suspect=" << (cell.calibrationSuspect ? 1 : 0)
+                          << " charged_near=" << (cell.chargedNear ? 1 : 0)
+                          << '\n';
+            }
 
             ++eventsRead;
         }

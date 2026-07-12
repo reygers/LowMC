@@ -64,6 +64,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--shape-seed", type=int, default=97531)
     parser.add_argument("--shape-base-probe-bins", type=int, default=11)
     parser.add_argument("--audit-full-base-probes", action="store_true")
+    parser.add_argument("--audit-severe-ratio-threshold", type=float, default=1.1)
+    parser.add_argument("--audit-severe-cell-report-max", type=int, default=0)
     parser.add_argument("--targeted-base-probes", action="store_true")
     parser.add_argument("--targeted-base-probe-neighbor-scale", type=float, default=0.0)
     parser.add_argument("--evidence-targeted-base-probes", action="store_true")
@@ -365,6 +367,12 @@ def main() -> int:
         raise ValueError("--ecm must be positive")
     if args.shape_base_probe_bins <= 0:
         raise ValueError("--shape-base-probe-bins must be positive")
+    if args.audit_severe_ratio_threshold <= 1.0 or not math.isfinite(
+        args.audit_severe_ratio_threshold
+    ):
+        raise ValueError("--audit-severe-ratio-threshold must be greater than one")
+    if args.audit_severe_cell_report_max < 0:
+        raise ValueError("--audit-severe-cell-report-max must be non-negative")
     if args.targeted_base_probe_neighbor_scale < 0.0:
         raise ValueError("--targeted-base-probe-neighbor-scale must be non-negative")
     if args.evidence_targeted_base_probe_neighbor_scale < 0.0:
@@ -432,6 +440,20 @@ def main() -> int:
     ]
     if args.audit_full_base_probes:
         afterburner_command.append("--audit-full-base-probes")
+    if args.audit_severe_ratio_threshold != 1.1:
+        afterburner_command.extend(
+            [
+                "--audit-severe-ratio-threshold",
+                f"{args.audit_severe_ratio_threshold:.17g}",
+            ]
+        )
+    if args.audit_severe_cell_report_max > 0:
+        afterburner_command.extend(
+            [
+                "--audit-severe-cell-report-max",
+                str(args.audit_severe_cell_report_max),
+            ]
+        )
     if args.targeted_base_probes:
         afterburner_command.extend(
             [
@@ -471,6 +493,7 @@ def main() -> int:
     summary_log, summary_seconds = run_logged(summary_command, args.output_dir / "summary.log")
 
     afterburner_rows = rows_with_key(afterburner_log, "photon_status")
+    audit_cell_rows = rows_with_key(afterburner_log, "cell_index")
     summary_rows = rows_with_key(summary_log, "lowmc_photons")
     if not afterburner_rows:
         raise ValueError("afterburner log contains no event rows")
@@ -492,6 +515,9 @@ def main() -> int:
             "shape_seed": args.shape_seed,
             "shape_base_probe_bins": args.shape_base_probe_bins,
             "audit_full_base_probes": int(args.audit_full_base_probes),
+            "audit_severe_ratio_threshold": args.audit_severe_ratio_threshold,
+            "audit_severe_cell_report_max": args.audit_severe_cell_report_max,
+            "audit_severe_cell_report_rows": len(audit_cell_rows),
             "targeted_base_probes": int(args.targeted_base_probes),
             "targeted_base_probe_neighbor_scale": args.targeted_base_probe_neighbor_scale,
             "evidence_targeted_base_probes": int(args.evidence_targeted_base_probes),
@@ -505,6 +531,8 @@ def main() -> int:
         row["estimated_afterburner_seconds_per_event"] = estimated_seconds_per_event
     write_summary_csv(args.output_dir / "validation_summary.csv", aggregate)
     write_event_csv(args.output_dir / "validation_events.csv", event_summaries)
+    audit_cell_csv = args.output_dir / "audit_cells.csv"
+    write_event_csv(audit_cell_csv, audit_cell_rows)
 
     print(
         "validation "
@@ -532,7 +560,8 @@ def main() -> int:
         f"afterburner_log={args.output_dir / 'afterburner.log'} "
         f"summary_log={args.output_dir / 'summary.log'} "
         f"summary_csv={args.output_dir / 'validation_summary.csv'} "
-        f"event_csv={args.output_dir / 'validation_events.csv'}"
+        f"event_csv={args.output_dir / 'validation_events.csv'} "
+        f"audit_cell_csv={audit_cell_csv}"
     )
     for mismatch in mismatches:
         print(f"mismatch {mismatch}")

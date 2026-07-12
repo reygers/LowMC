@@ -761,6 +761,15 @@ void validateShapeUnweightingConfig(const ShapeUnweightingConfig& config) {
     if (config.calibrationTrials < 0) {
         throw std::invalid_argument("shape-unweighting calibration trial count must be non-negative");
     }
+    if (!std::isfinite(config.auditSevereRatioThreshold) ||
+        config.auditSevereRatioThreshold <= 1.0) {
+        throw std::invalid_argument(
+            "shape-unweighting auditSevereRatioThreshold must be greater than one");
+    }
+    if (config.auditSevereCellReportMaxRows < 0) {
+        throw std::invalid_argument(
+            "shape-unweighting auditSevereCellReportMaxRows must be non-negative");
+    }
     if (config.probeBins <= 0) {
         throw std::invalid_argument("shape-unweighting probeBins must be positive");
     }
@@ -833,7 +842,7 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
     result.envelope.auditRatioAbove150CellCount = 0;
     result.envelope.auditRatioAbove200CellCount = 0;
     result.envelope.auditSeconds = 0.0;
-    result.envelope.auditSevereRatioThreshold = 1.1;
+    result.envelope.auditSevereRatioThreshold = config.auditSevereRatioThreshold;
     result.envelope.auditSevereCellCount = 0;
     result.envelope.auditSevereCalibrationSuspectCellCount = 0;
     result.envelope.auditSevereChargedNearCellCount = 0;
@@ -956,24 +965,15 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
             const double area = cellArea(cell);
             const double etaWidth = cell.etaMax - cell.etaMin;
             const double phiWidth = cell.phiMax - cell.phiMin;
-            ++result.envelope.auditSevereCellCount;
-            result.envelope.auditSevereProposalMassSum +=
-                cellProposalMass(gridProposal, cell);
-            severeAreaSum += area;
-            severeEtaWidthSum += etaWidth;
-            severePhiWidthSum += phiWidth;
-            result.envelope.auditSevereMaxCellArea =
-                std::max(result.envelope.auditSevereMaxCellArea, area);
-            if (calibrationCellMaxWeights[index] > probedCellMaxWeights[index]) {
-                ++result.envelope.auditSevereCalibrationSuspectCellCount;
-            }
-            if (cellNearSelectedChargedParticle(
+            const double proposalMass = cellProposalMass(gridProposal, cell);
+            const bool calibrationSuspect =
+                calibrationCellMaxWeights[index] > probedCellMaxWeights[index];
+            const bool chargedNear =
+                cellNearSelectedChargedParticle(
                     cell,
                     selectedParticles,
                     config.phaseSpace,
-                    1.0)) {
-                ++result.envelope.auditSevereChargedNearCellCount;
-            }
+                    1.0);
             double calibrationOverBase = 0.0;
             if (base > 0.0 && std::isfinite(base) &&
                 std::isfinite(calibrationCellMaxWeights[index])) {
@@ -982,10 +982,56 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
                        std::isfinite(calibrationCellMaxWeights[index])) {
                 calibrationOverBase = std::numeric_limits<double>::infinity();
             }
+            ++result.envelope.auditSevereCellCount;
+            result.envelope.auditSevereProposalMassSum += proposalMass;
+            severeAreaSum += area;
+            severeEtaWidthSum += etaWidth;
+            severePhiWidthSum += phiWidth;
+            result.envelope.auditSevereMaxCellArea =
+                std::max(result.envelope.auditSevereMaxCellArea, area);
+            if (calibrationSuspect) {
+                ++result.envelope.auditSevereCalibrationSuspectCellCount;
+            }
+            if (chargedNear) {
+                ++result.envelope.auditSevereChargedNearCellCount;
+            }
             result.envelope.auditSevereMaxCalibrationOverBaseProbeRatio =
                 std::max(
                     result.envelope.auditSevereMaxCalibrationOverBaseProbeRatio,
                     calibrationOverBase);
+            if (config.auditSevereCellReportMaxRows > 0) {
+                result.auditCells.push_back(
+                    ShapeUnweightingAuditCellDiagnostic{
+                        index,
+                        0.5 * (cell.etaMin + cell.etaMax),
+                        0.5 * (cell.phiMin + cell.phiMax),
+                        etaWidth,
+                        phiWidth,
+                        area,
+                        proposalMass,
+                        base,
+                        full,
+                        ratio,
+                        calibrationCellMaxWeights[index],
+                        calibrationOverBase,
+                        calibrationSuspect,
+                        chargedNear,
+                    });
+            }
+        }
+        if (config.auditSevereCellReportMaxRows > 0) {
+            std::sort(
+                result.auditCells.begin(),
+                result.auditCells.end(),
+                [](const ShapeUnweightingAuditCellDiagnostic& left,
+                   const ShapeUnweightingAuditCellDiagnostic& right) {
+                    return left.fullOverReducedRatio > right.fullOverReducedRatio;
+                });
+            if (static_cast<int>(result.auditCells.size()) >
+                config.auditSevereCellReportMaxRows) {
+                result.auditCells.resize(
+                    static_cast<std::size_t>(config.auditSevereCellReportMaxRows));
+            }
         }
         if (result.envelope.auditSevereCellCount > 0) {
             const double severeCount =

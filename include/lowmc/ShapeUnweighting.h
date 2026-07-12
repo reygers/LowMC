@@ -42,6 +42,8 @@ struct ShapeUnweightingConfig {
     int probeBins = 11;
     int baseProbeBins = 0;
     bool auditFullBaseProbes = false;
+    double auditSevereRatioThreshold = 1.1;
+    int auditSevereCellReportMaxRows = 0;
     bool targetedBaseProbes = false;
     double targetedBaseProbeNeighborScale = 0.0;
     bool evidenceTargetedBaseProbes = false;
@@ -62,6 +64,23 @@ struct ShapeUnweightedPhotonCandidate {
     double kT = 0.0;
     double eta = 0.0;
     double phi = 0.0;
+};
+
+struct ShapeUnweightingAuditCellDiagnostic {
+    std::size_t cellIndex = 0;
+    double etaCenter = 0.0;
+    double phiCenter = 0.0;
+    double etaWidth = 0.0;
+    double phiWidth = 0.0;
+    double area = 0.0;
+    double proposalMass = 0.0;
+    double reducedMaxWeight = 0.0;
+    double fullMaxWeight = 0.0;
+    double fullOverReducedRatio = 0.0;
+    double calibrationMaxWeight = 0.0;
+    double calibrationOverReducedRatio = 0.0;
+    bool calibrationSuspect = false;
+    bool chargedNear = false;
 };
 
 struct ShapeUnweightingEnvelopeDiagnostics {
@@ -121,6 +140,7 @@ struct ShapeUnweightingEnvelopeDiagnostics {
 
 struct ShapeUnweightingResult {
     std::vector<ShapeUnweightedPhotonCandidate> candidates;
+    std::vector<ShapeUnweightingAuditCellDiagnostic> auditCells;
     ShapeUnweightingEnvelopeDiagnostics envelope;
     ChargeConservationDiagnostic chargeConservation;
     double gridBuildKT = 0.0;

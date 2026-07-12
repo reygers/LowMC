@@ -960,6 +960,8 @@ lowmc::ShapeUnweightingConfig shapeUnweightingTestConfig(std::uint64_t seed) {
         2,
         0,
         false,
+        1.1,
+        0,
         false,
         0.0,
         false,
@@ -1745,6 +1747,7 @@ void testShapeUnweightingReducedVsFullProbeAuditReportsUnderBoundedCells() {
     config.baseProbeBins = 1;
     config.probeBins = 3;
     config.auditFullBaseProbes = true;
+    config.auditSevereCellReportMaxRows = 3;
 
     const lowmc::ShapeUnweightingResult result =
         lowmc::generateShapeUnweightedPhotonCandidates(eventGeneratorToyParticles(), config);
@@ -1792,6 +1795,23 @@ void testShapeUnweightingReducedVsFullProbeAuditReportsUnderBoundedCells() {
         result.envelope.auditSevereCellCount == 0 ||
             result.envelope.auditSevereMeanCellArea > 0.0,
         "audit severe cells should report positive mean cell area");
+    require(
+        result.auditCells.size() <= 3,
+        "audit sparse cell report should obey the configured row limit");
+    for (std::size_t index = 1; index < result.auditCells.size(); ++index) {
+        require(
+            result.auditCells[index - 1].fullOverReducedRatio >=
+                result.auditCells[index].fullOverReducedRatio,
+            "audit sparse cell report should be sorted by severity");
+    }
+    for (const lowmc::ShapeUnweightingAuditCellDiagnostic& cell : result.auditCells) {
+        require(
+            cell.fullOverReducedRatio > result.envelope.auditSevereRatioThreshold,
+            "audit sparse cell report should only contain severe cells");
+        require(
+            cell.area > 0.0 && cell.proposalMass > 0.0,
+            "audit sparse cell report should include positive cell geometry");
+    }
 }
 
 void testShapeUnweightingEvidenceTargetedBaseProbesFullProbeSuspectCells() {
@@ -1966,6 +1986,20 @@ void generateShapeUnweightingWithInvalidBaseProbeBins() {
         lowmc::generateShapeUnweightedPhotonCandidates(eventGeneratorToyParticles(), config));
 }
 
+void generateShapeUnweightingWithInvalidAuditSevereRatioThreshold() {
+    lowmc::ShapeUnweightingConfig config = shapeUnweightingTestConfig(123);
+    config.auditSevereRatioThreshold = 1.0;
+    static_cast<void>(
+        lowmc::generateShapeUnweightedPhotonCandidates(eventGeneratorToyParticles(), config));
+}
+
+void generateShapeUnweightingWithInvalidAuditSevereCellReportMaxRows() {
+    lowmc::ShapeUnweightingConfig config = shapeUnweightingTestConfig(123);
+    config.auditSevereCellReportMaxRows = -1;
+    static_cast<void>(
+        lowmc::generateShapeUnweightedPhotonCandidates(eventGeneratorToyParticles(), config));
+}
+
 void generateShapeUnweightingWithInvalidTargetedBaseProbeNeighborScale() {
     lowmc::ShapeUnweightingConfig config = shapeUnweightingTestConfig(123);
     config.targetedBaseProbeNeighborScale = -1.0;
@@ -1990,6 +2024,12 @@ void testShapeUnweightingRejectsInvalidInputs() {
     requireThrowsInvalidArgument(
         generateShapeUnweightingWithInvalidBaseProbeBins,
         "shape unweighting should reject invalid base probe bins");
+    requireThrowsInvalidArgument(
+        generateShapeUnweightingWithInvalidAuditSevereRatioThreshold,
+        "shape unweighting should reject invalid audit severe ratio threshold");
+    requireThrowsInvalidArgument(
+        generateShapeUnweightingWithInvalidAuditSevereCellReportMaxRows,
+        "shape unweighting should reject invalid audit severe cell report row limit");
     requireThrowsInvalidArgument(
         generateShapeUnweightingWithInvalidTargetedBaseProbeNeighborScale,
         "shape unweighting should reject invalid targeted base-probe neighbor scale");
