@@ -24,6 +24,31 @@ soft-photon emission:
 
 The intended user workflows are summarized in `docs/USAGE.md`.
 
+## User-Facing Examples
+
+LowMC should eventually provide a small set of example programs in the style of
+Pythia `mainXX.cc` examples. These should demonstrate the intended workflows
+rather than only test internals. In particular, one early example should show
+enhanced Low photon production with an explicit enhancement factor, because
+physical Low photon counts can be too sparse for practical histograms in a
+limited event sample. The example should make clear that enhanced HepMC output
+samples
+
+```text
+N_sample ~ Poisson(enhancementFactor * lambda_event)
+```
+
+and that photon histograms must be filled with `LowMC:weight = 1 /
+enhancementFactor` to recover the physical Low yield.
+
+Candidate examples:
+
+- minimal two-charged-particle direct-core example
+- HepMC3 afterburner with physical `enhancementFactor = 1`
+- HepMC3 afterburner with enhanced photons for smooth histograms
+- direct Pythia8 in-memory workflow filling histograms without HepMC output
+- optional Pythia8-to-HepMC3 round-trip workflow
+
 PHOTOS is an important related tool and comparison point, but LowMC has a
 different target: event-wide coherent radiation from a configurable set of
 charged external particles, rather than QED radiation in decays.
