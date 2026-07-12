@@ -20,6 +20,7 @@ STAGE_SECOND_KEYS = [
     "shape_grid_seconds",
     "shape_base_probe_seconds",
     "shape_calibration_seconds",
+    "shape_audit_seconds",
     "shape_probe_plan_seconds",
     "shape_boosted_probe_seconds",
     "shape_envelope_build_seconds",
@@ -253,6 +254,36 @@ def compare_rows(
                 ),
                 "shape_audit_ratio_above_200_cell_count": row.get(
                     "shape_audit_ratio_above_200_cell_count", ""
+                ),
+                "shape_audit_severe_ratio_threshold": row.get(
+                    "shape_audit_severe_ratio_threshold", ""
+                ),
+                "shape_audit_severe_cell_count": row.get(
+                    "shape_audit_severe_cell_count", ""
+                ),
+                "shape_audit_severe_calibration_suspect_cell_count": row.get(
+                    "shape_audit_severe_calibration_suspect_cell_count", ""
+                ),
+                "shape_audit_severe_charged_near_cell_count": row.get(
+                    "shape_audit_severe_charged_near_cell_count", ""
+                ),
+                "shape_audit_severe_proposal_mass_sum": row.get(
+                    "shape_audit_severe_proposal_mass_sum", ""
+                ),
+                "shape_audit_severe_mean_cell_area": row.get(
+                    "shape_audit_severe_mean_cell_area", ""
+                ),
+                "shape_audit_severe_max_cell_area": row.get(
+                    "shape_audit_severe_max_cell_area", ""
+                ),
+                "shape_audit_severe_mean_eta_width": row.get(
+                    "shape_audit_severe_mean_eta_width", ""
+                ),
+                "shape_audit_severe_mean_phi_width": row.get(
+                    "shape_audit_severe_mean_phi_width", ""
+                ),
+                "shape_audit_severe_max_calibration_over_base_probe_ratio": row.get(
+                    "shape_audit_severe_max_calibration_over_base_probe_ratio", ""
                 ),
                 "shape_full_base_probe_cell_count": row.get(
                     "shape_full_base_probe_cell_count", ""

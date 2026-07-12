@@ -881,6 +881,16 @@ above `1.1`, are more useful for deciding whether a future targeted rule is
 plausible. The next policy should therefore be based on correlations between
 severe audit cells and cheap predictors, not on the raw strict count alone.
 
+The first aggregate severe-cell summary uses ratio `>1.1` as the default
+severity threshold. It records only event-level aggregates, not a large per-cell
+dump: severe-cell count, proposal-mass sum, mean and maximum cell area, mean
+eta/phi widths, calibration-suspect overlap, charged-near overlap, and maximum
+calibration/base ratio within the severe set. This is enough to reject the
+simplest predictors in the bounded Pythia scan: calibration evidence misses
+most severe cells, while charged-particle proximity is suggestive but not
+sufficient. A future promotion rule needs either a stronger feature comparison
+or a different envelope construction.
+
 Shape unweighting is separate from event multiplicity. After the photon shape
 can be sampled without weights, LowMC still needs a normalization rule for how
 many photons to add to a given input event in the configured phase space. The

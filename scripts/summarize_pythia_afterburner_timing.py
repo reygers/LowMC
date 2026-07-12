@@ -17,6 +17,7 @@ STAGE_SECOND_KEYS = [
     "shape_grid_seconds",
     "shape_base_probe_seconds",
     "shape_calibration_seconds",
+    "shape_audit_seconds",
     "shape_probe_plan_seconds",
     "shape_boosted_probe_seconds",
     "shape_envelope_build_seconds",
@@ -37,6 +38,7 @@ SHAPE_SUBSTAGE_LABELS = [
     ("grid/refinement/index", "shape_grid_seconds"),
     ("base probing", "shape_base_probe_seconds"),
     ("calibration trials", "shape_calibration_seconds"),
+    ("audit full-base probing", "shape_audit_seconds"),
     ("probe planning", "shape_probe_plan_seconds"),
     ("boosted-cell probing", "shape_boosted_probe_seconds"),
     ("envelope build", "shape_envelope_build_seconds"),
@@ -135,6 +137,12 @@ def pearson(rows: list[dict[str, str]], x_key: str, y_key: str = "event_seconds"
     if var_x <= 0.0 or var_y <= 0.0:
         return math.nan
     return cov / math.sqrt(var_x * var_y)
+
+
+def format_range_value(value: float) -> str:
+    if math.isfinite(value) and abs(value - round(value)) < 1.0e-12:
+        return f"{value:.0f}"
+    return f"{value:.6g}"
 
 
 def numeric_summary(rows: list[dict[str, str]]) -> dict[str, float]:
@@ -285,6 +293,28 @@ def write_summary_md(
             ("audit ratio >1.10 cells", "shape_audit_ratio_above_110_cell_count"),
             ("audit ratio >1.50 cells", "shape_audit_ratio_above_150_cell_count"),
             ("audit ratio >2.00 cells", "shape_audit_ratio_above_200_cell_count"),
+            ("audit severe ratio threshold", "shape_audit_severe_ratio_threshold"),
+            ("audit severe cells", "shape_audit_severe_cell_count"),
+            (
+                "audit severe calibration-suspect cells",
+                "shape_audit_severe_calibration_suspect_cell_count",
+            ),
+            (
+                "audit severe charged-near cells",
+                "shape_audit_severe_charged_near_cell_count",
+            ),
+            (
+                "audit severe proposal mass sum",
+                "shape_audit_severe_proposal_mass_sum",
+            ),
+            ("audit severe mean cell area", "shape_audit_severe_mean_cell_area"),
+            ("audit severe max cell area", "shape_audit_severe_max_cell_area"),
+            ("audit severe mean eta width", "shape_audit_severe_mean_eta_width"),
+            ("audit severe mean phi width", "shape_audit_severe_mean_phi_width"),
+            (
+                "audit severe max calibration/base ratio",
+                "shape_audit_severe_max_calibration_over_base_probe_ratio",
+            ),
             ("full base-probed cells", "shape_full_base_probe_cell_count"),
             (
                 "targeted base-probe neighbor scale",
@@ -313,7 +343,10 @@ def write_summary_md(
                 ]
             )
             for label, minimum, maximum in counter_ranges:
-                lines.append(f"| {label} | {minimum:.0f} | {maximum:.0f} |")
+                lines.append(
+                    f"| {label} | {format_range_value(minimum)} | "
+                    f"{format_range_value(maximum)} |"
+                )
             lines.append("")
 
     lines.extend(

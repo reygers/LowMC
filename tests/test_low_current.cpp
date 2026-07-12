@@ -1770,6 +1770,28 @@ void testShapeUnweightingReducedVsFullProbeAuditReportsUnderBoundedCells() {
         result.envelope.auditRatioAbove200CellCount <=
             result.envelope.auditRatioAbove150CellCount,
         "audit severity buckets should be ordered");
+    require(
+        result.envelope.auditSevereRatioThreshold == 1.1,
+        "audit severe-cell threshold should match the reported >1.10 bucket");
+    require(
+        result.envelope.auditSevereCellCount == result.envelope.auditRatioAbove110CellCount,
+        "audit severe-cell count should match the default >1.10 bucket");
+    require(
+        result.envelope.auditSevereCalibrationSuspectCellCount <=
+            result.envelope.auditSevereCellCount,
+        "audit severe calibration-suspect cells should be a subset");
+    require(
+        result.envelope.auditSevereChargedNearCellCount <=
+            result.envelope.auditSevereCellCount,
+        "audit severe charged-near cells should be a subset");
+    require(
+        result.envelope.auditSevereCellCount == 0 ||
+            result.envelope.auditSevereProposalMassSum > 0.0,
+        "audit severe cells should report positive proposal mass");
+    require(
+        result.envelope.auditSevereCellCount == 0 ||
+            result.envelope.auditSevereMeanCellArea > 0.0,
+        "audit severe cells should report positive mean cell area");
 }
 
 void testShapeUnweightingEvidenceTargetedBaseProbesFullProbeSuspectCells() {

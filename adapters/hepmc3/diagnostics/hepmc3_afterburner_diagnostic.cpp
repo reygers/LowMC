@@ -478,6 +478,17 @@ int main(int argc, char** argv) {
             int shapeAuditRatioAbove110CellCount = 0;
             int shapeAuditRatioAbove150CellCount = 0;
             int shapeAuditRatioAbove200CellCount = 0;
+            double shapeAuditSeconds = 0.0;
+            double shapeAuditSevereRatioThreshold = 0.0;
+            int shapeAuditSevereCellCount = 0;
+            int shapeAuditSevereCalibrationSuspectCellCount = 0;
+            int shapeAuditSevereChargedNearCellCount = 0;
+            double shapeAuditSevereProposalMassSum = 0.0;
+            double shapeAuditSevereMeanCellArea = 0.0;
+            double shapeAuditSevereMaxCellArea = 0.0;
+            double shapeAuditSevereMeanEtaWidth = 0.0;
+            double shapeAuditSevereMeanPhiWidth = 0.0;
+            double shapeAuditSevereMaxCalibrationOverBaseProbeRatio = 0.0;
             int shapeFullBaseProbeCellCount = 0;
             double shapeTargetedBaseProbeNeighborScale = 0.0;
             int shapeEvidenceBaseProbeCellCount = 0;
@@ -563,6 +574,26 @@ int main(int argc, char** argv) {
                             shape.envelope.auditRatioAbove150CellCount;
                         shapeAuditRatioAbove200CellCount =
                             shape.envelope.auditRatioAbove200CellCount;
+                        shapeAuditSeconds = shape.envelope.auditSeconds;
+                        shapeAuditSevereRatioThreshold =
+                            shape.envelope.auditSevereRatioThreshold;
+                        shapeAuditSevereCellCount = shape.envelope.auditSevereCellCount;
+                        shapeAuditSevereCalibrationSuspectCellCount =
+                            shape.envelope.auditSevereCalibrationSuspectCellCount;
+                        shapeAuditSevereChargedNearCellCount =
+                            shape.envelope.auditSevereChargedNearCellCount;
+                        shapeAuditSevereProposalMassSum =
+                            shape.envelope.auditSevereProposalMassSum;
+                        shapeAuditSevereMeanCellArea =
+                            shape.envelope.auditSevereMeanCellArea;
+                        shapeAuditSevereMaxCellArea =
+                            shape.envelope.auditSevereMaxCellArea;
+                        shapeAuditSevereMeanEtaWidth =
+                            shape.envelope.auditSevereMeanEtaWidth;
+                        shapeAuditSevereMeanPhiWidth =
+                            shape.envelope.auditSevereMeanPhiWidth;
+                        shapeAuditSevereMaxCalibrationOverBaseProbeRatio =
+                            shape.envelope.auditSevereMaxCalibrationOverBaseProbeRatio;
                         shapeFullBaseProbeCellCount = shape.envelope.fullBaseProbeCellCount;
                         shapeTargetedBaseProbeNeighborScale =
                             shape.envelope.targetedBaseProbeNeighborScale;
@@ -663,6 +694,26 @@ int main(int argc, char** argv) {
                       << shapeAuditRatioAbove150CellCount
                       << " shape_audit_ratio_above_200_cell_count="
                       << shapeAuditRatioAbove200CellCount
+                      << " shape_audit_seconds=" << shapeAuditSeconds
+                      << " shape_audit_severe_ratio_threshold="
+                      << shapeAuditSevereRatioThreshold
+                      << " shape_audit_severe_cell_count=" << shapeAuditSevereCellCount
+                      << " shape_audit_severe_calibration_suspect_cell_count="
+                      << shapeAuditSevereCalibrationSuspectCellCount
+                      << " shape_audit_severe_charged_near_cell_count="
+                      << shapeAuditSevereChargedNearCellCount
+                      << " shape_audit_severe_proposal_mass_sum="
+                      << shapeAuditSevereProposalMassSum
+                      << " shape_audit_severe_mean_cell_area="
+                      << shapeAuditSevereMeanCellArea
+                      << " shape_audit_severe_max_cell_area="
+                      << shapeAuditSevereMaxCellArea
+                      << " shape_audit_severe_mean_eta_width="
+                      << shapeAuditSevereMeanEtaWidth
+                      << " shape_audit_severe_mean_phi_width="
+                      << shapeAuditSevereMeanPhiWidth
+                      << " shape_audit_severe_max_calibration_over_base_probe_ratio="
+                      << shapeAuditSevereMaxCalibrationOverBaseProbeRatio
                       << " shape_full_base_probe_cell_count=" << shapeFullBaseProbeCellCount
                       << " shape_targeted_base_probe_neighbor_scale="
                       << shapeTargetedBaseProbeNeighborScale

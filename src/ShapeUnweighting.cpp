@@ -158,6 +158,28 @@ struct ProbePlan {
            wrappedPhiDistance <= neighborScale * phiWidth;
 }
 
+[[nodiscard]] bool cellNearSelectedChargedParticle(
+    const GridAdaptiveEtaPhiCell& cell,
+    const std::vector<ChargedParticle>& selectedParticles,
+    const PhotonPhaseSpace& phaseSpace,
+    double neighborScale) {
+    for (const ChargedParticle& particle : selectedParticles) {
+        double eta = 0.0;
+        double phi = 0.0;
+        if (!chargedParticleEtaPhi(particle, phaseSpace, eta, phi)) {
+            continue;
+        }
+        if (eta < phaseSpace.etaMin || eta > phaseSpace.etaMax ||
+            phi < phaseSpace.phiMin || phi >= phaseSpace.phiMax) {
+            continue;
+        }
+        if (cellNearCoordinate(cell, eta, phi, phaseSpace, neighborScale)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 [[nodiscard]] std::vector<int> makeBaseProbeBins(
     const std::vector<ChargedParticle>& selectedParticles,
     const PhotonPhaseSpace& phaseSpace,
@@ -810,6 +832,17 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
     result.envelope.auditRatioAbove110CellCount = 0;
     result.envelope.auditRatioAbove150CellCount = 0;
     result.envelope.auditRatioAbove200CellCount = 0;
+    result.envelope.auditSeconds = 0.0;
+    result.envelope.auditSevereRatioThreshold = 1.1;
+    result.envelope.auditSevereCellCount = 0;
+    result.envelope.auditSevereCalibrationSuspectCellCount = 0;
+    result.envelope.auditSevereChargedNearCellCount = 0;
+    result.envelope.auditSevereProposalMassSum = 0.0;
+    result.envelope.auditSevereMeanCellArea = 0.0;
+    result.envelope.auditSevereMaxCellArea = 0.0;
+    result.envelope.auditSevereMeanEtaWidth = 0.0;
+    result.envelope.auditSevereMeanPhiWidth = 0.0;
+    result.envelope.auditSevereMaxCalibrationOverBaseProbeRatio = 0.0;
     result.envelope.targetedBaseProbeNeighborScale = config.targetedBaseProbeNeighborScale;
     result.envelope.evidenceBaseProbeCellCount = 0;
     result.envelope.evidenceTargetedBaseProbeNeighborScale =
@@ -858,7 +891,26 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
             alpha);
     result.envelope.baseProbeSeconds = secondsSince(baseProbeStart);
 
+    std::vector<double> calibrationCellMaxWeights(gridProposal.cells.size(), 0.0);
+    std::mt19937_64 calibrationRng(config.seed);
+    const auto calibrationStart = std::chrono::steady_clock::now();
+    for (int index = 0; index < config.calibrationTrials; ++index) {
+        const TrialRecord record =
+            makeTrialRecord(
+                current,
+                config.phaseSpace,
+                gridProposal,
+                pointCellIndex,
+                calibrationRng,
+                alpha);
+        calibrationCellMaxWeights[record.cellIndex] = std::max(
+            calibrationCellMaxWeights[record.cellIndex],
+            record.sample.weightedPhoton.photon.weight);
+    }
+    result.envelope.calibrationSeconds = secondsSince(calibrationStart);
+
     if (config.auditFullBaseProbes && effectiveBaseProbeBins(config) < config.probeBins) {
+        const auto auditStart = std::chrono::steady_clock::now();
         std::vector<int> fullProbeBins(gridProposal.cells.size(), config.probeBins);
         const std::vector<double> fullProbedCellMaxWeights =
             probeCellMaxWeights(
@@ -870,6 +922,9 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
                 config.probeRule,
                 alpha);
         result.envelope.auditCellCount = static_cast<int>(gridProposal.cells.size());
+        double severeAreaSum = 0.0;
+        double severeEtaWidthSum = 0.0;
+        double severePhiWidthSum = 0.0;
         for (std::size_t index = 0; index < gridProposal.cells.size(); ++index) {
             const double base = probedCellMaxWeights[index];
             const double full = fullProbedCellMaxWeights[index];
@@ -893,26 +948,54 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
             if (ratio > 2.0) {
                 ++result.envelope.auditRatioAbove200CellCount;
             }
-        }
-    }
+            if (ratio <= result.envelope.auditSevereRatioThreshold) {
+                continue;
+            }
 
-    std::vector<double> calibrationCellMaxWeights(gridProposal.cells.size(), 0.0);
-    std::mt19937_64 calibrationRng(config.seed);
-    const auto calibrationStart = std::chrono::steady_clock::now();
-    for (int index = 0; index < config.calibrationTrials; ++index) {
-        const TrialRecord record =
-            makeTrialRecord(
-                current,
-                config.phaseSpace,
-                gridProposal,
-                pointCellIndex,
-                calibrationRng,
-                alpha);
-        calibrationCellMaxWeights[record.cellIndex] = std::max(
-            calibrationCellMaxWeights[record.cellIndex],
-            record.sample.weightedPhoton.photon.weight);
+            const GridAdaptiveEtaPhiCell& cell = gridProposal.cells[index];
+            const double area = cellArea(cell);
+            const double etaWidth = cell.etaMax - cell.etaMin;
+            const double phiWidth = cell.phiMax - cell.phiMin;
+            ++result.envelope.auditSevereCellCount;
+            result.envelope.auditSevereProposalMassSum +=
+                cellProposalMass(gridProposal, cell);
+            severeAreaSum += area;
+            severeEtaWidthSum += etaWidth;
+            severePhiWidthSum += phiWidth;
+            result.envelope.auditSevereMaxCellArea =
+                std::max(result.envelope.auditSevereMaxCellArea, area);
+            if (calibrationCellMaxWeights[index] > probedCellMaxWeights[index]) {
+                ++result.envelope.auditSevereCalibrationSuspectCellCount;
+            }
+            if (cellNearSelectedChargedParticle(
+                    cell,
+                    selectedParticles,
+                    config.phaseSpace,
+                    1.0)) {
+                ++result.envelope.auditSevereChargedNearCellCount;
+            }
+            double calibrationOverBase = 0.0;
+            if (base > 0.0 && std::isfinite(base) &&
+                std::isfinite(calibrationCellMaxWeights[index])) {
+                calibrationOverBase = calibrationCellMaxWeights[index] / base;
+            } else if (calibrationCellMaxWeights[index] > 0.0 &&
+                       std::isfinite(calibrationCellMaxWeights[index])) {
+                calibrationOverBase = std::numeric_limits<double>::infinity();
+            }
+            result.envelope.auditSevereMaxCalibrationOverBaseProbeRatio =
+                std::max(
+                    result.envelope.auditSevereMaxCalibrationOverBaseProbeRatio,
+                    calibrationOverBase);
+        }
+        if (result.envelope.auditSevereCellCount > 0) {
+            const double severeCount =
+                static_cast<double>(result.envelope.auditSevereCellCount);
+            result.envelope.auditSevereMeanCellArea = severeAreaSum / severeCount;
+            result.envelope.auditSevereMeanEtaWidth = severeEtaWidthSum / severeCount;
+            result.envelope.auditSevereMeanPhiWidth = severePhiWidthSum / severeCount;
+        }
+        result.envelope.auditSeconds = secondsSince(auditStart);
     }
-    result.envelope.calibrationSeconds = secondsSince(calibrationStart);
 
     const auto probePlanStart = std::chrono::steady_clock::now();
     for (std::size_t index = 0; index < gridProposal.cells.size(); ++index) {

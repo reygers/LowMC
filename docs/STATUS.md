@@ -917,6 +917,25 @@ above-`1.1` fraction falls to about `0.1%` to `0.3%`, with maximum ratio
 should characterize the severe audit cells by cheap features before adding a
 new promotion rule.
 
+The first severe-cell characterization is now implemented in the reduced/full
+audit summary. For cells with full/reduced ratio above `1.1`, the diagnostic
+reports aggregate proposal mass, cell sizes, calibration-suspect overlap, and a
+cheap charged-particle-near count. On the same four bounded Pythia seeds,
+`5 x 5` severe cells remain sparse (`50` to `392` cells, about `1.5%` to
+`3.3%`) and carry small proposal mass (`0.0075` to `0.0647`). Only about
+`5%` to `12%` of these severe cells are calibration-suspect, so calibration
+alone cannot identify them. The charged-near fraction is higher, about `32%`
+to `61%`, but still not a clean selector. With `7 x 7`, the severe set becomes
+very small (`4` to `37` cells, about `0.1%` to `0.3%`) and carries proposal
+mass below about `0.0051`; calibration misses all severe cells in three of the
+four events and catches only about `8%` in the high-multiplicity event. The
+high-multiplicity event has a high charged-near fraction (`76%`), but the
+elevated `max_trial_bound_ratio` persists. The evidence therefore argues
+against a simple calibration-only or charged-proximity-only reduced-probe
+policy. The next step should inspect sparse severe-cell records or compare
+severe-cell feature distributions against all cells before proposing a
+promotion rule.
+
 The command name decision is settled for now: keep
 `lowmc_hepmc3_afterburner_diagnostic` as the only executable name. A shorter
 production alias should wait until validation gates and output-mode conventions

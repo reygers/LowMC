@@ -99,6 +99,17 @@ struct ShapeUnweightingEnvelopeDiagnostics {
     int auditRatioAbove110CellCount = 0;
     int auditRatioAbove150CellCount = 0;
     int auditRatioAbove200CellCount = 0;
+    double auditSeconds = 0.0;
+    double auditSevereRatioThreshold = 1.1;
+    int auditSevereCellCount = 0;
+    int auditSevereCalibrationSuspectCellCount = 0;
+    int auditSevereChargedNearCellCount = 0;
+    double auditSevereProposalMassSum = 0.0;
+    double auditSevereMeanCellArea = 0.0;
+    double auditSevereMaxCellArea = 0.0;
+    double auditSevereMeanEtaWidth = 0.0;
+    double auditSevereMeanPhiWidth = 0.0;
+    double auditSevereMaxCalibrationOverBaseProbeRatio = 0.0;
     int fullBaseProbeCellCount = 0;
     double targetedBaseProbeNeighborScale = 0.0;
     int evidenceBaseProbeCellCount = 0;
