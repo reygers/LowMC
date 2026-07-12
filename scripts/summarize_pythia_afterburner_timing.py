@@ -276,6 +276,15 @@ def write_summary_md(
             ("suspect cells", "shape_suspect_cell_count"),
             ("promoted cells", "shape_promoted_cell_count"),
             ("base probe bins", "shape_base_probe_bins"),
+            ("audit cells", "shape_audit_cell_count"),
+            ("audit under-bounded cells", "shape_audit_under_bounded_cell_count"),
+            (
+                "audit max full/base ratio",
+                "shape_audit_max_full_over_base_probe_ratio",
+            ),
+            ("audit ratio >1.10 cells", "shape_audit_ratio_above_110_cell_count"),
+            ("audit ratio >1.50 cells", "shape_audit_ratio_above_150_cell_count"),
+            ("audit ratio >2.00 cells", "shape_audit_ratio_above_200_cell_count"),
             ("full base-probed cells", "shape_full_base_probe_cell_count"),
             (
                 "targeted base-probe neighbor scale",

@@ -871,6 +871,16 @@ thousands of cells. The next diagnostic should therefore stop adding heuristic
 promotion rules and directly compare reduced and full probe maxima, so LowMC
 can learn which reduced-probe cells are actually under-bounded.
 
+The reduced/full base-probe audit is diagnostic-only: it computes the full
+`11 x 11` base-probe maximum alongside the reduced base-probe maximum and
+reports the disagreement, but it does not alter the sampled envelope. The first
+bounded Pythia scan shows that the strict condition `full > reduced` is too
+sensitive to small lattice-placement differences and flags nearly every cell.
+Severity thresholds, such as the fraction of cells with full/reduced ratio
+above `1.1`, are more useful for deciding whether a future targeted rule is
+plausible. The next policy should therefore be based on correlations between
+severe audit cells and cheap predictors, not on the raw strict count alone.
+
 Shape unweighting is separate from event multiplicity. After the photon shape
 can be sampled without weights, LowMC still needs a normalization rule for how
 many photons to add to a given input event in the configured phase space. The

@@ -62,6 +62,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--multiplicity-seed", type=int, default=13579)
     parser.add_argument("--shape-seed", type=int, default=97531)
     parser.add_argument("--shape-base-probe-bins", type=int, default=11)
+    parser.add_argument("--audit-full-base-probes", action="store_true")
     parser.add_argument("--targeted-base-probes", action="store_true")
     parser.add_argument("--targeted-base-probe-neighbor-scale", type=float, default=0.0)
     parser.add_argument("--evidence-targeted-base-probes", action="store_true")
@@ -237,6 +238,22 @@ def compare_rows(
                 "shape_suspect_cell_count": row.get("shape_suspect_cell_count", ""),
                 "shape_promoted_cell_count": row.get("shape_promoted_cell_count", ""),
                 "shape_base_probe_bins": row.get("shape_base_probe_bins", ""),
+                "shape_audit_cell_count": row.get("shape_audit_cell_count", ""),
+                "shape_audit_under_bounded_cell_count": row.get(
+                    "shape_audit_under_bounded_cell_count", ""
+                ),
+                "shape_audit_max_full_over_base_probe_ratio": row.get(
+                    "shape_audit_max_full_over_base_probe_ratio", ""
+                ),
+                "shape_audit_ratio_above_110_cell_count": row.get(
+                    "shape_audit_ratio_above_110_cell_count", ""
+                ),
+                "shape_audit_ratio_above_150_cell_count": row.get(
+                    "shape_audit_ratio_above_150_cell_count", ""
+                ),
+                "shape_audit_ratio_above_200_cell_count": row.get(
+                    "shape_audit_ratio_above_200_cell_count", ""
+                ),
                 "shape_full_base_probe_cell_count": row.get(
                     "shape_full_base_probe_cell_count", ""
                 ),
@@ -382,6 +399,8 @@ def main() -> int:
         "--phi-max",
         f"{args.phi_max:.17g}",
     ]
+    if args.audit_full_base_probes:
+        afterburner_command.append("--audit-full-base-probes")
     if args.targeted_base_probes:
         afterburner_command.extend(
             [
@@ -441,6 +460,7 @@ def main() -> int:
             "multiplicity_seed": args.multiplicity_seed,
             "shape_seed": args.shape_seed,
             "shape_base_probe_bins": args.shape_base_probe_bins,
+            "audit_full_base_probes": int(args.audit_full_base_probes),
             "targeted_base_probes": int(args.targeted_base_probes),
             "targeted_base_probe_neighbor_scale": args.targeted_base_probe_neighbor_scale,
             "evidence_targeted_base_probes": int(args.evidence_targeted_base_probes),

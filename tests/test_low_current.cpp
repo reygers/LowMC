@@ -960,6 +960,7 @@ lowmc::ShapeUnweightingConfig shapeUnweightingTestConfig(std::uint64_t seed) {
         2,
         0,
         false,
+        false,
         0.0,
         false,
         0.0,
@@ -1739,6 +1740,38 @@ void testShapeUnweightingTargetedBaseProbesFullProbeChargedCells() {
         "targeted base probes should save work versus full base probing");
 }
 
+void testShapeUnweightingReducedVsFullProbeAuditReportsUnderBoundedCells() {
+    lowmc::ShapeUnweightingConfig config = shapeUnweightingTestConfig(123);
+    config.baseProbeBins = 1;
+    config.probeBins = 3;
+    config.auditFullBaseProbes = true;
+
+    const lowmc::ShapeUnweightingResult result =
+        lowmc::generateShapeUnweightedPhotonCandidates(eventGeneratorToyParticles(), config);
+
+    require(
+        result.envelope.auditCellCount == static_cast<int>(result.envelope.gridCellCount),
+        "reduced/full probe audit should inspect every grid cell");
+    require(
+        result.envelope.auditUnderBoundedCellCount > 0,
+        "reduced/full probe audit should find under-bounded cells for coarse probes");
+    require(
+        result.envelope.auditMaxFullOverBaseProbeRatio > 1.0,
+        "reduced/full probe audit should report the maximum full/base ratio");
+    require(
+        result.envelope.auditRatioAbove110CellCount <=
+            result.envelope.auditUnderBoundedCellCount,
+        "audit severity buckets should be subsets of under-bounded cells");
+    require(
+        result.envelope.auditRatioAbove150CellCount <=
+            result.envelope.auditRatioAbove110CellCount,
+        "audit severity buckets should be ordered");
+    require(
+        result.envelope.auditRatioAbove200CellCount <=
+            result.envelope.auditRatioAbove150CellCount,
+        "audit severity buckets should be ordered");
+}
+
 void testShapeUnweightingEvidenceTargetedBaseProbesFullProbeSuspectCells() {
     lowmc::ShapeUnweightingConfig config = shapeUnweightingTestConfig(123);
     config.baseProbeBins = 1;
@@ -2092,6 +2125,7 @@ int main() {
     testWeightedEventGeneratorRejectsInvalidInputs();
     testShapeUnweightingReturnsDiagnosticsAndUnitWeightCandidates();
     testShapeUnweightingTargetedBaseProbesFullProbeChargedCells();
+    testShapeUnweightingReducedVsFullProbeAuditReportsUnderBoundedCells();
     testShapeUnweightingEvidenceTargetedBaseProbesFullProbeSuspectCells();
     testShapeUnweightingEvidenceTargetedNeighborsExpandFullProbeCells();
     testShapeUnweightingIndexMatchesLinearReference();

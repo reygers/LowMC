@@ -804,6 +804,12 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
     result.envelope.targetedRefinementNeighborScale = config.targetedRefinementNeighborScale;
     result.envelope.probeBins = config.probeBins;
     result.envelope.baseProbeBins = effectiveBaseProbeBins(config);
+    result.envelope.auditCellCount = 0;
+    result.envelope.auditUnderBoundedCellCount = 0;
+    result.envelope.auditMaxFullOverBaseProbeRatio = 0.0;
+    result.envelope.auditRatioAbove110CellCount = 0;
+    result.envelope.auditRatioAbove150CellCount = 0;
+    result.envelope.auditRatioAbove200CellCount = 0;
     result.envelope.targetedBaseProbeNeighborScale = config.targetedBaseProbeNeighborScale;
     result.envelope.evidenceBaseProbeCellCount = 0;
     result.envelope.evidenceTargetedBaseProbeNeighborScale =
@@ -851,6 +857,44 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
             config.probeRule,
             alpha);
     result.envelope.baseProbeSeconds = secondsSince(baseProbeStart);
+
+    if (config.auditFullBaseProbes && effectiveBaseProbeBins(config) < config.probeBins) {
+        std::vector<int> fullProbeBins(gridProposal.cells.size(), config.probeBins);
+        const std::vector<double> fullProbedCellMaxWeights =
+            probeCellMaxWeights(
+                current,
+                config.phaseSpace,
+                gridProposal,
+                pointCellIndex,
+                fullProbeBins,
+                config.probeRule,
+                alpha);
+        result.envelope.auditCellCount = static_cast<int>(gridProposal.cells.size());
+        for (std::size_t index = 0; index < gridProposal.cells.size(); ++index) {
+            const double base = probedCellMaxWeights[index];
+            const double full = fullProbedCellMaxWeights[index];
+            double ratio = 0.0;
+            if (base > 0.0 && std::isfinite(base) && std::isfinite(full)) {
+                ratio = full / base;
+            } else if (full > 0.0 && std::isfinite(full)) {
+                ratio = std::numeric_limits<double>::infinity();
+            }
+            if (ratio > 1.0) {
+                ++result.envelope.auditUnderBoundedCellCount;
+                result.envelope.auditMaxFullOverBaseProbeRatio =
+                    std::max(result.envelope.auditMaxFullOverBaseProbeRatio, ratio);
+            }
+            if (ratio > 1.1) {
+                ++result.envelope.auditRatioAbove110CellCount;
+            }
+            if (ratio > 1.5) {
+                ++result.envelope.auditRatioAbove150CellCount;
+            }
+            if (ratio > 2.0) {
+                ++result.envelope.auditRatioAbove200CellCount;
+            }
+        }
+    }
 
     std::vector<double> calibrationCellMaxWeights(gridProposal.cells.size(), 0.0);
     std::mt19937_64 calibrationRng(config.seed);

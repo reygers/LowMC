@@ -902,6 +902,21 @@ Calibration-neighborhood expansion is therefore not a satisfactory heuristic
 for the bounded Pythia stress set. The next probe-reduction experiment should
 directly audit where reduced and full probe lattices disagree.
 
+A reduced/full base-probe audit is now implemented as the explicit diagnostic
+option `--audit-full-base-probes`. It compares the reduced base lattice against
+the full `11 x 11` base lattice without changing the envelope used for sampling.
+On the four bounded Pythia-produced seeds, strict `full > reduced` occurs in
+nearly every cell, so the strict under-bounded fraction is not a useful policy
+selector by itself. The severity tail is more informative: with `5 x 5` base
+probes, cells above a `1.1` full/reduced ratio account for about `1.5%` to
+`3.3%` of cells, with maximum ratio `1.49`; with `7 x 7` base probes, the
+above-`1.1` fraction falls to about `0.1%` to `0.3%`, with maximum ratio
+`1.20`. Even so, the high-multiplicity seed still gives elevated
+`max_trial_bound_ratio` values (`0.454328` for `5 x 5`, `0.41253` for
+`7 x 7`, with boosted-cell probes disabled). The next reduced-probe step
+should characterize the severe audit cells by cheap features before adding a
+new promotion rule.
+
 The command name decision is settled for now: keep
 `lowmc_hepmc3_afterburner_diagnostic` as the only executable name. A shorter
 production alias should wait until validation gates and output-mode conventions

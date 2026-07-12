@@ -37,6 +37,7 @@ struct Options {
     int minShapeTrials = 10000;
     int shapeTrialsPerPhoton = 2000;
     int shapeBaseProbeBins = 11;
+    bool auditFullBaseProbes = false;
     bool targetedBaseProbes = false;
     double targetedBaseProbeNeighborScale = 0.0;
     bool evidenceTargetedBaseProbes = false;
@@ -70,6 +71,7 @@ void printUsage(std::ostream& out) {
         << "  --min-shape-trials N            Minimum shape-unweighting trials (default: 10000)\n"
         << "  --shape-trials-per-photon N     Extra trials per requested photon (default: 2000)\n"
         << "  --shape-base-probe-bins N       Base probe bins before boosted cells (default: 11)\n"
+        << "  --audit-full-base-probes        Compare reduced and full base probe maxima\n"
         << "  --targeted-base-probes          Keep full base probes near charged particles\n"
         << "  --targeted-base-probe-neighbor-scale X  Neighbor scale for targeted base probes (default: 0)\n"
         << "  --evidence-targeted-base-probes Keep full base probes in calibration-suspect cells\n"
@@ -182,6 +184,10 @@ Options parseOptions(int argc, char** argv) {
         if (argument == "--shape-base-probe-bins") {
             options.shapeBaseProbeBins =
                 parsePositiveInt(readStringOption(index, argc, argv, argument), argument);
+            continue;
+        }
+        if (argument == "--audit-full-base-probes") {
+            options.auditFullBaseProbes = true;
             continue;
         }
         if (argument == "--targeted-base-probes") {
@@ -310,6 +316,7 @@ lowmc::ShapeUnweightingConfig makeShapeConfig(
     config.calibrationTrials = std::max(1000, std::min(20000, trials));
     config.probeBins = 11;
     config.baseProbeBins = options.shapeBaseProbeBins;
+    config.auditFullBaseProbes = options.auditFullBaseProbes;
     config.targetedBaseProbes = options.targetedBaseProbes;
     config.targetedBaseProbeNeighborScale = options.targetedBaseProbeNeighborScale;
     config.evidenceTargetedBaseProbes = options.evidenceTargetedBaseProbes;
@@ -465,6 +472,12 @@ int main(int argc, char** argv) {
             int shapeSuspectCellCount = 0;
             int shapePromotedCellCount = 0;
             int shapeBaseProbeBins = 0;
+            int shapeAuditCellCount = 0;
+            int shapeAuditUnderBoundedCellCount = 0;
+            double shapeAuditMaxFullOverBaseProbeRatio = 0.0;
+            int shapeAuditRatioAbove110CellCount = 0;
+            int shapeAuditRatioAbove150CellCount = 0;
+            int shapeAuditRatioAbove200CellCount = 0;
             int shapeFullBaseProbeCellCount = 0;
             double shapeTargetedBaseProbeNeighborScale = 0.0;
             int shapeEvidenceBaseProbeCellCount = 0;
@@ -539,6 +552,17 @@ int main(int argc, char** argv) {
                         shapeSuspectCellCount = shape.envelope.suspectCellCount;
                         shapePromotedCellCount = shape.envelope.promotedCellCount;
                         shapeBaseProbeBins = shape.envelope.baseProbeBins;
+                        shapeAuditCellCount = shape.envelope.auditCellCount;
+                        shapeAuditUnderBoundedCellCount =
+                            shape.envelope.auditUnderBoundedCellCount;
+                        shapeAuditMaxFullOverBaseProbeRatio =
+                            shape.envelope.auditMaxFullOverBaseProbeRatio;
+                        shapeAuditRatioAbove110CellCount =
+                            shape.envelope.auditRatioAbove110CellCount;
+                        shapeAuditRatioAbove150CellCount =
+                            shape.envelope.auditRatioAbove150CellCount;
+                        shapeAuditRatioAbove200CellCount =
+                            shape.envelope.auditRatioAbove200CellCount;
                         shapeFullBaseProbeCellCount = shape.envelope.fullBaseProbeCellCount;
                         shapeTargetedBaseProbeNeighborScale =
                             shape.envelope.targetedBaseProbeNeighborScale;
@@ -628,6 +652,17 @@ int main(int argc, char** argv) {
                       << " shape_suspect_cell_count=" << shapeSuspectCellCount
                       << " shape_promoted_cell_count=" << shapePromotedCellCount
                       << " shape_base_probe_bins=" << shapeBaseProbeBins
+                      << " shape_audit_cell_count=" << shapeAuditCellCount
+                      << " shape_audit_under_bounded_cell_count="
+                      << shapeAuditUnderBoundedCellCount
+                      << " shape_audit_max_full_over_base_probe_ratio="
+                      << shapeAuditMaxFullOverBaseProbeRatio
+                      << " shape_audit_ratio_above_110_cell_count="
+                      << shapeAuditRatioAbove110CellCount
+                      << " shape_audit_ratio_above_150_cell_count="
+                      << shapeAuditRatioAbove150CellCount
+                      << " shape_audit_ratio_above_200_cell_count="
+                      << shapeAuditRatioAbove200CellCount
                       << " shape_full_base_probe_cell_count=" << shapeFullBaseProbeCellCount
                       << " shape_targeted_base_probe_neighbor_scale="
                       << shapeTargetedBaseProbeNeighborScale
