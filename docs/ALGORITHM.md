@@ -901,6 +901,17 @@ for reduced-probed cells may be a simpler next prototype than another geometric
 promotion rule. Such a factor would still need to be judged against the
 full-probe reference and kept out of defaults until validated.
 
+The reduced-probe compensation prototype applies a scalar factor to the
+cell-local maximum from reduced base probes before envelope construction. It is
+not a physics change; it is a conservative envelope inflation for cells where
+the reduced lattice may miss sharp structure. The factor is applied only to
+cells whose base probe count is below the full `probeBins x probeBins`
+reference. Full-base cells are left unchanged, and any later explicit re-probe
+such as a boosted-cell pass replaces the compensated base estimate. Initial
+bounded Pythia scans show that this can restore or improve the trial/bound
+ratio at nearly reduced-probe cost, but the factor remains a validation
+parameter, not a default.
+
 Shape unweighting is separate from event multiplicity. After the photon shape
 can be sampled without weights, LowMC still needs a normalization rule for how
 many photons to add to a given input event in the configured phase space. The

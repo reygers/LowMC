@@ -4,7 +4,7 @@ This file should contain exactly one immediate task for Codex or another coding
 agent. Broader plans belong in `docs/ROADMAP.md`; project state belongs in
 `docs/STATUS.md`.
 
-Prototype a reduced-probe compensation factor.
+Validate compensated reduced-probe candidates.
 
 Requirements:
 
@@ -15,32 +15,31 @@ Requirements:
   reference as current defaults
 - do not change physics densities, `max_trial_bound_ratio` accounting,
   multiplicity conventions, or failure policy semantics
-- keep the reduced/full audit and sparse severe-cell report diagnostic-only;
-  do not make reduced probing a default
-- start from the sparse audit result: severe cells are stable across `5 x 5`
-  and `7 x 7`, sparse, low proposal-mass, mostly not calibration-suspect, and
-  only partly explained by charged-particle proximity
-- add an explicit prototype option that multiplies the probed maximum for
-  reduced-probed cells by a compensation factor before envelope construction
-- do not apply the compensation to cells already probed with the full
-  `11 x 11` base lattice or to boosted-cell re-probes unless the code path
-  makes that behavior explicit
-- keep the current full-probe reference unchanged and report the compensation
-  factor in diagnostics
-- scan a small set of factors, for example `1.05`, `1.10`, `1.20`, and `1.30`,
-  on bounded seeds `24681`, `24682`, `24683`, and `24684`, comparing `5 x 5`
-  and `7 x 7` with boosted-cell probes disabled
-- compare runtime, `max_trial_bound_ratio`, and accepted photon counts against
-  the full `11 x 11` reference and the uncompensated reduced-probe runs
+- keep compensated reduced probing diagnostic-only; do not make reduced probing
+  or compensation a default
+- start from the four-seed result: `5 x 5` with factor `1.30` and `7 x 7`
+  with factors `1.10` or `1.20` are the first plausible candidates
+- run a broader bounded Pythia seed sample for these candidates and for the
+  full `11 x 11` reference, with boosted-cell probes disabled
+- include the uncompensated `5 x 5` and `7 x 7` runs only if needed for a clean
+  comparison table
+- compare total event time, shape time, `max_trial_bound_ratio`, envelope
+  failures, accepted/retained photon counts, and compensated-cell counts
+- decide whether `7 x 7` with `1.10` is already sufficient or whether the
+  safer candidate is `7 x 7` with `1.20`; keep `5 x 5` with `1.30` as the
+  aggressive speed candidate
+- if the broader sample still looks promising, update the docs with a candidate
+  validation criterion for future compensated reduced-probe studies
 - update `docs/STATUS.md`, `docs/ALGORITHM.md`, and `docs/NEXT_TASK.md`
   afterward
 
 Open questions:
 
-- Is a single global reduced-probe compensation factor enough for both `5 x 5`
-  and `7 x 7`, or should any factor depend on the reduced lattice size?
-- Should the compensation be applied only to uniformly reduced cells, or also
-  to cells reduced after targeted/evidence-based promotion?
-- What criterion should be required before considering a compensated reduced
-  probe mode beyond diagnostics: matching the full-reference
-  `max_trial_bound_ratio`, no envelope failures, or a stronger safety margin?
+- How many bounded seeds are enough for this diagnostic phase: `10`, `20`, or
+  more?
+- Should the comparison criterion be matching the full-reference
+  `max_trial_bound_ratio`, staying below it by a margin, or using a direct
+  full/reduced audit on the same events?
+- Should compensated reduced probing be studied with boosted-cell probes
+  enabled after the no-boosted validation, or only after the no-boosted case is
+  clearly stable?

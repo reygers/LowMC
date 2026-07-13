@@ -954,6 +954,26 @@ promotion rule as the next move. A small conservative compensation factor for
 reduced-probed cells is now the more natural diagnostic prototype to test
 against the full-probe reference.
 
+A reduced-probe compensation prototype is now implemented as another explicit
+diagnostic option. It multiplies the base-probe maximum only for cells whose
+base lattice is reduced; cells already probed with the full `11 x 11` lattice
+are not compensated, and later boosted-cell re-probes overwrite the compensated
+base value. With boosted-cell probes disabled, a four-seed scan compared
+uncompensated `5 x 5`, uncompensated `7 x 7`, full `11 x 11`, and compensation
+factors `1.05`, `1.10`, `1.20`, and `1.30`. The uncompensated `5 x 5` scan
+took `5.51 s` total over the four events and reached maximum trial/bound ratio
+`0.454328`; `1.30` compensation kept the time similar (`5.39 s`) and reduced
+the maximum ratio to `0.371177`, below the full `11 x 11` no-boosted reference
+ratio `0.392943`. The uncompensated `7 x 7` scan took `7.14 s` and reached
+`0.412530`; `1.10` compensation already reduced the maximum ratio to
+`0.382159`, while `1.20` and `1.30` gave `0.338193` and `0.312681`. Photon
+counts stayed unchanged in all these runs (`22` added photons over the four
+events). This makes compensated reduced probing the most promising speed path
+so far, but the factor is still purely diagnostic. The next step should test
+candidate factors, especially `5 x 5` with `1.30` and `7 x 7` with `1.10` or
+`1.20`, on a broader bounded seed sample and with stricter acceptance and
+envelope diagnostics.
+
 The command name decision is settled for now: keep
 `lowmc_hepmc3_afterburner_diagnostic` as the only executable name. A shorter
 production alias should wait until validation gates and output-mode conventions

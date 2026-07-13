@@ -284,6 +284,14 @@ def write_summary_md(
             ("suspect cells", "shape_suspect_cell_count"),
             ("promoted cells", "shape_promoted_cell_count"),
             ("base probe bins", "shape_base_probe_bins"),
+            (
+                "reduced-probe compensation factor",
+                "shape_reduced_probe_compensation_factor",
+            ),
+            (
+                "reduced-probe compensated cells",
+                "shape_reduced_probe_compensated_cell_count",
+            ),
             ("audit cells", "shape_audit_cell_count"),
             ("audit under-bounded cells", "shape_audit_under_bounded_cell_count"),
             (

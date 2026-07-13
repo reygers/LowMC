@@ -37,6 +37,7 @@ struct Options {
     int minShapeTrials = 10000;
     int shapeTrialsPerPhoton = 2000;
     int shapeBaseProbeBins = 11;
+    double reducedProbeCompensationFactor = 1.0;
     bool auditFullBaseProbes = false;
     double auditSevereRatioThreshold = 1.1;
     int auditSevereCellReportMaxRows = 0;
@@ -73,6 +74,7 @@ void printUsage(std::ostream& out) {
         << "  --min-shape-trials N            Minimum shape-unweighting trials (default: 10000)\n"
         << "  --shape-trials-per-photon N     Extra trials per requested photon (default: 2000)\n"
         << "  --shape-base-probe-bins N       Base probe bins before boosted cells (default: 11)\n"
+        << "  --reduced-probe-compensation-factor X  Multiply reduced base-probe maxima (default: 1)\n"
         << "  --audit-full-base-probes        Compare reduced and full base probe maxima\n"
         << "  --audit-severe-ratio-threshold X  Sparse audit threshold (default: 1.1)\n"
         << "  --audit-severe-cell-report-max N  Print up to N severe audit cells per event\n"
@@ -188,6 +190,15 @@ Options parseOptions(int argc, char** argv) {
         if (argument == "--shape-base-probe-bins") {
             options.shapeBaseProbeBins =
                 parsePositiveInt(readStringOption(index, argc, argv, argument), argument);
+            continue;
+        }
+        if (argument == "--reduced-probe-compensation-factor") {
+            options.reducedProbeCompensationFactor =
+                parsePositiveDouble(readStringOption(index, argc, argv, argument), argument);
+            if (options.reducedProbeCompensationFactor < 1.0) {
+                throw std::invalid_argument(
+                    "--reduced-probe-compensation-factor must be at least one");
+            }
             continue;
         }
         if (argument == "--audit-full-base-probes") {
@@ -334,6 +345,7 @@ lowmc::ShapeUnweightingConfig makeShapeConfig(
     config.calibrationTrials = std::max(1000, std::min(20000, trials));
     config.probeBins = 11;
     config.baseProbeBins = options.shapeBaseProbeBins;
+    config.reducedProbeCompensationFactor = options.reducedProbeCompensationFactor;
     config.auditFullBaseProbes = options.auditFullBaseProbes;
     config.auditSevereRatioThreshold = options.auditSevereRatioThreshold;
     config.auditSevereCellReportMaxRows = options.auditSevereCellReportMaxRows;
@@ -492,6 +504,8 @@ int main(int argc, char** argv) {
             int shapeSuspectCellCount = 0;
             int shapePromotedCellCount = 0;
             int shapeBaseProbeBins = 0;
+            double shapeReducedProbeCompensationFactor = 1.0;
+            int shapeReducedProbeCompensatedCellCount = 0;
             int shapeAuditCellCount = 0;
             int shapeAuditUnderBoundedCellCount = 0;
             double shapeAuditMaxFullOverBaseProbeRatio = 0.0;
@@ -584,6 +598,10 @@ int main(int argc, char** argv) {
                         shapeSuspectCellCount = shape.envelope.suspectCellCount;
                         shapePromotedCellCount = shape.envelope.promotedCellCount;
                         shapeBaseProbeBins = shape.envelope.baseProbeBins;
+                        shapeReducedProbeCompensationFactor =
+                            shape.envelope.reducedProbeCompensationFactor;
+                        shapeReducedProbeCompensatedCellCount =
+                            shape.envelope.reducedProbeCompensatedCellCount;
                         shapeAuditCellCount = shape.envelope.auditCellCount;
                         shapeAuditUnderBoundedCellCount =
                             shape.envelope.auditUnderBoundedCellCount;
@@ -705,6 +723,10 @@ int main(int argc, char** argv) {
                       << " shape_suspect_cell_count=" << shapeSuspectCellCount
                       << " shape_promoted_cell_count=" << shapePromotedCellCount
                       << " shape_base_probe_bins=" << shapeBaseProbeBins
+                      << " shape_reduced_probe_compensation_factor="
+                      << shapeReducedProbeCompensationFactor
+                      << " shape_reduced_probe_compensated_cell_count="
+                      << shapeReducedProbeCompensatedCellCount
                       << " shape_audit_cell_count=" << shapeAuditCellCount
                       << " shape_audit_under_bounded_cell_count="
                       << shapeAuditUnderBoundedCellCount

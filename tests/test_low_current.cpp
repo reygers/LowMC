@@ -959,6 +959,7 @@ lowmc::ShapeUnweightingConfig shapeUnweightingTestConfig(std::uint64_t seed) {
         12,
         2,
         0,
+        1.0,
         false,
         1.1,
         0,
@@ -1655,6 +1656,12 @@ void testShapeUnweightingReturnsDiagnosticsAndUnitWeightCandidates() {
             static_cast<int>(result.envelope.gridCellCount),
         "default shape unweighting should full-probe every grid cell");
     require(
+        result.envelope.reducedProbeCompensationFactor == 1.0,
+        "default shape unweighting should report no reduced-probe compensation");
+    require(
+        result.envelope.reducedProbeCompensatedCellCount == 0,
+        "default shape unweighting should not compensate full-probed cells");
+    require(
         result.envelope.promotedCellCount == 0,
         "fixed shape unweighting should not promote cells");
     require(
@@ -1812,6 +1819,36 @@ void testShapeUnweightingReducedVsFullProbeAuditReportsUnderBoundedCells() {
             cell.area > 0.0 && cell.proposalMass > 0.0,
             "audit sparse cell report should include positive cell geometry");
     }
+}
+
+void testShapeUnweightingCompensatesOnlyReducedBaseProbeCells() {
+    lowmc::ShapeUnweightingConfig config = shapeUnweightingTestConfig(123);
+    config.baseProbeBins = 1;
+    config.probeBins = 3;
+    config.reducedProbeCompensationFactor = 1.2;
+    config.probePolicy = lowmc::ShapeUnweightingProbePolicy::Fixed;
+
+    const lowmc::ShapeUnweightingResult result =
+        lowmc::generateShapeUnweightedPhotonCandidates(eventGeneratorToyParticles(), config);
+
+    require(
+        result.status == lowmc::ShapeUnweightingStatus::Ok,
+        "compensated reduced base probes should still generate candidates");
+    require(
+        result.envelope.reducedProbeCompensationFactor == config.reducedProbeCompensationFactor,
+        "shape unweighting should report the reduced-probe compensation factor");
+    require(
+        result.envelope.reducedProbeCompensatedCellCount ==
+            static_cast<int>(result.envelope.gridCellCount),
+        "uniformly reduced base probes should compensate every cell");
+
+    lowmc::ShapeUnweightingConfig fullConfig = config;
+    fullConfig.baseProbeBins = fullConfig.probeBins;
+    const lowmc::ShapeUnweightingResult fullResult =
+        lowmc::generateShapeUnweightedPhotonCandidates(eventGeneratorToyParticles(), fullConfig);
+    require(
+        fullResult.envelope.reducedProbeCompensatedCellCount == 0,
+        "full base probes should not receive reduced-probe compensation");
 }
 
 void testShapeUnweightingEvidenceTargetedBaseProbesFullProbeSuspectCells() {
@@ -1986,6 +2023,13 @@ void generateShapeUnweightingWithInvalidBaseProbeBins() {
         lowmc::generateShapeUnweightedPhotonCandidates(eventGeneratorToyParticles(), config));
 }
 
+void generateShapeUnweightingWithInvalidReducedProbeCompensationFactor() {
+    lowmc::ShapeUnweightingConfig config = shapeUnweightingTestConfig(123);
+    config.reducedProbeCompensationFactor = 0.99;
+    static_cast<void>(
+        lowmc::generateShapeUnweightedPhotonCandidates(eventGeneratorToyParticles(), config));
+}
+
 void generateShapeUnweightingWithInvalidAuditSevereRatioThreshold() {
     lowmc::ShapeUnweightingConfig config = shapeUnweightingTestConfig(123);
     config.auditSevereRatioThreshold = 1.0;
@@ -2024,6 +2068,9 @@ void testShapeUnweightingRejectsInvalidInputs() {
     requireThrowsInvalidArgument(
         generateShapeUnweightingWithInvalidBaseProbeBins,
         "shape unweighting should reject invalid base probe bins");
+    requireThrowsInvalidArgument(
+        generateShapeUnweightingWithInvalidReducedProbeCompensationFactor,
+        "shape unweighting should reject invalid reduced-probe compensation factor");
     requireThrowsInvalidArgument(
         generateShapeUnweightingWithInvalidAuditSevereRatioThreshold,
         "shape unweighting should reject invalid audit severe ratio threshold");
@@ -2188,6 +2235,7 @@ int main() {
     testShapeUnweightingReturnsDiagnosticsAndUnitWeightCandidates();
     testShapeUnweightingTargetedBaseProbesFullProbeChargedCells();
     testShapeUnweightingReducedVsFullProbeAuditReportsUnderBoundedCells();
+    testShapeUnweightingCompensatesOnlyReducedBaseProbeCells();
     testShapeUnweightingEvidenceTargetedBaseProbesFullProbeSuspectCells();
     testShapeUnweightingEvidenceTargetedNeighborsExpandFullProbeCells();
     testShapeUnweightingIndexMatchesLinearReference();

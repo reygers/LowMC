@@ -41,6 +41,7 @@ struct ShapeUnweightingConfig {
     int calibrationTrials = 1000;
     int probeBins = 11;
     int baseProbeBins = 0;
+    double reducedProbeCompensationFactor = 1.0;
     bool auditFullBaseProbes = false;
     double auditSevereRatioThreshold = 1.1;
     int auditSevereCellReportMaxRows = 0;
@@ -112,6 +113,8 @@ struct ShapeUnweightingEnvelopeDiagnostics {
     double targetedRefinementNeighborScale = 0.0;
     int probeBins = 0;
     int baseProbeBins = 0;
+    double reducedProbeCompensationFactor = 1.0;
+    int reducedProbeCompensatedCellCount = 0;
     int auditCellCount = 0;
     int auditUnderBoundedCellCount = 0;
     double auditMaxFullOverBaseProbeRatio = 0.0;
