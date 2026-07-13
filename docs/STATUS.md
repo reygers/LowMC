@@ -974,6 +974,24 @@ candidate factors, especially `5 x 5` with `1.30` and `7 x 7` with `1.10` or
 `1.20`, on a broader bounded seed sample and with stricter acceptance and
 envelope diagnostics.
 
+A first broader no-boosted validation used ten bounded Pythia seeds
+`24681..24690`. The full `11 x 11` no-boosted reference took `35.64 s` total
+over the ten events, with shape time `33.58 s`, maximum trial/bound ratio
+`0.392943`, zero envelope failures, and `65/65` requested photons retained and
+written. The compensated candidates all retained and wrote the same `65`
+photons with zero envelope failures. `5 x 5` with factor `1.30` took `15.73 s`
+total (`13.66 s` shape time) and reached maximum ratio `0.371177`. `7 x 7`
+with factor `1.10` took `21.26 s` total (`18.97 s` shape time) and reached
+`0.382159`. `7 x 7` with factor `1.20` took `20.93 s` total (`18.78 s` shape
+time) and reached `0.338193`. All three candidates stayed below the
+full-reference event-level ratio on every seed; the smallest margin was only
+`0.000864` for `7 x 7` with `1.10`, while `7 x 7` with `1.20` had a larger
+minimum margin (`0.029844`). This makes `7 x 7` with `1.20` the safer current
+candidate, and `5 x 5` with `1.30` the aggressive speed candidate. The next
+validation question is how these candidates behave with the default
+boosted-cell path enabled, since boosted re-probes overwrite compensated base
+estimates in promoted cells.
+
 The command name decision is settled for now: keep
 `lowmc_hepmc3_afterburner_diagnostic` as the only executable name. A shorter
 production alias should wait until validation gates and output-mode conventions

@@ -912,6 +912,16 @@ bounded Pythia scans show that this can restore or improve the trial/bound
 ratio at nearly reduced-probe cost, but the factor remains a validation
 parameter, not a default.
 
+In the ten-seed no-boosted validation, the compensated candidates all stayed
+below the full `11 x 11` reference trial/bound ratio and preserved requested
+photon counts. The current interpretation is therefore: `7 x 7` with factor
+`1.20` is the safer diagnostic candidate, `7 x 7` with `1.10` is close to the
+edge of the observed reference margin, and `5 x 5` with `1.30` is the more
+aggressive speed candidate. These statements apply only to the no-boosted
+path. With boosted-cell probes enabled, promoted cells are explicitly re-probed
+and their compensated base estimate is replaced, so the interaction must be
+validated separately.
+
 Shape unweighting is separate from event multiplicity. After the photon shape
 can be sampled without weights, LowMC still needs a normalization rule for how
 many photons to add to a given input event in the configured phase space. The

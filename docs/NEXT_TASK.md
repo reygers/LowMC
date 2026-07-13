@@ -4,7 +4,7 @@ This file should contain exactly one immediate task for Codex or another coding
 agent. Broader plans belong in `docs/ROADMAP.md`; project state belongs in
 `docs/STATUS.md`.
 
-Validate compensated reduced-probe candidates.
+Validate compensated candidates with boosted-cell probes.
 
 Requirements:
 
@@ -17,29 +17,29 @@ Requirements:
   multiplicity conventions, or failure policy semantics
 - keep compensated reduced probing diagnostic-only; do not make reduced probing
   or compensation a default
-- start from the four-seed result: `5 x 5` with factor `1.30` and `7 x 7`
-  with factors `1.10` or `1.20` are the first plausible candidates
-- run a broader bounded Pythia seed sample for these candidates and for the
-  full `11 x 11` reference, with boosted-cell probes disabled
-- include the uncompensated `5 x 5` and `7 x 7` runs only if needed for a clean
-  comparison table
-- compare total event time, shape time, `max_trial_bound_ratio`, envelope
-  failures, accepted/retained photon counts, and compensated-cell counts
-- decide whether `7 x 7` with `1.10` is already sufficient or whether the
-  safer candidate is `7 x 7` with `1.20`; keep `5 x 5` with `1.30` as the
+- start from the ten-seed no-boosted result: all candidates stayed below the
+  full-reference ratio, but `7 x 7` with factor `1.10` had only a small margin;
+  `7 x 7` with `1.20` is the safer candidate and `5 x 5` with `1.30` is the
   aggressive speed candidate
-- if the broader sample still looks promising, update the docs with a candidate
-  validation criterion for future compensated reduced-probe studies
+- run the same bounded seeds `24681..24690` with the default boosted-cell
+  probe path enabled for the full `11 x 11` reference, `7 x 7` with
+  compensation factor `1.20`, and `5 x 5` with compensation factor `1.30`
+- include `7 x 7` with factor `1.10` only if the first two candidates leave
+  enough ambiguity to justify the extra runs
+- compare total event time, shape time, `max_trial_bound_ratio`, envelope
+  failures, accepted/retained photon counts, compensated-cell counts, promoted
+  cell counts, and boosted-probe time
+- decide whether boosted-cell probes still add useful safety on top of
+  compensation, or whether they mostly erase the speed advantage
 - update `docs/STATUS.md`, `docs/ALGORITHM.md`, and `docs/NEXT_TASK.md`
   afterward
 
 Open questions:
 
-- How many bounded seeds are enough for this diagnostic phase: `10`, `20`, or
-  more?
-- Should the comparison criterion be matching the full-reference
-  `max_trial_bound_ratio`, staying below it by a margin, or using a direct
-  full/reduced audit on the same events?
-- Should compensated reduced probing be studied with boosted-cell probes
-  enabled after the no-boosted validation, or only after the no-boosted case is
-  clearly stable?
+- With boosted-cell probes enabled, does compensation still affect enough cells
+  to matter?
+- Does the boosted-cell path reduce `max_trial_bound_ratio` further, or only
+  increase runtime for these candidates?
+- Should the eventual validation criterion require both no-boosted and boosted
+  scans to beat the full-reference ratio, or is the no-boosted comparison the
+  cleaner criterion for the reduced-base-probe policy?
