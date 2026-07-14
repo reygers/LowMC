@@ -745,6 +745,43 @@ set_tests_properties(
             "status=ok.*topology=multi8.*particle_count=8.*signed_charge_sum=0"
 )
 
+add_executable(lowmc_delphi_muon_fsr_diagnostic
+    diagnostics/delphi_muon_fsr_diagnostic.cpp
+)
+
+target_link_libraries(lowmc_delphi_muon_fsr_diagnostic
+    PRIVATE
+        lowmc_core
+)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(lowmc_delphi_muon_fsr_diagnostic PRIVATE -Wall -Wextra -pedantic)
+elseif(MSVC)
+    target_compile_options(lowmc_delphi_muon_fsr_diagnostic PRIVATE /W4)
+endif()
+
+add_test(
+    NAME lowmc_delphi_muon_fsr_diagnostic_help
+    COMMAND lowmc_delphi_muon_fsr_diagnostic --help
+)
+
+add_test(
+    NAME lowmc_delphi_muon_fsr_diagnostic_smoke
+    COMMAND lowmc_delphi_muon_fsr_diagnostic
+            ${CMAKE_CURRENT_BINARY_DIR}/delphi_muon_fsr_samples.csv
+            --trials 64
+            --calibration-trials 16
+            --probe-bins 2
+            --safety-factor 100
+            --seed 12345
+)
+set_tests_properties(
+    lowmc_delphi_muon_fsr_diagnostic_smoke
+    PROPERTIES
+        PASS_REGULAR_EXPRESSION
+            "status=ok .* gamma=430 .* expected_peak_mrad="
+)
+
 add_executable(lowmc_direct_charged_particles_example
     examples/direct_charged_particles.cpp
 )

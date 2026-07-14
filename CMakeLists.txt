@@ -156,4 +156,8 @@ if(Python3_Interpreter_FOUND)
         NAME lowmc_tune_shape_unweighting_bound_help
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/tune_shape_unweighting_bound.py --help
     )
+    add_test(
+        NAME lowmc_plot_delphi_muon_benchmark_help
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/plot_delphi_muon_benchmark.py --help
+    )
 endif()
