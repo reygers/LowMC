@@ -191,7 +191,9 @@ dependencies into the core.
 The current `lowmc_hepmc3_afterburner_diagnostic` is a first controlled usable
 prototype. It is appropriate for small-file user trials and validation studies,
 but not yet a production afterburner. Before promoting its behavior to a
-production-style command or alias, the minimum readiness checklist is:
+production-style command or alias, use the minimum readiness checklist below.
+The component-level release gates, physics-change gates, and exact clean-build
+commands are maintained separately in `docs/RELEASE_VALIDATION_MATRIX.md`.
 
 - satisfied: optional HepMC3 build keeps `lowmc_core` generator-independent
 - satisfied: default selection includes incoming beams and final stable charged
@@ -248,9 +250,10 @@ production-style command or alias, the minimum readiness checklist is:
 - open: final command naming should be settled before a production alias such
   as `lowmc_hepmc3_afterburner` is added
 
-The next speed milestone should prototype a validated spatial index for
-shape-unweighting cell lookup/sampling, because stage timing now shows shape
-unweighting dominates bounded Pythia-produced afterburner runtime.
+The validated spatial index for shape-unweighting cell lookup/sampling is now
+the default internal path. Further performance work should begin with a new
+profile of the current implementation and must preserve the release-validation
+correctness gates.
 
 ## Milestone 4: Validation
 

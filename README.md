@@ -113,6 +113,8 @@ See [docs/PHYSICS.md](docs/PHYSICS.md) for the full convention.
 - [docs/ALGORITHM.md](docs/ALGORITHM.md): sampling and algorithm notes
 - [docs/DECISIONS.md](docs/DECISIONS.md): recorded design decisions
 - [docs/STATUS.md](docs/STATUS.md): current implementation status
+- [docs/RELEASE_VALIDATION_MATRIX.md](docs/RELEASE_VALIDATION_MATRIX.md):
+  release-blocking and scientific validation gates
 - [docs/NEXT_TASK.md](docs/NEXT_TASK.md): next planned development step
 
 ## License

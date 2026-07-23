@@ -2041,7 +2041,7 @@ diagnostic validation, but no HepMC3 event output is written.
 `docs/STATUS.md` is a living file. Update it when the project state, active
 milestone, or known open questions change.
 
-## In Scope Now
+## Current Implemented Scope
 
 - C++17-or-later core
 - generator-independent event representation
@@ -2052,21 +2052,29 @@ milestone, or known open questions change.
 - unit tests for the basic physics and scaling properties
 - CSV diagnostics for simple controlled toy events
 - optional Python plotting for diagnostic CSV output
+- physical and enhanced unweighted-photon generation in the provisional
+  HepMC3 afterburner diagnostic
+- optional HepMC3 input, output, round-trip, and installed-example workflows
+- optional direct Pythia8 selection and weighted-photon diagnostics
+- optional Pythia8-to-HepMC3 cross-checks
+- optional PHOTOS `Z -> mu+ mu-` benchmark integration
 
-## Out of Scope For The Current Skeleton
+## Still Out Of Scope Or Not Yet Production Ready
 
-- production HepMC3 event writing or full HepMC3 workflow integration
-- Pythia8 interface
+- a stable production HepMC3 command name and production-readiness claim
 - recoil prescription
 - multiple-photon exponentiation
 - virtual photons and dielectrons
-- integration with existing QED radiation tools
+- VinciaQED integration and general QED-tool interoperability
 - ROOT-dependent plotting or analysis
-- unweighted event generation
+- production guarantees for all boosted and high-multiplicity event topologies
 
 ## Immediate Next Milestone
 
 Follow the single task in `docs/NEXT_TASK.md`.
+
+The release-gate classification and exact clean-candidate commands are in
+`docs/RELEASE_VALIDATION_MATRIX.md`.
 
 ## Analytic Low-Bound Audit
 

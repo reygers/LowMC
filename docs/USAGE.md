@@ -43,7 +43,7 @@ must be filled with their weights.
 
 ### 3. Pythia Workflows
 
-Pythia can be supported in two ways:
+Pythia is supported in two ways:
 
 ```text
 Pythia
@@ -51,7 +51,7 @@ Pythia
 -> LowMC HepMC3 workflow
 ```
 
-or, later:
+or directly:
 
 ```text
 Pythia event in memory
@@ -60,8 +60,8 @@ Pythia event in memory
 -> user analysis
 ```
 
-The direct Pythia adapter should remain a thin optional layer. It must not
-introduce a Pythia dependency into `lowmc_core`. Its boundary is planned as:
+The direct Pythia adapter is a thin optional layer and does not introduce a
+Pythia dependency into `lowmc_core`. Its implemented boundary is:
 
 ```text
 Pythia8::Event
@@ -71,10 +71,10 @@ Pythia8::Event
 -> weighted LowMC photons or diagnostics
 ```
 
-The first direct Pythia diagnostic should focus on selected-particle
-diagnostics. Weighted photon generation can follow after the Pythia
-incoming/final-state mapping is validated. HepMC3 output writing is not part of
-the direct Pythia workflow.
+The direct diagnostics cover selected-particle mapping and weighted photon
+generation. A combined optional build also cross-checks the direct selected
+particles and weighted summaries against the Pythia-to-HepMC3 path. HepMC3
+output writing is not part of the direct Pythia workflow.
 
 Build the optional direct Pythia adapter with:
 

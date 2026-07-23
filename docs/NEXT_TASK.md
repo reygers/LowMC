@@ -4,21 +4,24 @@ This file should contain exactly one immediate task for Codex or another coding
 agent. Broader plans belong in `docs/ROADMAP.md`; project state belongs in
 `docs/STATUS.md`.
 
-Define a release-blocking validation matrix for the first public LowMC
-afterburner workflow.
+Implement a single release-validation driver for the first public LowMC
+research-prototype release.
 
 Requirements:
 
-- inventory the existing core, weighted-sampling, yield, count-plus-shape,
-  HepMC3 round-trip, Pythia, DELPHI, PHOTOS, envelope, and performance tests
-- distinguish release-blocking correctness gates from scientific benchmarks
-  and optional stress diagnostics
-- identify stale or contradictory status statements about already implemented
-  Pythia, HepMC3, unweighting, and external-tool support
-- specify exact commands, optional dependencies, expected outcomes, and
-  acceptable failure criteria for a clean release candidate
-- keep DELPHI, PHOTOS, analytic-bound, and eta-center conclusions unchanged
-- do not tune physics cuts or sampling defaults as part of the inventory
-- produce one concise validation document and update the roadmap/status links
-- leave implementation of any newly discovered missing gate as a subsequent
-  task rather than expanding the inventory without a predeclared contract
+- follow `docs/RELEASE_VALIDATION_MATRIX.md` exactly; do not redefine its
+  physics criteria
+- add one script that creates fresh Release build directories and runs `R1`,
+  `R2`, and `R3`
+- provide explicit switches and dependency-prefix arguments for the applicable
+  `C1` combined HepMC3/Pythia8 gate and the optional PHOTOS build
+- stop on a blocking failure, preserve the failing logs, and return nonzero
+- write a machine-readable manifest containing the LowMC revision, dirty-tree
+  state, compiler/CMake versions, enabled components, dependency paths or
+  reported versions, commands, exit statuses, durations, and discovered test
+  counts
+- write a concise Markdown summary suitable for attaching to a release
+- test command construction and failure propagation without requiring all
+  optional dependencies in the default CTest path
+- do not run DELPHI or PHOTOS production-statistics studies automatically
+- do not tune physics cuts, envelopes, or sampling defaults

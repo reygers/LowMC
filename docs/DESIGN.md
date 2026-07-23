@@ -25,7 +25,7 @@ Low formula.
 - generator-independent core
 - HepMC3 support
 - Pythia8 interface
-- weighted and (planned) unweighted generation
+- weighted generation and provisional unweighted HepMC3 output
 - future support for virtual photons and dielectrons
 
 ## Status
@@ -45,8 +45,8 @@ input event or selected charged particles
 -> user histograms and diagnostics
 ```
 
-Later, once physical unweighted photon generation is fully validated, LowMC can
-also provide an event-record afterburner workflow:
+The provisional HepMC3 diagnostic also provides an event-record afterburner
+workflow while production validation continues:
 
 ```text
 input.hepmc3 -> LowMC afterburner -> output.hepmc3
