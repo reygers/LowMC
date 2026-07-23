@@ -31,6 +31,7 @@ struct Options {
     int probeBins = 11;
     lowmc::ShapeUnweightingProbeRule probeRule = lowmc::ShapeUnweightingProbeRule::Interior;
     lowmc::ShapeUnweightingProbePolicy probePolicy = lowmc::ShapeUnweightingProbePolicy::Fixed;
+    bool analyticBoundAudit = false;
     int boostedProbeBins = 21;
     double boostedCellSafetyFactor = 20.0;
     double boostedCellNeighborScale = 1.0;
@@ -69,6 +70,7 @@ void printUsage(std::ostream& out, const char* programName) {
         << "  --probe-bins N           Probe lattice bins per cell dimension (default: 11)\n"
         << "  --probe-rule RULE        Probe rule: interior or edge (default: interior)\n"
         << "  --probe-policy POLICY    Probe policy: fixed or boosted-cells (default: fixed)\n"
+        << "  --analytic-bound-audit   Audit closed-form global/cell bounds without using them\n"
         << "  --boosted-probe-bins N   Dense probe bins for promoted cells (default: 21)\n"
         << "  --boosted-safety-factor X  Safety factor for promoted cells (default: 20)\n"
         << "  --boosted-neighbor-scale X  Charged-direction cell-neighborhood scale (default: 1)\n"
@@ -289,6 +291,10 @@ Options parseOptions(int argc, char** argv) {
         }
         if (argument == "--probe-policy") {
             options.probePolicy = parseProbePolicy(readStringOption(index, argc, argv, argument));
+            continue;
+        }
+        if (argument == "--analytic-bound-audit") {
+            options.analyticBoundAudit = true;
             continue;
         }
         if (argument == "--boosted-probe-bins") {
@@ -516,6 +522,7 @@ int main(int argc, char** argv) {
         config.probeBins = options.probeBins;
         config.probeRule = options.probeRule;
         config.probePolicy = options.probePolicy;
+        config.auditAnalyticBounds = options.analyticBoundAudit;
         config.boostedProbeBins = options.boostedProbeBins;
         config.boostedCellSafetyFactor = options.boostedCellSafetyFactor;
         config.boostedCellNeighborScale = options.boostedCellNeighborScale;
@@ -546,6 +553,38 @@ int main(int argc, char** argv) {
                   << " expected_acceptance_efficiency="
                   << result.envelope.expectedAcceptanceEfficiency
                   << " envelope_integral=" << result.envelope.envelopeIntegral
+                  << " analytic_bound_audit_enabled="
+                  << (result.envelope.analyticBoundAuditEnabled ? 1 : 0)
+                  << " analytic_bound_available="
+                  << (result.envelope.analyticBoundAvailable ? 1 : 0)
+                  << " analytic_bound_invalid_particles="
+                  << result.envelope.analyticBoundInvalidParticleCount
+                  << " analytic_bound_cells="
+                  << result.envelope.analyticBoundCellCount
+                  << " analytic_bound_fallback_cells="
+                  << result.envelope.analyticBoundFallbackCellCount
+                  << " analytic_bound_observed_violations="
+                  << result.envelope.analyticBoundObservedViolationCount
+                  << " analytic_bound_trial_violations="
+                  << result.envelope.analyticBoundTrialViolationCount
+                  << " analytic_bound_pair_evaluations="
+                  << result.envelope.analyticBoundPairEvaluations
+                  << " analytic_bound_seconds="
+                  << result.envelope.analyticBoundSeconds
+                  << " analytic_global_angular_bound="
+                  << result.envelope.analyticGlobalAngularBound
+                  << " analytic_global_weight_bound="
+                  << result.envelope.analyticGlobalWeightBound
+                  << " analytic_cell_envelope_integral="
+                  << result.envelope.analyticCellEnvelopeIntegral
+                  << " analytic_cell_envelope_over_current="
+                  << result.envelope.analyticCellEnvelopeOverCurrent
+                  << " analytic_expected_acceptance_efficiency="
+                  << result.envelope.analyticExpectedAcceptanceEfficiency
+                  << " analytic_max_observed_over_bound="
+                  << result.envelope.analyticMaxObservedOverBound
+                  << " analytic_max_trial_over_bound="
+                  << result.envelope.analyticMaxTrialOverBound
                   << " probe_evaluations=" << result.envelope.probeEvaluations
                   << " grid_cells=" << result.envelope.gridCellCount
                   << " suspect_cell_count=" << result.envelope.suspectCellCount

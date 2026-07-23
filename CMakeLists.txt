@@ -226,4 +226,8 @@ if(Python3_Interpreter_FOUND)
         NAME lowmc_summarize_delphi_jet_accounting_help
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/summarize_delphi_jet_accounting.py --help
     )
+    add_test(
+        NAME lowmc_summarize_analytic_bound_audit_help
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/summarize_analytic_bound_audit.py --help
+    )
 endif()

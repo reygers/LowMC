@@ -1218,11 +1218,32 @@ on-shell assumptions and numerically stable evaluation of
 `M_i^T-p_i^T = m_i^2/(M_i^T+p_i^T)` also require explicit validation and
 fallback behavior.
 
-The next envelope task is therefore an auditing-only global and cell-local
-analytic-bound prototype alongside the current sampler. It must not alter
-sampling, reduced-probe settings, or failure policies until pointwise
-factorization, bound safety, tightness, and finite-input coverage have been
-measured on controlled and Pythia-produced events.
+The audit-only implementation now evaluates both a global bound and rectangular
+cell-local bounds alongside the unchanged sampler. It uses true rapidity in the
+exact denominator and the stable identity
+
+$$
+D_i=(M_i^T-p_i^T)
+ +2M_i^T\sinh^2((\eta-y_i)/2)
+ +2p_i^T\sin^2((\phi-\phi_i)/2),
+\qquad
+M_i^T-p_i^T=\frac{m_i^2}{M_i^T+p_i^T}.
+$$
+
+The implementation explicitly rejects massless, off-shell, non-timelike, or
+non-finite charged legs from analytic certification. It bounds the complete
+importance weight, including `alpha/(2 pi)^2`, the log-uniform-`kT`
+normalization, and the physical `q_eta_phi` density.
+
+The predeclared held-out Pythia test covered fifteen hadronic-Z and fifteen
+SoftQCD events. Both processes had zero invalid legs, fallback cells, observed
+violations, and independent-trial violations. The construction is therefore a
+successful bound audit. It is not a practical standalone sampler: the median
+cell-envelope integral was `8.34` times the current envelope for hadronic Z
+events and `40.5` times for SoftQCD, while the global bound was billions of
+times larger. These fail the predeclared tightness gates. The analytic bounds
+remain audit-only; the current envelope, reduced-probe settings, and failure
+policies are unchanged, and the cosh-cos inverse-CDF proposal is deferred.
 
 ## Eta-Phi Sampling
 

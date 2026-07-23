@@ -117,6 +117,32 @@ Any independent trial overshoot sets `envelope_ok=0`; it must be treated as a
 failure. This command does not generate photons or replace the production
 shape-unweighting envelope.
 
+The closed-form Low-bound audit can be run on generated events without changing
+the sampler:
+
+```sh
+./build-pythia8/adapters/pythia8/lowmc_pythia8_analytic_bound_audit \
+  build-pythia8/analytic_bound_ee_seed46801.csv \
+  --mode ee-hadrons \
+  --events 5 \
+  --trials 10000 \
+  --calibration-trials 1000 \
+  --seed 46801
+```
+
+Use `--mode softqcd` for the corresponding proton-proton test. Combine one or
+more output files with:
+
+```sh
+python3 scripts/summarize_analytic_bound_audit.py \
+  build-pythia8/analytic_bound_*.csv \
+  --summary build-pythia8/analytic_bound_summary.csv \
+  --plot build-pythia8/analytic_bound_summary.png
+```
+
+This is a certification and tightness diagnostic only. Even a zero-violation
+result does not make the analytic bound the active rejection envelope.
+
 ### macOS Pythia8 Troubleshooting
 
 If the Pythia8 tests segfault very early, including in simple operations such

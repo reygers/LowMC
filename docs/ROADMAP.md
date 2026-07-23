@@ -406,6 +406,21 @@ incoming legs. PHOTOS remains the natural tool for ordinary decay radiation;
 LowMC's broader target remains a generator-independent leading-soft
 calculation for a user-selected scattering configuration.
 
+### Analytic envelope result
+
+The analytic global and cell-local bounds suggested by Stefan have been
+validated as formal majorants in controlled tests and a predeclared
+thirty-event Pythia block. They remain useful mathematical and diagnostic
+infrastructure, but they fail the standalone tightness criteria by a large
+margin on realistic multi-particle events. LowMC should therefore:
+
+- retain the bounds as an optional audit and possible future cell-certification
+  or branch-and-bound ingredient;
+- leave the current shape sampler and envelope defaults unchanged;
+- not pursue the cosh-cos inverse-CDF sampler unless a substantially tighter
+  positive decomposition or cancellation-aware bound is found; and
+- evaluate true-rapidity proposal centers separately from the bound result.
+
 ## Milestone 5: Extensions
 
 Potential future work:

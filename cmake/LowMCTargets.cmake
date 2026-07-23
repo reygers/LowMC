@@ -1,4 +1,5 @@
 add_library(lowmc_core STATIC
+    src/AnalyticLowBound.cpp
     src/EventYield.cpp
     src/FixedKTWeightedSampler.cpp
     src/GridEtaPhiProposal.cpp
@@ -631,6 +632,24 @@ set_tests_properties(
     PROPERTIES
         PASS_REGULAR_EXPRESSION
             "status=ok .* trials=16 .* accepted_candidates="
+)
+
+add_test(
+    NAME lowmc_shape_unweighting_analytic_bound_audit_smoke
+    COMMAND lowmc_shape_unweighting_diagnostic
+            --trials 16
+            --calibration-trials 16
+            --safety-factor 100
+            --probe-bins 2
+            --seed 12345
+            --momentum 10
+            --analytic-bound-audit
+)
+set_tests_properties(
+    lowmc_shape_unweighting_analytic_bound_audit_smoke
+    PROPERTIES
+        PASS_REGULAR_EXPRESSION
+            "analytic_bound_available=1.*analytic_bound_fallback_cells=0.*analytic_bound_observed_violations=0.*analytic_bound_trial_violations=0"
 )
 
 add_test(

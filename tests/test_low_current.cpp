@@ -39,6 +39,8 @@ void requireThrowsInvalidArgument(void (*action)(), const std::string& message) 
     std::exit(EXIT_FAILURE);
 }
 
+lowmc::PhotonPhaseSpace testPhaseSpace();
+
 lowmc::FourVector masslessPhotonFromEnergyAndDirection(
     double energy, double nx, double ny, double nz) {
     return lowmc::FourVector{energy, energy * nx, energy * ny, energy * nz};
@@ -97,6 +99,214 @@ void testCurrentSquaredMatchesPairSum() {
         current.intensityPairSum(photon),
         1.0e-12,
         "current-squared intensity should match explicit pair sum");
+}
+
+std::vector<lowmc::ChargedParticle> analyticBoundToyParticles() {
+    const double mass = 0.35;
+    const double px = 1.2;
+    const double py = 0.7;
+    const double pz = 1.8;
+    const double energy =
+        std::sqrt(mass * mass + px * px + py * py + pz * pz);
+    return {
+        {
+            lowmc::FourVector{energy, px, py, pz},
+            +1.0,
+            lowmc::InOutSign::Outgoing,
+        },
+        {
+            lowmc::FourVector{energy, -px, -py, -pz},
+            -1.0,
+            lowmc::InOutSign::Outgoing,
+        },
+    };
+}
+
+void testAnalyticLowDenominatorAndFactorization() {
+    const std::vector<lowmc::ChargedParticle> particles =
+        analyticBoundToyParticles();
+    const lowmc::LowCurrent current(particles);
+    const lowmc::AnalyticLowBound analytic(particles);
+    require(analytic.valid(), "massive analytic-bound toy should be valid");
+    require(
+        analytic.invalidParticleCount() == 0,
+        "massive analytic-bound toy should have no invalid particles");
+
+    const std::vector<double> kTValues = {0.02, 0.08, 0.19};
+    const std::vector<double> etaValues = {-1.1, 0.25, 1.2};
+    const std::vector<double> phiValues = {0.15, 2.0, 5.7};
+    for (const double kT : kTValues) {
+        for (std::size_t point = 0; point < etaValues.size(); ++point) {
+            const double eta = etaValues[point];
+            const double phi = phiValues[point];
+            const lowmc::FourVector photon =
+                lowmc::photonMomentumFromKTEtaPhi(kT, eta, phi);
+            for (std::size_t particle = 0;
+                 particle < particles.size();
+                 ++particle) {
+                const double direct =
+                    particles[particle].momentum.dot(photon) / kT;
+                const double closed =
+                    analytic.denominatorScale(particle, eta, phi);
+                requireNear(
+                    closed,
+                    direct,
+                    2.0e-13 * std::max(1.0, std::abs(direct)),
+                    "closed-form p.k/kT denominator scale");
+            }
+            const double directAngular =
+                current.intensity(photon) * kT * kT;
+            const double analyticAngular =
+                analytic.angularIntensity(eta, phi);
+            requireNear(
+                analyticAngular,
+                directAngular,
+                2.0e-11 *
+                    std::max(1.0, std::abs(directAngular)),
+                "analytic angular intensity should reproduce kT^2 S(k)");
+        }
+    }
+}
+
+void testAnalyticLowGlobalAndCellBoundsCoverDensePoints() {
+    const lowmc::AnalyticLowBound analytic(
+        analyticBoundToyParticles());
+    const lowmc::AnalyticLowAngularBound global =
+        analytic.globalAngularIntensityBound();
+    require(global.valid, "analytic global angular bound should be valid");
+    const lowmc::AnalyticLowAngularBound cell =
+        analytic.cellAngularIntensityBound(-0.4, 0.7, 1.0, 2.4);
+    require(cell.valid, "analytic cell angular bound should be valid");
+    require(
+        cell.value <= global.value,
+        "cell-local analytic bound should not exceed the global bound");
+
+    for (int etaIndex = 0; etaIndex < 31; ++etaIndex) {
+        const double eta =
+            -1.5 + 3.0 *
+                (static_cast<double>(etaIndex) + 0.5) / 31.0;
+        for (int phiIndex = 0; phiIndex < 37; ++phiIndex) {
+            const double phi =
+                2.0 * std::acos(-1.0) *
+                (static_cast<double>(phiIndex) + 0.5) / 37.0;
+            const double angular =
+                analytic.angularIntensity(eta, phi);
+            require(
+                angular <=
+                    global.value *
+                        (1.0 + 32.0 *
+                            std::numeric_limits<double>::epsilon()),
+                "global analytic bound should cover dense angular points");
+            if (eta >= -0.4 && eta <= 0.7 &&
+                phi >= 1.0 && phi <= 2.4) {
+                require(
+                    angular <=
+                        cell.value *
+                            (1.0 + 32.0 *
+                                std::numeric_limits<double>::epsilon()),
+                    "cell analytic bound should cover dense cell points");
+            }
+        }
+    }
+}
+
+void testAnalyticLowWeightBoundIncludesProposalNormalization() {
+    const std::vector<lowmc::ChargedParticle> particles =
+        analyticBoundToyParticles();
+    const lowmc::LowCurrent current(particles);
+    const lowmc::AnalyticLowBound analytic(particles);
+    const lowmc::PhotonPhaseSpace phaseSpace = testPhaseSpace();
+    const double etaPhiDensity =
+        lowmc::uniformEtaPhiDensity(phaseSpace);
+    const lowmc::AnalyticLowAngularBound angularBound =
+        analytic.cellAngularIntensityBound(
+            phaseSpace.etaMin,
+            phaseSpace.etaMax,
+            phaseSpace.phiMin,
+            phaseSpace.phiMax);
+    const double alpha = 0.01;
+    const double weightBound =
+        lowmc::analyticLowWeightBound(
+            angularBound,
+            phaseSpace,
+            etaPhiDensity,
+            alpha);
+    require(
+        weightBound > 0.0 && std::isfinite(weightBound),
+        "analytic full-weight bound should be positive and finite");
+
+    for (const double kT : {0.025, 0.08, 0.18}) {
+        for (const double eta : {-1.0, 0.0, 1.0}) {
+            for (const double phi : {0.2, 2.2, 5.5}) {
+                const lowmc::FourVector photon =
+                    lowmc::photonMomentumFromKTEtaPhi(
+                        kT, eta, phi);
+                const double proposalDensity =
+                    lowmc::logUniformKTDensityPhysicalMeasure(
+                        phaseSpace, kT) *
+                    etaPhiDensity;
+                const double weight =
+                    lowmc::lowPhotonDensity(
+                        current, photon, alpha) /
+                    proposalDensity;
+                require(
+                    weight <=
+                        weightBound *
+                            (1.0 + 32.0 *
+                                std::numeric_limits<double>::epsilon()),
+                    "analytic weight bound should include kT and eta-phi proposal normalization");
+            }
+        }
+    }
+}
+
+void testAnalyticLowBoundReportsMasslessFallback() {
+    const lowmc::AnalyticLowBound analytic({
+        {
+            lowmc::FourVector{2.0, 2.0, 0.0, 0.0},
+            +1.0,
+            lowmc::InOutSign::Outgoing,
+        },
+    });
+    require(
+        !analytic.valid(),
+        "massless charged input should invalidate finite analytic bound");
+    require(
+        analytic.invalidParticleCount() == 1,
+        "massless analytic bound should count the invalid particle");
+    const lowmc::AnalyticLowAngularBound global =
+        analytic.globalAngularIntensityBound();
+    require(
+        !global.valid && std::isinf(global.value),
+        "massless analytic bound should request explicit fallback");
+}
+
+void testAnalyticLowPeakUsesTrueRapidity() {
+    const double mass = 0.8;
+    const double px = 0.3;
+    const double pz = 0.4;
+    const double energy =
+        std::sqrt(mass * mass + px * px + pz * pz);
+    const lowmc::AnalyticLowBound analytic({
+        {
+            lowmc::FourVector{energy, px, 0.0, pz},
+            +1.0,
+            lowmc::InOutSign::Outgoing,
+        },
+    });
+    require(analytic.valid(), "massive slow particle should be valid");
+    const double rapidity =
+        analytic.legKinematics().front().rapidity;
+    const double pseudorapidity = std::asinh(pz / px);
+    require(
+        std::abs(rapidity - pseudorapidity) > 0.1,
+        "slow massive particle should separate rapidity and pseudorapidity");
+    const double phi = 0.0;
+    require(
+        analytic.denominatorScale(0, rapidity, phi) <
+            analytic.denominatorScale(
+                0, pseudorapidity, phi),
+        "fixed-kT denominator should be minimized at true rapidity");
 }
 
 void testLowPhotonDensityUsesLowNormalization() {
@@ -1814,6 +2024,66 @@ void testShapeUnweightingReturnsDiagnosticsAndUnitWeightCandidates() {
     }
 }
 
+void testShapeUnweightingAnalyticBoundAuditIsNonMutatingAndSafe() {
+    lowmc::ShapeUnweightingConfig auditedConfig =
+        shapeUnweightingTestConfig(24680);
+    auditedConfig.trials = 128;
+    auditedConfig.calibrationTrials = 64;
+    auditedConfig.probeBins = 5;
+    auditedConfig.auditAnalyticBounds = true;
+    lowmc::ShapeUnweightingConfig referenceConfig = auditedConfig;
+    referenceConfig.auditAnalyticBounds = false;
+
+    const lowmc::ShapeUnweightingResult audited =
+        lowmc::generateShapeUnweightedPhotonCandidates(
+            eventGeneratorToyParticles(), auditedConfig);
+    const lowmc::ShapeUnweightingResult reference =
+        lowmc::generateShapeUnweightedPhotonCandidates(
+            eventGeneratorToyParticles(), referenceConfig);
+
+    require(
+        audited.status == reference.status,
+        "analytic-bound audit should not change shape status");
+    require(
+        audited.candidates.size() == reference.candidates.size(),
+        "analytic-bound audit should not change accepted candidates");
+    requireNear(
+        audited.envelope.envelopeIntegral,
+        reference.envelope.envelopeIntegral,
+        1.0e-15,
+        "analytic-bound audit should not change empirical envelope");
+    require(
+        audited.envelope.analyticBoundAuditEnabled,
+        "analytic-bound audit should report that it is enabled");
+    require(
+        audited.envelope.analyticBoundAvailable,
+        "massive two-pion analytic bounds should be available");
+    require(
+        audited.envelope.analyticBoundInvalidParticleCount == 0 &&
+            audited.envelope.analyticBoundFallbackCellCount == 0,
+        "massive two-pion analytic audit should need no fallback");
+    require(
+        audited.envelope.analyticBoundObservedViolationCount == 0 &&
+            audited.envelope.analyticBoundTrialViolationCount == 0,
+        "analytic bounds should cover probes, calibration, and trials");
+    require(
+        audited.envelope.analyticBoundCellCount ==
+            static_cast<int>(audited.envelope.gridCellCount),
+        "analytic audit should inspect every grid cell");
+    require(
+        audited.envelope.analyticCellEnvelopeIntegral > 0.0 &&
+            std::isfinite(
+                audited.envelope.analyticCellEnvelopeIntegral),
+        "analytic cell envelope integral should be finite and positive");
+    require(
+        audited.envelope.analyticMaxObservedOverBound <= 1.0 &&
+            audited.envelope.analyticMaxTrialOverBound <= 1.0,
+        "observed analytic-bound ratios should not exceed one");
+    require(
+        audited.envelope.analyticBoundPairEvaluations > 0,
+        "analytic audit should report pair evaluations");
+}
+
 void testShapeUnweightingTargetedBaseProbesFullProbeChargedCells() {
     lowmc::ShapeUnweightingConfig config = shapeUnweightingTestConfig(123);
     config.baseProbeBins = 1;
@@ -2287,6 +2557,11 @@ int main() {
     testChargeNeutralTwoParticleCurrentIsTransverse();
     testFiniteMassCollinearRegularization();
     testCurrentSquaredMatchesPairSum();
+    testAnalyticLowDenominatorAndFactorization();
+    testAnalyticLowGlobalAndCellBoundsCoverDensePoints();
+    testAnalyticLowWeightBoundIncludesProposalNormalization();
+    testAnalyticLowBoundReportsMasslessFallback();
+    testAnalyticLowPeakUsesTrueRapidity();
     testLowPhotonDensityUsesLowNormalization();
     testLowPhotonDensityDefaultAlphaIsPositive();
     testWeightedPhotonSampleUsesProposalDensityConvention();
@@ -2342,6 +2617,7 @@ int main() {
     testWeightedEventGeneratorAppliesOversamplingFactor();
     testWeightedEventGeneratorRejectsInvalidInputs();
     testShapeUnweightingReturnsDiagnosticsAndUnitWeightCandidates();
+    testShapeUnweightingAnalyticBoundAuditIsNonMutatingAndSafe();
     testShapeUnweightingTargetedBaseProbesFullProbeChargedCells();
     testShapeUnweightingReducedVsFullProbeAuditReportsUnderBoundedCells();
     testShapeUnweightingCompensatesOnlyReducedBaseProbeCells();

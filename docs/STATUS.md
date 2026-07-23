@@ -2068,6 +2068,23 @@ milestone, or known open questions change.
 
 Follow the single task in `docs/NEXT_TASK.md`.
 
+## Analytic Low-Bound Audit
+
+Stefan's global and rectangular cell-local majorants are implemented as an
+opt-in, read-only audit beside the existing shape-unweighting sampler. Unit
+tests cover the exact fixed-`kT` factorization, the complete normalized weight
+bound, dense cell coverage, stable finite-mass evaluation, true rapidity, and
+explicit invalid-leg fallback. The sampling path and defaults are unchanged.
+
+The predeclared thirty-event held-out Pythia block passed the safety gate with
+zero invalid legs, fallback cells, or bound violations. It failed the
+tightness gate: the median analytic/current cell-envelope ratios are `8.34`
+for hadronic Z and `40.5` for SoftQCD, with maxima of `86.96` and `1339.38`.
+The global bound is billions of times above the current envelope. The analytic
+construction is therefore retained for auditing or possible future cell
+certification, not as a standalone sampler. Detailed criteria and results are
+in `docs/ANALYTIC_BOUND_AUDIT_PLAN.md`.
+
 ## Open Questions
 
 - Is a no-incoming-particle LowMC afterburner vertex the best HepMC3 topology

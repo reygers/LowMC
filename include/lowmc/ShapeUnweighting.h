@@ -58,6 +58,7 @@ struct ShapeUnweightingConfig {
     double targetedRefinementNeighborScale = 0.0;
     double safetyFactor = 3.0;
     EnvelopeFailurePolicy failurePolicy = EnvelopeFailurePolicy::Strict;
+    bool auditAnalyticBounds = false;
 };
 
 struct ShapeUnweightedPhotonCandidate {
@@ -132,6 +133,22 @@ struct ShapeUnweightingEnvelopeDiagnostics {
     double auditSevereMeanEtaWidth = 0.0;
     double auditSevereMeanPhiWidth = 0.0;
     double auditSevereMaxCalibrationOverBaseProbeRatio = 0.0;
+    bool analyticBoundAuditEnabled = false;
+    bool analyticBoundAvailable = false;
+    int analyticBoundInvalidParticleCount = 0;
+    int analyticBoundCellCount = 0;
+    int analyticBoundFallbackCellCount = 0;
+    int analyticBoundObservedViolationCount = 0;
+    int analyticBoundTrialViolationCount = 0;
+    std::size_t analyticBoundPairEvaluations = 0;
+    double analyticBoundSeconds = 0.0;
+    double analyticGlobalAngularBound = 0.0;
+    double analyticGlobalWeightBound = 0.0;
+    double analyticCellEnvelopeIntegral = 0.0;
+    double analyticCellEnvelopeOverCurrent = 0.0;
+    double analyticExpectedAcceptanceEfficiency = 0.0;
+    double analyticMaxObservedOverBound = 0.0;
+    double analyticMaxTrialOverBound = 0.0;
     int fullBaseProbeCellCount = 0;
     double targetedBaseProbeNeighborScale = 0.0;
     int evidenceBaseProbeCellCount = 0;

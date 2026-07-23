@@ -368,6 +368,52 @@ foreach(LOWMC_DELPHI_JET_ALGORITHM IN ITEMS Durham Jade)
     )
 endforeach()
 
+add_executable(lowmc_pythia8_analytic_bound_audit
+    diagnostics/pythia8_analytic_bound_audit.cpp
+)
+
+target_link_libraries(lowmc_pythia8_analytic_bound_audit
+    PRIVATE
+        lowmc_pythia8_adapter
+)
+
+target_compile_definitions(lowmc_pythia8_analytic_bound_audit
+    PRIVATE
+        LOWMC_PYTHIA8_XMLDOC="${LOWMC_PYTHIA8_XMLDOC_DIR}"
+)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(
+        lowmc_pythia8_analytic_bound_audit
+        PRIVATE -Wall -Wextra -pedantic
+    )
+elseif(MSVC)
+    target_compile_options(
+        lowmc_pythia8_analytic_bound_audit PRIVATE /W4
+    )
+endif()
+
+add_test(
+    NAME lowmc_pythia8_analytic_bound_audit_help
+    COMMAND lowmc_pythia8_analytic_bound_audit --help
+)
+
+add_test(
+    NAME lowmc_pythia8_analytic_bound_audit_smoke
+    COMMAND lowmc_pythia8_analytic_bound_audit
+            ${CMAKE_CURRENT_BINARY_DIR}/pythia8_analytic_bound_audit_smoke.csv
+            --events 1
+            --trials 64
+            --calibration-trials 16
+            --seed 12345
+)
+set_tests_properties(
+    lowmc_pythia8_analytic_bound_audit_smoke
+    PROPERTIES
+        PASS_REGULAR_EXPRESSION
+            "analytic_bound_audit_status=ok mode=ee-hadrons seed=12345 events=1"
+)
+
 if(Python3_Interpreter_FOUND)
     add_test(
         NAME lowmc_pythia8_delphi_hadronic_summary_smoke

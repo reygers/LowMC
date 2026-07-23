@@ -573,3 +573,17 @@ The first version should stay analytically normalizable and weighted, with a
 uniform floor and exact `S(k)` evaluation at every sampled point. It should be
 compared against the tuned grid-adaptive map before any production role is
 considered.
+
+### Analytic Low bounds remain audit-only
+
+The exact global and rectangular cell-local Low-current bounds are accepted as
+diagnostic infrastructure, including stable finite-mass denominators and
+explicit invalid-leg fallback. They are not accepted as the production
+rejection envelope.
+
+The predeclared held-out test found no coverage violations, but the median
+cell-envelope integral was `8.34` times the current envelope for hadronic Z
+events and `40.5` times for SoftQCD. The global bound was billions of times too
+large. LowMC therefore keeps the existing sampler and failure semantics. The
+cosh-cos inverse-CDF proposal is deferred; it should be reconsidered only with
+a materially tighter construction.

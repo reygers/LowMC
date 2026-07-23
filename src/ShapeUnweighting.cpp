@@ -8,6 +8,7 @@
 #include <random>
 #include <stdexcept>
 
+#include "lowmc/AnalyticLowBound.h"
 #include "lowmc/KTProposal.h"
 #include "lowmc/WeightedPhotonGenerator.h"
 
@@ -859,6 +860,23 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
     result.envelope.auditSevereMeanEtaWidth = 0.0;
     result.envelope.auditSevereMeanPhiWidth = 0.0;
     result.envelope.auditSevereMaxCalibrationOverBaseProbeRatio = 0.0;
+    result.envelope.analyticBoundAuditEnabled =
+        config.auditAnalyticBounds;
+    result.envelope.analyticBoundAvailable = false;
+    result.envelope.analyticBoundInvalidParticleCount = 0;
+    result.envelope.analyticBoundCellCount = 0;
+    result.envelope.analyticBoundFallbackCellCount = 0;
+    result.envelope.analyticBoundObservedViolationCount = 0;
+    result.envelope.analyticBoundTrialViolationCount = 0;
+    result.envelope.analyticBoundPairEvaluations = 0;
+    result.envelope.analyticBoundSeconds = 0.0;
+    result.envelope.analyticGlobalAngularBound = 0.0;
+    result.envelope.analyticGlobalWeightBound = 0.0;
+    result.envelope.analyticCellEnvelopeIntegral = 0.0;
+    result.envelope.analyticCellEnvelopeOverCurrent = 0.0;
+    result.envelope.analyticExpectedAcceptanceEfficiency = 0.0;
+    result.envelope.analyticMaxObservedOverBound = 0.0;
+    result.envelope.analyticMaxTrialOverBound = 0.0;
     result.envelope.targetedBaseProbeNeighborScale = config.targetedBaseProbeNeighborScale;
     result.envelope.evidenceBaseProbeCellCount = 0;
     result.envelope.evidenceTargetedBaseProbeNeighborScale =
@@ -1100,6 +1118,127 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
     result.envelope.promotedCellCount = probePlan.promotedCellCount;
     result.envelope.probeEvaluations = probePlan.probeEvaluations;
 
+    std::vector<double> analyticCellWeightBounds;
+    if (config.auditAnalyticBounds) {
+        const auto analyticStart = std::chrono::steady_clock::now();
+        const AnalyticLowBound analyticBound(selectedParticles);
+        result.envelope.analyticBoundInvalidParticleCount =
+            analyticBound.invalidParticleCount();
+        result.envelope.analyticBoundCellCount =
+            static_cast<int>(gridProposal.cells.size());
+        analyticCellWeightBounds.assign(
+            gridProposal.cells.size(),
+            std::numeric_limits<double>::infinity());
+
+        const std::size_t particleCount = selectedParticles.size();
+        const std::size_t pairCount = particleCount * particleCount;
+        if (analyticBound.valid()) {
+            const AnalyticLowAngularBound globalBound =
+                analyticBound.globalAngularIntensityBound();
+            result.envelope.analyticGlobalAngularBound =
+                globalBound.value;
+            result.envelope.analyticBoundPairEvaluations += pairCount;
+
+            double minimumEtaPhiDensity =
+                std::numeric_limits<double>::infinity();
+            for (const GridAdaptiveEtaPhiCell& cell :
+                 gridProposal.cells) {
+                minimumEtaPhiDensity = std::min(
+                    minimumEtaPhiDensity,
+                    etaPhiDensityForCell(gridProposal, cell));
+            }
+            if (globalBound.valid &&
+                minimumEtaPhiDensity > 0.0 &&
+                std::isfinite(minimumEtaPhiDensity)) {
+                result.envelope.analyticGlobalWeightBound =
+                    analyticLowWeightBound(
+                        globalBound,
+                        config.phaseSpace,
+                        minimumEtaPhiDensity,
+                        alpha);
+            } else {
+                result.envelope.analyticGlobalWeightBound =
+                    std::numeric_limits<double>::infinity();
+            }
+
+            double analyticEnvelopeIntegral = 0.0;
+            for (std::size_t index = 0;
+                 index < gridProposal.cells.size();
+                 ++index) {
+                const GridAdaptiveEtaPhiCell& cell =
+                    gridProposal.cells[index];
+                const double etaPhiDensity =
+                    etaPhiDensityForCell(gridProposal, cell);
+                const AnalyticLowAngularBound cellBound =
+                    analyticBound.cellAngularIntensityBound(
+                        cell.etaMin,
+                        cell.etaMax,
+                        cell.phiMin,
+                        cell.phiMax);
+                result.envelope.analyticBoundPairEvaluations +=
+                    pairCount;
+                if (!cellBound.valid ||
+                    !(etaPhiDensity > 0.0) ||
+                    !std::isfinite(etaPhiDensity)) {
+                    ++result.envelope.analyticBoundFallbackCellCount;
+                    continue;
+                }
+                const double weightBound =
+                    analyticLowWeightBound(
+                        cellBound,
+                        config.phaseSpace,
+                        etaPhiDensity,
+                        alpha);
+                if (!(weightBound > 0.0) ||
+                    !std::isfinite(weightBound)) {
+                    ++result.envelope.analyticBoundFallbackCellCount;
+                    continue;
+                }
+                analyticCellWeightBounds[index] = weightBound;
+                analyticEnvelopeIntegral +=
+                    weightBound *
+                    cellProposalMass(gridProposal, cell);
+
+                const double observed = std::max(
+                    finalProbedCellMaxWeights[index],
+                    calibrationCellMaxWeights[index]);
+                const double ratio = observed / weightBound;
+                if (std::isfinite(ratio)) {
+                    result.envelope.analyticMaxObservedOverBound =
+                        std::max(
+                            result.envelope.analyticMaxObservedOverBound,
+                            ratio);
+                }
+                if (observed >
+                    weightBound *
+                        (1.0 + 32.0 *
+                            std::numeric_limits<double>::epsilon())) {
+                    ++result.envelope
+                          .analyticBoundObservedViolationCount;
+                }
+            }
+            result.envelope.analyticCellEnvelopeIntegral =
+                analyticEnvelopeIntegral;
+            result.envelope.analyticBoundAvailable =
+                result.envelope.analyticBoundFallbackCellCount == 0 &&
+                result.envelope
+                        .analyticBoundObservedViolationCount == 0 &&
+                analyticEnvelopeIntegral > 0.0 &&
+                std::isfinite(analyticEnvelopeIntegral);
+        } else {
+            result.envelope.analyticBoundFallbackCellCount =
+                static_cast<int>(gridProposal.cells.size());
+            result.envelope.analyticGlobalAngularBound =
+                std::numeric_limits<double>::infinity();
+            result.envelope.analyticGlobalWeightBound =
+                std::numeric_limits<double>::infinity();
+            result.envelope.analyticCellEnvelopeIntegral =
+                std::numeric_limits<double>::infinity();
+        }
+        result.envelope.analyticBoundSeconds =
+            secondsSince(analyticStart);
+    }
+
     const auto envelopeBuildStart = std::chrono::steady_clock::now();
     const std::vector<EnvelopeCell> envelopeCells =
         makeEnvelopeCells(
@@ -1112,6 +1251,11 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
         throw std::runtime_error("shape-unweighting envelope has zero total mass");
     }
     result.envelope.envelopeIntegral = envelopeMass;
+    if (result.envelope.analyticBoundAvailable) {
+        result.envelope.analyticCellEnvelopeOverCurrent =
+            result.envelope.analyticCellEnvelopeIntegral /
+            envelopeMass;
+    }
     const EnvelopeCellSampler envelopeCellSampler = makeEnvelopeCellSampler(envelopeCells);
     result.envelope.envelopeBuildSeconds = secondsSince(envelopeBuildStart);
 
@@ -1147,6 +1291,30 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
         if (weight > bound) {
             ++result.envelope.failedEnvelopeCount;
         }
+        if (config.auditAnalyticBounds &&
+            record.cellIndex < analyticCellWeightBounds.size()) {
+            const double analyticWeightBound =
+                analyticCellWeightBounds[record.cellIndex];
+            if (analyticWeightBound > 0.0 &&
+                std::isfinite(analyticWeightBound)) {
+                const double analyticRatio =
+                    weight / analyticWeightBound;
+                if (std::isfinite(analyticRatio)) {
+                    result.envelope.analyticMaxTrialOverBound =
+                        std::max(
+                            result.envelope
+                                .analyticMaxTrialOverBound,
+                            analyticRatio);
+                }
+                if (weight >
+                    analyticWeightBound *
+                        (1.0 + 32.0 *
+                            std::numeric_limits<double>::epsilon())) {
+                    ++result.envelope
+                          .analyticBoundTrialViolationCount;
+                }
+            }
+        }
 
         const double acceptanceProbability =
             std::isfinite(bound) ? std::min(1.0, ratio) : 0.0;
@@ -1172,6 +1340,16 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
         static_cast<double>(result.envelope.acceptedCount) / static_cast<double>(config.trials);
     result.envelope.expectedAcceptanceEfficiency =
         cappedAcceptanceSum / static_cast<double>(config.trials);
+    if (result.envelope.analyticBoundTrialViolationCount > 0) {
+        result.envelope.analyticBoundAvailable = false;
+    }
+    if (result.envelope.analyticBoundAvailable &&
+        result.envelope.analyticCellEnvelopeIntegral > 0.0) {
+        result.envelope.analyticExpectedAcceptanceEfficiency =
+            result.envelope.expectedAcceptanceEfficiency *
+            result.envelope.envelopeIntegral /
+            result.envelope.analyticCellEnvelopeIntegral;
+    }
 
     if (result.envelope.failedEnvelopeCount > 0) {
         result.status = ShapeUnweightingStatus::EnvelopeFailed;
