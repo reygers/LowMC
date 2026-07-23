@@ -621,6 +621,112 @@ void testFixedKTSmoothEtaPhiWeightedSampleUsesSmoothDensity() {
         "smooth fixed-kT sample should weight by exact density divided by smooth q");
 }
 
+void testLegCenteredEtaPhiDensityIsNormalizedOnSphere() {
+    const double momentum = 0.75;
+    const double energy = 1.25;
+    const lowmc::PhotonPhaseSpace phaseSpace = testPhaseSpace();
+    const std::vector<lowmc::ChargedParticle> particles = {
+        {lowmc::FourVector{energy, momentum, 0.0, 0.0}, +1.0,
+         lowmc::InOutSign::Outgoing},
+    };
+    const lowmc::LegCenteredEtaPhiProposal proposal =
+        lowmc::makeLegCenteredEtaPhiProposal(
+            phaseSpace,
+            particles,
+            lowmc::LegCenteredEtaPhiProposalConfig{0.2, 1.0e-12});
+
+    const int etaBins = 500;
+    const int phiBins = 720;
+    const double etaMin = -10.0;
+    const double etaMax = 10.0;
+    const double dEta = (etaMax - etaMin) / etaBins;
+    const double dPhi = 2.0 * std::acos(-1.0) / phiBins;
+    double integral = 0.0;
+    for (int iEta = 0; iEta < etaBins; ++iEta) {
+        const double eta = etaMin + (iEta + 0.5) * dEta;
+        for (int iPhi = 0; iPhi < phiBins; ++iPhi) {
+            const double phi = (iPhi + 0.5) * dPhi;
+            integral += lowmc::legCenteredEtaPhiDensity(proposal, eta, phi) *
+                        dEta * dPhi;
+        }
+    }
+    requireNear(
+        integral,
+        1.0,
+        2.0e-4,
+        "leg-centred eta-phi density should integrate to one on the sphere");
+}
+
+void testLegCenteredEtaPhiSampleUsesFiniteMassKernel() {
+    const double momentum = 0.75;
+    const double energy = 1.25;
+    const double beta = momentum / energy;
+    const lowmc::PhotonPhaseSpace phaseSpace = testPhaseSpace();
+    const lowmc::LegCenteredEtaPhiProposal proposal =
+        lowmc::makeLegCenteredEtaPhiProposal(
+            phaseSpace,
+            {{lowmc::FourVector{energy, momentum, 0.0, 0.0}, +1.0,
+              lowmc::InOutSign::Outgoing}},
+            lowmc::LegCenteredEtaPhiProposalConfig{0.2, 1.0e-12});
+
+    const double unitPolar = 0.37;
+    const lowmc::LegCenteredEtaPhiProposalPoint sample =
+        lowmc::sampleLegCenteredEtaPhi(proposal, 0.5, unitPolar, 0.23);
+    const double logarithm = std::log1p(beta) - std::log1p(-beta);
+    const double expectedCosine =
+        (1.0 - (1.0 + beta) * std::exp(-unitPolar * logarithm)) / beta;
+    const double sampledCosine = std::cos(sample.phi) / std::cosh(sample.eta);
+
+    requireNear(
+        sampledCosine,
+        expectedCosine,
+        1.0e-12,
+        "leg-centred sample should invert the finite-mass denominator kernel");
+    require(sample.density > 0.0, "leg-centred sample density should be positive");
+}
+
+void testFixedKTLegCenteredWeightedSampleUsesExactTargetDensity() {
+    const double mass = 0.13957039;
+    const double momentum = 10.0;
+    const double energy = std::sqrt(momentum * momentum + mass * mass);
+    const lowmc::LowCurrent current({
+        {lowmc::FourVector{energy, 0.0, momentum, 0.0}, +1.0,
+         lowmc::InOutSign::Outgoing},
+        {lowmc::FourVector{energy, 0.0, -momentum, 0.0}, -1.0,
+         lowmc::InOutSign::Outgoing},
+    });
+    const lowmc::PhotonPhaseSpace phaseSpace = testPhaseSpace();
+    const lowmc::LegCenteredEtaPhiProposal proposal =
+        lowmc::makeLegCenteredEtaPhiProposal(
+            phaseSpace,
+            current.particles(),
+            lowmc::LegCenteredEtaPhiProposalConfig{0.2, 1.0e-12});
+    const double alpha = 0.01;
+    const lowmc::FixedKTLegCenteredWeightedSample sample =
+        lowmc::makeFixedKTLegCenteredEtaPhiWeightedSample(
+            current,
+            0.08,
+            proposal,
+            0.3,
+            0.5,
+            0.5,
+            alpha);
+
+    require(sample.etaPhiProposal.insideAcceptance,
+            "controlled leg-centred sample should be inside acceptance");
+    requireNear(
+        sample.weightedPhoton.proposalDensity,
+        sample.etaPhiProposal.density,
+        1.0e-12,
+        "leg-centred fixed-kT sample should retain analytic proposal density");
+    requireNear(
+        sample.weightedPhoton.photon.weight,
+        lowmc::lowPhotonDensity(current, sample.weightedPhoton.photon.momentum, alpha) /
+            sample.etaPhiProposal.density,
+        1.0e-12,
+        "leg-centred sample should weight by exact Low density over analytic proposal");
+}
+
 void testGridAdaptiveEtaPhiProposalBuildsRefinedCells() {
     const lowmc::LowCurrent current({
         {lowmc::FourVector{2.0, 0.0, 0.0, 1.0}, +1.0, lowmc::InOutSign::Outgoing},
@@ -2197,6 +2303,9 @@ int main() {
     testFixedKTAdaptiveEtaPhiWeightedSampleUsesAdaptiveDensity();
     testSmoothEtaPhiProposalSamplesLocalKernel();
     testFixedKTSmoothEtaPhiWeightedSampleUsesSmoothDensity();
+    testLegCenteredEtaPhiDensityIsNormalizedOnSphere();
+    testLegCenteredEtaPhiSampleUsesFiniteMassKernel();
+    testFixedKTLegCenteredWeightedSampleUsesExactTargetDensity();
     testGridAdaptiveEtaPhiProposalBuildsRefinedCells();
     testGridAdaptiveEtaPhiSampleUsesPositiveDensity();
     testGridAdaptiveVarianceRefinementScoreBuildsProposal();

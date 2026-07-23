@@ -17,6 +17,7 @@ Optional adapters:
 
 - HepMC3, only when `LOWMC_ENABLE_HEPMC3=ON`
 - Pythia8, only when `LOWMC_ENABLE_PYTHIA8=ON`
+- PHOTOS with its HepMC3 interface, only when `LOWMC_ENABLE_PHOTOS=ON`
 
 ## Default Build
 
@@ -62,6 +63,60 @@ ctest --test-dir build-pythia8 -R pythia8 --output-on-failure
 LowMC also searches the common local prefix `$HOME/pythia8317/bin` for
 `pythia8-config`.
 
+The opt-in Pythia residual-tail diagnostic compares the analytic leg-centred
+proposal with the tuned grid on generated events:
+
+```sh
+./build-pythia8/adapters/pythia8/lowmc_pythia8_leg_proposal_tail_diagnostic \
+  build-pythia8/leg_tail_ee_seed24681.csv \
+  --mode ee-hadrons \
+  --events 20 \
+  --samples 20000 \
+  --seed 24681
+```
+
+Use `--mode softqcd` for 13 TeV non-diffractive `pp` events. After running
+multiple seeds, create the paired summary and diagnostic plot with:
+
+```sh
+python3 scripts/summarize_pythia_leg_tail_study.py \
+  build-pythia8/leg_tail_*.csv \
+  --summary build-pythia8/leg_tail_summary.csv \
+  --paired build-pythia8/leg_tail_paired.csv \
+  --plot build-pythia8/leg_tail_study.png
+```
+
+This remains a weighted diagnostic and does not construct or select a
+production envelope.
+
+The separate strict envelope diagnostic calibrates an empirical per-event
+bound and checks it on independent proposal draws:
+
+```sh
+./build-pythia8/adapters/pythia8/lowmc_pythia8_leg_envelope_diagnostic \
+  build-pythia8/leg_envelope_ee_seed35791.csv \
+  --mode ee-hadrons \
+  --events 20 \
+  --calibration-samples 20000 \
+  --trial-samples 100000 \
+  --seed 35791
+```
+
+The default scan writes rows for safety factors `1.2`, `1.5`, and `2.0`.
+Repeat `--safety-factor` to select a custom list. Summarize multiple seeds and
+both event modes with:
+
+```sh
+python3 scripts/summarize_pythia_leg_envelope.py \
+  build-pythia8/leg_envelope_*.csv \
+  --summary build-pythia8/leg_envelope_summary.csv \
+  --plot build-pythia8/leg_envelope_study.png
+```
+
+Any independent trial overshoot sets `envelope_ok=0`; it must be treated as a
+failure. This command does not generate photons or replace the production
+shape-unweighting envelope.
+
 ### macOS Pythia8 Troubleshooting
 
 If the Pythia8 tests segfault very early, including in simple operations such
@@ -93,6 +148,86 @@ cmake -S . -B build-pythia8-hepmc3 \
 cmake --build build-pythia8-hepmc3
 ctest --test-dir build-pythia8-hepmc3 -R "pythia8|hepmc3" --output-on-failure
 ```
+
+## Analytic Leg-Centred Proposal Diagnostic
+
+The PHOTOS-inspired leg-centred proposal is part of the default build and does
+not require PHOTOS. Write a fixed-`kT` weighted sample with:
+
+```sh
+./build/lowmc_fixed_kt_weighted_samples \
+  build/leg_samples.csv \
+  --proposal leg \
+  --samples 100000 \
+  --leg-uniform-fraction 0.1
+```
+
+Run the predeclared three-seed comparison against the tuned grid proposal on
+the repository particle fixtures with:
+
+```sh
+python3 scripts/compare_leg_centered_proposal.py \
+  build/leg_centered_proposal_comparison.csv \
+  --benchmark build/lowmc_fixed_kt_weighted_samples \
+  --samples 100000
+```
+
+This is a weighted diagnostic. It does not select the leg-centred proposal as
+a production default or construct a rejection envelope.
+
+## PHOTOS Benchmark
+
+PHOTOS remains an opt-in benchmark dependency and is not linked into the
+generator-independent core. With PHOTOS and HepMC3 installed, configure:
+
+```sh
+cmake -S . -B build-photos \
+  -DLOWMC_ENABLE_PHOTOS=ON \
+  -DPHOTOS_ROOT=/path/to/photospp \
+  -DCMAKE_PREFIX_PATH=/path/to/hepmc3
+cmake --build build-photos --target lowmc_photos_zmumu_benchmark
+ctest --test-dir build-photos -R photos_zmumu --output-on-failure
+```
+
+Run the default fixed `Z -> mu+ mu-` pilot with:
+
+```sh
+./build-photos/lowmc_photos_zmumu_benchmark \
+  build-photos/photos_zmumu_photons.csv \
+  build-photos/photos_zmumu_summary.csv \
+  --lowmc-output build-photos/lowmc_zmumu_photons.csv
+```
+
+Create the normalized shape and ratio comparison with:
+
+```sh
+python3 scripts/plot_photos_zmumu_comparison.py \
+  build-photos/photos_zmumu_photons.csv \
+  build-photos/lowmc_zmumu_photons.csv \
+  build-photos/photos_zmumu_shapes.png \
+  --bins-csv build-photos/photos_zmumu_shape_bins.csv \
+  --summary-csv build-photos/photos_zmumu_shape_summary.csv
+```
+
+Run the predeclared three-seed soft-energy scan with:
+
+```sh
+python3 scripts/run_photos_zmumu_soft_scan.py \
+  build-photos/photos_zmumu_soft_scan.csv \
+  build-photos/photos_zmumu_soft_scan.png \
+  --benchmark build-photos/lowmc_photos_zmumu_benchmark \
+  --events 100000
+```
+
+The default scan uses six nested values
+`E_gamma_max = 0.06, 0.075, 0.10, 0.15, 0.25, 0.50 GeV` and three independent
+PHOTOS seed pairs. The resulting points are correlated because the same seed
+pairs and nested selections are intentionally used at every energy maximum.
+
+The PHOTOS 3.64 fixed-order mode used here is not stable at arbitrarily small
+generation cutoffs. The benchmark default uses a fractional cutoff of
+`3e-4`, corresponding to about `27.4 MeV` for the chosen `Z` mass, and applies
+the common analysis only above `kT = 50 MeV`.
 
 ## What To Report
 

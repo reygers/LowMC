@@ -29,6 +29,7 @@ struct Options {
     std::string proposal = "uniform";
     lowmc::AdaptiveEtaPhiProposalConfig adaptiveConfig;
     lowmc::SmoothEtaPhiProposalConfig smoothConfig;
+    lowmc::LegCenteredEtaPhiProposalConfig legConfig;
     lowmc::GridAdaptiveEtaPhiProposalConfig gridConfig;
 };
 
@@ -37,11 +38,12 @@ void printUsage(const char* programName) {
               << " [output.csv] [--samples n] [--seed n] [--kt GeV]\n"
               << "       [--momentum GeV]... [--particle-eta eta] [--particle-phi phi]\n"
               << "       [--eta-min eta] [--eta-max eta] [--phi-min phi] [--phi-max phi]\n"
-              << "       [--proposal uniform|adaptive|smooth|grid]\n\n"
+              << "       [--proposal uniform|adaptive|smooth|leg|grid]\n\n"
               << "       [--adaptive-uniform-fraction f] [--adaptive-width-scale s]\n"
               << "       [--adaptive-min-half-width w] [--adaptive-max-half-width w]\n\n"
               << "       [--smooth-uniform-fraction f] [--smooth-width-scale s]\n"
               << "       [--smooth-min-half-width w] [--smooth-max-half-width w]\n\n"
+              << "       [--leg-uniform-fraction f] [--leg-minimum-one-minus-beta x]\n\n"
               << "       [--grid-eta-bins n] [--grid-phi-bins n]\n"
               << "       [--grid-refinement-levels n] [--grid-refine-fraction f]\n"
               << "       [--grid-uniform-fraction f]\n"
@@ -188,9 +190,10 @@ Options parseOptions(int argc, char** argv) {
             if (options.proposal != "uniform" &&
                 options.proposal != "adaptive" &&
                 options.proposal != "smooth" &&
+                options.proposal != "leg" &&
                 options.proposal != "grid") {
                 throw std::invalid_argument(
-                    "--proposal must be uniform, adaptive, smooth, or grid");
+                    "--proposal must be uniform, adaptive, smooth, leg, or grid");
             }
             continue;
         }
@@ -226,6 +229,16 @@ Options parseOptions(int argc, char** argv) {
         }
         if (argument == "--smooth-max-half-width") {
             options.smoothConfig.maxHalfWidth = readDoubleOption(index, argc, argv, argument);
+            continue;
+        }
+        if (argument == "--leg-uniform-fraction") {
+            options.legConfig.uniformFraction =
+                readDoubleOption(index, argc, argv, argument);
+            continue;
+        }
+        if (argument == "--leg-minimum-one-minus-beta") {
+            options.legConfig.minimumOneMinusBeta =
+                readDoubleOption(index, argc, argv, argument);
             continue;
         }
         if (argument == "--grid-eta-bins") {
@@ -350,6 +363,29 @@ lowmc::WeightSummary runStudyPoint(
         return lowmc::summarizeWeightedPhotonSamples(samples);
     }
 
+    if (options.proposal == "leg") {
+        const lowmc::LegCenteredEtaPhiProposal proposal =
+            lowmc::makeLegCenteredEtaPhiProposal(
+                phaseSpace,
+                current.particles(),
+                options.legConfig);
+        for (int index = 0; index < options.samples; ++index) {
+            const double unitComponent = std::generate_canonical<double, 53>(rng);
+            const double unitPolar = std::generate_canonical<double, 53>(rng);
+            const double unitAzimuth = std::generate_canonical<double, 53>(rng);
+            samples.push_back(
+                lowmc::makeFixedKTLegCenteredEtaPhiWeightedSample(
+                    current,
+                    options.kT,
+                    proposal,
+                    unitComponent,
+                    unitPolar,
+                    unitAzimuth)
+                    .weightedPhoton);
+        }
+        return lowmc::summarizeWeightedPhotonSamples(samples);
+    }
+
     for (int index = 0; index < options.samples; ++index) {
         const double unitEta = std::generate_canonical<double, 53>(rng);
         const double unitPhi = std::generate_canonical<double, 53>(rng);
@@ -419,6 +455,7 @@ int main(int argc, char** argv) {
            << "adaptiveMinHalfWidth,adaptiveMaxHalfWidth,"
            << "smoothUniformFraction,smoothWidthScale,"
            << "smoothMinHalfWidth,smoothMaxHalfWidth,"
+           << "legUniformFraction,legMinimumOneMinusBeta,"
            << "gridEtaBins,gridPhiBins,gridRefinementLevels,"
            << "gridRefineFraction,gridUniformFraction,"
            << "gridRefinementScore,gridVarianceProbeBins,"
@@ -444,6 +481,8 @@ int main(int argc, char** argv) {
                << options.smoothConfig.widthScale << ','
                << options.smoothConfig.minHalfWidth << ','
                << options.smoothConfig.maxHalfWidth << ','
+               << options.legConfig.uniformFraction << ','
+               << options.legConfig.minimumOneMinusBeta << ','
                << options.gridConfig.etaBins << ','
                << options.gridConfig.phiBins << ','
                << options.gridConfig.refinementLevels << ','

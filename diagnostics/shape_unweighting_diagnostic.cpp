@@ -500,30 +500,30 @@ void writeSamplesCsv(
 int main(int argc, char** argv) {
     try {
         const Options options = parseOptions(argc, argv);
-        const lowmc::ShapeUnweightingConfig config{
-            lowmc::PhotonPhaseSpace{
-                options.kTMin,
-                options.kTMax,
-                options.etaMin,
-                options.etaMax,
-                options.phiMin,
-                options.phiMax,
-            },
-            options.trials,
-            options.seed,
-            options.gridConfig,
-            options.calibrationTrials,
-            options.probeBins,
-            options.probeRule,
-            options.probePolicy,
-            options.boostedProbeBins,
-            options.boostedCellSafetyFactor,
-            options.boostedCellNeighborScale,
-            options.targetedRefinementLevels,
-            options.targetedRefinementNeighborScale,
-            options.safetyFactor,
-            options.failurePolicy,
+        lowmc::ShapeUnweightingConfig config;
+        config.phaseSpace = lowmc::PhotonPhaseSpace{
+            options.kTMin,
+            options.kTMax,
+            options.etaMin,
+            options.etaMax,
+            options.phiMin,
+            options.phiMax,
         };
+        config.trials = options.trials;
+        config.seed = options.seed;
+        config.gridConfig = options.gridConfig;
+        config.calibrationTrials = options.calibrationTrials;
+        config.probeBins = options.probeBins;
+        config.probeRule = options.probeRule;
+        config.probePolicy = options.probePolicy;
+        config.boostedProbeBins = options.boostedProbeBins;
+        config.boostedCellSafetyFactor = options.boostedCellSafetyFactor;
+        config.boostedCellNeighborScale = options.boostedCellNeighborScale;
+        config.targetedRefinementLevels = options.targetedRefinementLevels;
+        config.targetedRefinementNeighborScale =
+            options.targetedRefinementNeighborScale;
+        config.safetyFactor = options.safetyFactor;
+        config.failurePolicy = options.failurePolicy;
 
         const std::vector<lowmc::ChargedParticle> selectedParticles = makeToyPions(options);
         const lowmc::ShapeUnweightingResult result =

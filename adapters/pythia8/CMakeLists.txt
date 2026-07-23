@@ -182,6 +182,100 @@ add_test(
     NAME lowmc_pythia8_weighted_photon_diagnostic_softqcd
     COMMAND lowmc_pythia8_weighted_photon_diagnostic --mode softqcd --events 1 --samples 4 --seed 12345
 )
+
+add_executable(lowmc_pythia8_leg_proposal_tail_diagnostic
+    diagnostics/pythia8_leg_proposal_tail_diagnostic.cpp
+)
+
+target_link_libraries(lowmc_pythia8_leg_proposal_tail_diagnostic
+    PRIVATE
+        lowmc_pythia8_adapter
+)
+
+target_compile_definitions(lowmc_pythia8_leg_proposal_tail_diagnostic
+    PRIVATE
+        LOWMC_PYTHIA8_XMLDOC="${LOWMC_PYTHIA8_XMLDOC_DIR}"
+)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(
+        lowmc_pythia8_leg_proposal_tail_diagnostic PRIVATE -Wall -Wextra -pedantic)
+elseif(MSVC)
+    target_compile_options(lowmc_pythia8_leg_proposal_tail_diagnostic PRIVATE /W4)
+endif()
+
+add_test(
+    NAME lowmc_pythia8_leg_proposal_tail_diagnostic_help
+    COMMAND lowmc_pythia8_leg_proposal_tail_diagnostic --help
+)
+
+add_test(
+    NAME lowmc_pythia8_leg_proposal_tail_diagnostic_ee_smoke
+    COMMAND lowmc_pythia8_leg_proposal_tail_diagnostic
+            ${CMAKE_CURRENT_BINARY_DIR}/pythia8_leg_proposal_tail_ee.csv
+            --mode ee-hadrons
+            --events 1
+            --samples 8
+            --seed 12345
+)
+
+add_test(
+    NAME lowmc_pythia8_leg_proposal_tail_diagnostic_softqcd_smoke
+    COMMAND lowmc_pythia8_leg_proposal_tail_diagnostic
+            ${CMAKE_CURRENT_BINARY_DIR}/pythia8_leg_proposal_tail_softqcd.csv
+            --mode softqcd
+            --events 1
+            --samples 8
+            --seed 12345
+)
+
+add_executable(lowmc_pythia8_leg_envelope_diagnostic
+    diagnostics/pythia8_leg_envelope_diagnostic.cpp
+)
+
+target_link_libraries(lowmc_pythia8_leg_envelope_diagnostic
+    PRIVATE
+        lowmc_pythia8_adapter
+)
+
+target_compile_definitions(lowmc_pythia8_leg_envelope_diagnostic
+    PRIVATE
+        LOWMC_PYTHIA8_XMLDOC="${LOWMC_PYTHIA8_XMLDOC_DIR}"
+)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(
+        lowmc_pythia8_leg_envelope_diagnostic PRIVATE -Wall -Wextra -pedantic)
+elseif(MSVC)
+    target_compile_options(lowmc_pythia8_leg_envelope_diagnostic PRIVATE /W4)
+endif()
+
+add_test(
+    NAME lowmc_pythia8_leg_envelope_diagnostic_help
+    COMMAND lowmc_pythia8_leg_envelope_diagnostic --help
+)
+
+add_test(
+    NAME lowmc_pythia8_leg_envelope_diagnostic_ee_smoke
+    COMMAND lowmc_pythia8_leg_envelope_diagnostic
+            ${CMAKE_CURRENT_BINARY_DIR}/pythia8_leg_envelope_ee.csv
+            --mode ee-hadrons
+            --events 1
+            --calibration-samples 8
+            --trial-samples 16
+            --seed 12345
+)
+
+add_test(
+    NAME lowmc_pythia8_leg_envelope_diagnostic_softqcd_smoke
+    COMMAND lowmc_pythia8_leg_envelope_diagnostic
+            ${CMAKE_CURRENT_BINARY_DIR}/pythia8_leg_envelope_softqcd.csv
+            --mode softqcd
+            --events 1
+            --calibration-samples 8
+            --trial-samples 16
+            --seed 12345
+)
 set_tests_properties(
     lowmc_pythia8_weighted_photon_diagnostic_softqcd
     PROPERTIES

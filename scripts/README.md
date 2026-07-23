@@ -133,6 +133,36 @@ directions plus a uniform floor:
   --smooth-min-half-width 0.02
 ```
 
+Pass `--proposal leg` to use the analytic finite-mass leg-centred diagnostic.
+It is normalized on the full photon sphere and keeps the exact coherent Low
+density in every nonzero sample weight:
+
+```sh
+./build/lowmc_fixed_kt_weighted_samples build/fixed_kt_leg_samples.csv \
+  --samples 10000 \
+  --momentum 100 \
+  --proposal leg \
+  --leg-uniform-fraction 0.1
+```
+
+The reproducible multi-fixture comparison with the tuned grid proposal is:
+
+```sh
+python3 scripts/compare_leg_centered_proposal.py \
+  build/leg_centered_proposal_comparison.csv \
+  --benchmark build/lowmc_fixed_kt_weighted_samples
+```
+
+Summarize independent calibration/trial runs of the Pythia analytic-envelope
+diagnostic with:
+
+```sh
+python3 scripts/summarize_pythia_leg_envelope.py \
+  build-pythia8/leg_envelope_*.csv \
+  --summary build-pythia8/leg_envelope_summary.csv \
+  --plot build-pythia8/leg_envelope_study.png
+```
+
 The sampler-study diagnostic writes one summary row per toy charged-pion
 momentum, including effective sample size:
 

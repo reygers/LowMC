@@ -992,6 +992,231 @@ validation question is how these candidates behave with the default
 boosted-cell path enabled, since boosted re-probes overwrite compensated base
 estimates in promoted cells.
 
+The corresponding ten-seed validation with the default boosted-cell probe path
+enabled is now complete. The full `11 x 11` boosted reference took `32.11 s`
+total over the ten events, with `30.28 s` in shape unweighting, `20.96 s` in
+base probing, `2.14 s` in boosted-cell probing, maximum trial/bound ratio
+`0.371033`, zero envelope failures, and `65/65` requested photons retained and
+written. `7 x 7` with compensation factor `1.20` took `18.39 s` total, with
+`16.56 s` in shape unweighting, `8.36 s` in base probing, `0.98 s` in
+boosted-cell probing, maximum ratio `0.348596`, zero envelope failures, and
+the same `65/65` photons. It stayed below the full boosted reference in global
+maximum ratio, but seed `24686` had a tiny per-seed overshoot
+(`0.347484` versus `0.346102`). `5 x 5` with compensation factor `1.30` took
+`14.37 s` total, with `12.54 s` in shape unweighting, `4.34 s` in base
+probing, `0.98 s` in boosted-cell probing, maximum ratio `0.349483`, zero
+envelope failures, and the same `65/65` photons. In this scan, `5 x 5` with
+factor `1.30` stayed below the full-reference trial/bound ratio on every seed
+and is the fastest current diagnostic candidate. Boosted-cell probes still add
+safety checks, but they do not erase the speed advantage from compensated
+reduced base probing. The next validation should broaden the `5 x 5`,
+factor-`1.30` candidate beyond this ten-seed sample before considering any
+default-policy change.
+
+That broader boosted validation has now been run for the next twenty bounded
+Pythia seeds, `24691..24710`, and combined with the previous ten-seed block.
+Across all thirty one-event runs, the full `11 x 11` boosted reference took
+`79.87 s` total, with `74.80 s` in shape unweighting, `50.46 s` in base
+probing, `5.22 s` in boosted-cell probing, maximum trial/bound ratio
+`0.384364`, zero envelope failures, and `174/174` requested photons retained
+and written. The `5 x 5`, factor-`1.30` candidate took `36.93 s` total, with
+`31.87 s` in shape unweighting, `10.47 s` in base probing, `2.24 s` in
+boosted-cell probing, maximum ratio `0.361652`, zero envelope failures, and
+the same `174/174` photons. The candidate stayed below the matching full
+reference ratio for every seed in `24681..24710`; the narrowest margin was
+seed `24699`, where the full reference gave `0.361696` and the candidate gave
+`0.361652`. This strengthens the case that compensated `5 x 5` probing is a
+credible speed path. It remains diagnostic-only until a stricter stress gate
+or an independent review confirms that the small observed margins are
+acceptable.
+
+A first stricter stress gate focused on the four smallest-margin or nearby
+events: seeds `24699`, `24698`, `24689`, and `24686`. Audit-enabled reruns of
+the `5 x 5`, factor-`1.30` candidate preserved photon counts and trial/bound
+ratios, confirming that the full-base audit is diagnostic-only. The audit
+showed that the tightest event, seed `24699`, also has the largest reduced/full
+base-probe disagreement in this set: maximum full/reduced ratio `1.74104`,
+`372` cells above the `1.1` severity threshold, severe-cell proposal-mass sum
+`0.0310549`, and only `14/372` severe cells calibration-suspect. This means
+the small margin is not purely random bookkeeping noise; it coincides with a
+real reduced-probe severity tail. A narrow rerun with larger compensation
+factors then showed that factor `1.35` opens the seed-`24699` margin from
+`0.000044` to `0.013439` while leaving the same photon counts and essentially
+the same runtime on the four checked events. Factor `1.50` opens much larger
+margins, but is a bigger envelope inflation. The next validation should
+therefore broaden `5 x 5` with factor `1.35` over the same thirty-seed boosted
+sample before deciding whether factor `1.30` has enough safety margin.
+
+The thirty-seed boosted validation of `5 x 5` with factor `1.35` shows that it
+is not a clean replacement for factor `1.30`. It retained the same `174/174`
+requested photons with zero envelope failures and took `37.12 s` total,
+essentially the same as factor `1.30` (`36.93 s`). Its global maximum
+trial/bound ratio was `0.373041`, still below the full-reference global
+maximum `0.384364`, and it improved the narrow seed `24699` from `0.361652`
+to `0.348257`. However, seed `24684` worsened from `0.349483` at factor
+`1.30` to `0.373041` at factor `1.35`, slightly above that seed's full
+reference value `0.371033`. Audit-enabled reruns of seed `24684` confirmed the
+same ratios and showed the same reduced/full severity tail for all tested
+factors: maximum full/reduced ratio `1.43156`, `392` cells above the `1.1`
+threshold, severe-cell proposal-mass sum `0.0647186`, and `37/392`
+calibration-suspect severe cells. Factor `1.50` brought the seed-`24684` ratio
+down to `0.321687`, but it has not yet been broadened. The current conclusion
+is that factor `1.30` remains the fastest thirty-seed candidate with a clean
+per-seed record, factor `1.35` is not preferred, and factor `1.50` is the next
+candidate if we want a more conservative reduced-probe path.
+
+The thirty-seed boosted validation of `5 x 5` with factor `1.50` is now also
+complete. It retained the same `174/174` requested photons with zero envelope
+failures and zero summary mismatches. Total event time was `36.76 s`, with
+`31.74 s` in shape unweighting, `10.35 s` in base probing, `13.32 s` in
+calibration trials, and `2.23 s` in boosted-cell probes, essentially the same
+runtime as factors `1.30` and `1.35` in this diagnostic block. The maximum
+trial/bound ratio dropped to `0.321687`, and the candidate stayed below the
+matching full `11 x 11` reference for every seed in `24681..24710`; the
+narrowest margin was still comfortable (`0.049346` at seed `24684`). The
+tradeoff is proposal efficiency: with the same `428000` trial points, accepted
+trial count dropped from `90602` for factor `1.30` to `79004` for factor
+`1.50`. The current interpretation is therefore that factor `1.50` is the
+safest reduced-probe diagnostic candidate in this thirty-seed block, while
+factor `1.30` remains the less conservative performance candidate. Neither
+should become a default without an explicit validation gate and independent
+review of the safety/efficiency tradeoff.
+
+The reduced-probe recommendation for independent review is therefore: present
+factor `1.50` as the single conservative diagnostic candidate, and keep factor
+`1.30` as the performance comparison. Factor `1.35` is not recommended because
+it failed the per-seed full-reference criterion at seed `24684`. The strongest
+case for `1.50` is envelope margin: no per-seed overshoot in the thirty-seed
+block and maximum trial/bound ratio `0.321687`. The cost is lower proposal
+efficiency: accepted trials decrease by about `13%` relative to factor `1.30`.
+The next useful reviewer task is to check whether this safety/efficiency
+criterion is reasonable and then repeat the comparison on fresh bounded Pythia
+seeds before moving reduced probing beyond diagnostic-only use.
+
+The fresh held-out reduced-probe validation block has now been run for Pythia
+seeds `24711..24740`. This block is harder than the previous one: selected
+outgoing charged multiplicity reached `274`, requested photons summed to
+`313`, and the full `11 x 11` boosted reference took `151.36 s` total, with
+`143.84 s` in shape unweighting, `98.90 s` in base probing, `23.14 s` in
+calibration trials, `10.51 s` in boosted-cell probes, maximum trial/bound ratio
+`0.395003`, zero envelope failures, and `313/313` photons retained. The
+`5 x 5`, factor-`1.30` performance comparison took `67.06 s` total and kept
+photon accounting clean, but it failed the per-seed full-reference criterion
+on four seeds: `24711`, `24713`, `24725`, and `24729`, with the largest
+overshoot at seed `24713` (`0.405221` versus full `0.395003`). The
+`5 x 5`, factor-`1.50` conservative candidate took `67.38 s` total, retained
+the same `313/313` photons with zero envelope failures, and stayed below the
+matching full reference on every seed; its maximum trial/bound ratio was
+`0.351192`, with the smallest per-seed margin `0.040705` at seed `24711`.
+Accepted trial counts were `166475` for the full reference, `138274` for
+factor `1.30`, and `120172` for factor `1.50` over the same `662000` trial
+points. This held-out block confirms the recommendation: factor `1.50` is the
+only current reduced-probe candidate with a clean independent per-seed record,
+while factor `1.30` should be treated only as a speed/efficiency comparison.
+The review summary for Stefan is now collected in
+`docs/reduced-probe-review-note-stefan.md`.
+
+While that review is pending, the first independent PHOTOS comparison has
+started without changing reduced-probe code or defaults. PHOTOS 3.64 is
+installed locally with its HepMC3 interface, and the new opt-in
+`LOWMC_ENABLE_PHOTOS` build creates `lowmc_photos_zmumu_benchmark`. The
+diagnostic constructs an exact fixed `Z -> mu+ mu-` decay, configures PHOTOS
+with interference enabled but exponentiation, multiple bremsstrahlung, pair
+emission, and the exact `Z` matrix-element correction disabled, and compares
+PHOTOS with the same two-muon LowMC current in a common rectangular
+`kT, eta, phi` acceptance. It records full configuration and rate summaries,
+Born- and recoil-relative angles, pointwise analytic-current checks, and
+four-momentum residuals.
+
+The first `10000`-decay pilot uses PHOTOS seeds `1802, 9373`, fractional
+generation cutoff `3e-4` (`27.4 MeV`), and common acceptance
+`0.05 <= kT < 0.2 GeV`, `|eta| < 2`, with full `phi`. PHOTOS produced `791`
+accepted photons, or `0.0791 +/- 0.0028` per decay. The tightened L9
+factorized LowMC integral is `0.0801377`, with an L8/L9 relative difference of
+`7.2e-5`, so `PHOTOS / LowMC = 0.987`; the two rates agree at current pilot
+statistics. There were no multiphoton events, the LowMC current agreed with
+the analytic two-muon expression to `7.5e-10` maximum relative difference,
+and the largest PHOTOS four-momentum residual was `4.5e-7 GeV`. PHOTOS fixed
+order aborts below roughly `xphcut = 3e-4` for this decay, so a lower-cutoff
+strict-soft study will require either a revised fixed-order strategy or a
+carefully separated exponentiated comparison. The next PHOTOS step is the
+predeclared higher-statistics energy-window and independent-seed scan.
+
+The first normalized shape comparison is now also complete. An independent
+`100000`-trial weighted LowMC sample has mean weight `0.0801946`, consistent
+with the deterministic `0.0801377`, and effective sample fraction `0.959`.
+The new plotting helper compares `kT`, `eta`, `phi`, and angle to the nearest
+Born muon and writes both a PNG and machine-readable bin and approximate
+chi-square summaries. For the original PHOTOS seed, the four diagnostic
+chi-square/ndf values are `1.38`, `1.09`, `1.26`, and `1.73`. An independent
+PHOTOS run with seeds `24680, 13579` gives `797` accepted photons, rate
+`0.0797 +/- 0.0028`, `PHOTOS / LowMC = 0.995`, and shape chi-square/ndf values
+`0.90`, `0.56`, `0.64`, and `0.72`. No shape discrepancy is reproducible at
+current statistics. The chi-square summaries ignore normalization-induced bin
+correlations and use a half-count uncertainty floor for empty PHOTOS bins, so
+they remain diagnostics rather than acceptance criteria.
+
+The first higher-statistics PHOTOS soft-energy scan is now complete. The
+benchmark supports a common `E_gamma_max` cut in the fixed `Z` rest frame, and
+the LowMC reference integrates the corresponding eta-dependent `kT` boundary
+with L9 angular refinement and an L8 convergence check. The predeclared six
+windows from `0.06` to `0.50 GeV` use three independent PHOTOS seed pairs and
+`300000` total decays per window. LowMC/PHOTOS is respectively
+`0.995 +/- 0.019`, `1.010 +/- 0.013`, `1.013 +/- 0.010`,
+`1.007 +/- 0.008`, `1.009 +/- 0.007`, and `1.009 +/- 0.007` as the energy
+maximum increases. All windows are compatible with unity, the softest point
+is within `0.5%` of unity, and every L8/L9 integration difference is below
+`1e-4`. This validates the shared leading-soft normalization at present
+precision. Because the windows are nested and reuse the same seeds, they are
+correlated and do not constitute a measurement of a monotonic convergence
+slope. This completes the planned PHOTOS baseline. Further PHOTOS work should
+only be reopened for a specific physics question; it is not the next LowMC
+milestone.
+
+While reduced-probe review remains pending, a separate weighted-only analytic
+proposal prototype has been added without changing the production sampler or
+envelope. The leg-centred mixture samples normalized finite-mass components
+proportional to `1 / (1 - beta_i cos(theta_i_gamma))`, mixes them by absolute
+charge with a uniform full-sphere floor, converts the density to `d eta d phi`
+with `sech^2(eta)`, and evaluates the exact coherent Low current for every
+nonzero target weight. Samples outside the configured angular acceptance have
+zero target weight, preserving the proposal's analytic normalization.
+
+The first three-seed, `300000`-sample-per-proposal comparison covers four
+controlled fixtures. Leg/grid effective-sample fractions are respectively
+`0.883/0.600` for `event4`, `0.739/0.325` for `clustered8`, `0.821/0.804` for
+`incoming_outgoing4`, and `0.484/0.957` for the low-boost HepMC3 validation
+fixture. All independently sampled mean weights agree within about two
+combined standard errors. The analytic proposal is promising but not
+universal: it improves the boosted and clustered cases, while the grid remains
+much better for the low-boost fixture. The next gate was a residual-tail study
+on independent Pythia-produced events. That study is now complete for three
+seeds with twenty events per seed in both `e+e- -> Z -> hadrons` and 13 TeV
+non-diffractive SoftQCD, using `20000` samples per proposal and event. The leg
+proposal's median ESS fractions are `0.334` and `0.323`, below the grid medians
+of `0.868` and `0.932`. Its much lower construction and density-evaluation cost
+nevertheless gives about `2.41e5` and `8.83e4` effective samples per second,
+versus `5.89e4` and `5.30e4` for the grid. Its empirical residual tail is also
+more stable: the largest observed maximum-to-mean ratio is `35.0`, versus
+`7090` and `150` for the grid in the two modes. Focused `200000`-sample
+independent-seed reruns confirm stable analytic means in the worst SoftQCD case
+while the grid retains rare extreme weights and unstable convergence. This
+clears the gate for a strict diagnostic analytic-envelope prototype, but not
+for a default change or a claimed guaranteed majorant. The implementation
+contract and results are in `docs/LEG_CENTERED_PROPOSAL_PLAN.md`.
+
+The follow-up strict diagnostic envelope prototype is also complete. It uses
+`20000` leg-proposal draws to calibrate a per-event global residual bound and
+tests that bound with `100000` independent draws. Three Pythia seeds with
+twenty events each were run in both the hadronic-Z and 13 TeV SoftQCD modes,
+using predeclared safety factors `1.2`, `1.5`, and `2.0`. All factors have zero
+overshoots. At factor `1.2`, the largest trial/bound ratios are `0.844` and
+`0.915`, and mean expected acceptances are `7.97%` and `6.58%`, respectively.
+The diagnostic treats any future overshoot as an explicit envelope failure and
+does not emit photons. These results make factor `1.2` a reasonable opt-in
+stress-test candidate, not a guaranteed majorant or a production-default
+change. The grid envelope and reduced-probe settings are untouched.
+
 The command name decision is settled for now: keep
 `lowmc_hepmc3_afterburner_diagnostic` as the only executable name. A shorter
 production alias should wait until validation gates and output-mode conventions

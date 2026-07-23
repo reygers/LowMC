@@ -431,6 +431,37 @@ weight explicit. Passing this gate supports developing the HepMC3 writer
 contract next; it still does not authorize writing production event-record
 photons.
 
+The reduced base-probe compensation study should be presented for independent
+review as a diagnostic optimization candidate, not as a default-policy change.
+For the thirty bounded Pythia one-event seeds `24681..24710`, the full
+`11 x 11` boosted reference took `79.87 s` total, while `5 x 5` reduced probing
+with compensation factors `1.30`, `1.35`, and `1.50` all took about `37 s` and
+retained the same `174/174` requested photons with zero envelope failures.
+Factor `1.30` is the less conservative performance candidate: it stayed below
+the matching full-reference trial/bound ratio on every seed, but its narrowest
+margin was only `0.000044`. Factor `1.35` should not be recommended because it
+overshot the matching full reference at seed `24684`. Factor `1.50` is the
+single conservative review candidate because it had no per-seed overshoot and
+reduced the maximum trial/bound ratio to `0.321687`, but it also lowered
+accepted trial count from `90602` to `79004` for the same `428000` trials.
+This tradeoff should remain explicit: larger compensation buys envelope margin
+by inflating the proposal envelope, not by changing the Low density. Before any
+reduced-probe setting becomes configurable outside diagnostics, it should pass
+an independent fresh-seed validation block and an external review of the
+safety/efficiency criterion.
+
+The independent fresh-seed block `24711..24740` confirms the conservative
+recommendation. Factor `1.30` is no longer a clean safety candidate: it
+overshot the matching full `11 x 11` reference on four seeds, although photon
+accounting and envelope-failure diagnostics stayed clean. Factor `1.50`
+remained below the full reference on every seed, with maximum trial/bound ratio
+`0.351192`, while preserving the same requested photons and roughly the same
+wall time as factor `1.30`. The accepted decision is therefore to present
+factor `1.50` as the only current reduced-probe candidate for independent
+review. Factor `1.30` should remain in the comparison table as the more
+efficient but less safe performance reference. Reduced probing remains
+diagnostic-only.
+
 ### Diagnostics and plotting
 
 The core library, core tests, and first diagnostics should not depend on ROOT.

@@ -154,4 +154,44 @@ FixedKTGridAdaptiveWeightedSample makeFixedKTGridAdaptiveEtaPhiWeightedSample(
     };
 }
 
+FixedKTLegCenteredWeightedSample makeFixedKTLegCenteredEtaPhiWeightedSample(
+    const LowCurrent& current,
+    double kT,
+    const LegCenteredEtaPhiProposal& proposal,
+    double unitComponent,
+    double unitPolar,
+    double unitAzimuth,
+    double alpha) {
+    if (!validatePhotonPhaseSpace(proposal.phaseSpace).valid()) {
+        throw std::invalid_argument("invalid photon phase space");
+    }
+    if (!std::isfinite(kT) ||
+        kT < proposal.phaseSpace.kTMin || kT > proposal.phaseSpace.kTMax) {
+        throw std::invalid_argument("fixed kT must be finite and inside the phase-space range");
+    }
+
+    const LegCenteredEtaPhiProposalPoint etaPhiProposal =
+        sampleLegCenteredEtaPhi(proposal, unitComponent, unitPolar, unitAzimuth);
+    const FourVector momentum =
+        photonMomentumFromKTEtaPhi(kT, etaPhiProposal.eta, etaPhiProposal.phi);
+
+    WeightedPhotonSample weightedPhoton{
+        Photon{momentum, 0.0},
+        etaPhiProposal.density,
+    };
+    if (etaPhiProposal.insideAcceptance) {
+        weightedPhoton = makeWeightedPhotonSample(
+            current,
+            proposal.phaseSpace,
+            WeightedPhotonProposal{momentum, etaPhiProposal.density},
+            alpha);
+    }
+
+    return FixedKTLegCenteredWeightedSample{
+        kT,
+        etaPhiProposal,
+        weightedPhoton,
+    };
+}
+
 }  // namespace lowmc

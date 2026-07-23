@@ -3,6 +3,7 @@
 #include "lowmc/EtaPhiProposal.h"
 #include "lowmc/FourVector.h"
 #include "lowmc/GridEtaPhiProposal.h"
+#include "lowmc/LegCenteredEtaPhiProposal.h"
 #include "lowmc/LowCurrent.h"
 #include "lowmc/PhotonPhaseSpace.h"
 #include "lowmc/WeightedPhotonSampler.h"
@@ -30,6 +31,12 @@ struct FixedKTSmoothWeightedSample {
 struct FixedKTGridAdaptiveWeightedSample {
     double kT = 0.0;
     GridAdaptiveEtaPhiProposalPoint etaPhiProposal;
+    WeightedPhotonSample weightedPhoton;
+};
+
+struct FixedKTLegCenteredWeightedSample {
+    double kT = 0.0;
+    LegCenteredEtaPhiProposalPoint etaPhiProposal;
     WeightedPhotonSample weightedPhoton;
 };
 
@@ -72,6 +79,15 @@ struct FixedKTGridAdaptiveWeightedSample {
     double unitEta,
     double unitPhi,
     const GridAdaptiveEtaPhiProposalConfig& config = {},
+    double alpha = FineStructureConstant);
+
+[[nodiscard]] FixedKTLegCenteredWeightedSample makeFixedKTLegCenteredEtaPhiWeightedSample(
+    const LowCurrent& current,
+    double kT,
+    const LegCenteredEtaPhiProposal& proposal,
+    double unitComponent,
+    double unitPolar,
+    double unitAzimuth,
     double alpha = FineStructureConstant);
 
 }  // namespace lowmc

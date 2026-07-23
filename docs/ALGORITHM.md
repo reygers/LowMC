@@ -922,6 +922,95 @@ path. With boosted-cell probes enabled, promoted cells are explicitly re-probed
 and their compensated base estimate is replaced, so the interaction must be
 validated separately.
 
+The first boosted-cell validation of the same ten bounded Pythia seeds changes
+the interpretation. With boosted-cell probes enabled, both compensated
+candidates retained the same requested photons and had zero envelope failures.
+`7 x 7` with factor `1.20` reduced total event time from `32.11 s` for the
+full `11 x 11` reference to `18.39 s`, and reduced the global maximum
+trial/bound ratio from `0.371033` to `0.348596`; however, one seed had a tiny
+per-seed ratio overshoot relative to its full-reference event. `5 x 5` with
+factor `1.30` reduced total event time further to `14.37 s`, kept the global
+maximum ratio at `0.349483`, and stayed below the full-reference ratio on every
+seed. Thus the boosted-cell path does not erase the reduced-probe speed
+advantage. The most promising diagnostic candidate is now `5 x 5` with factor
+`1.30`, but it remains a validation parameter rather than a default until it is
+checked on a broader event sample.
+
+The broader boosted validation extends this to thirty one-event Pythia seeds,
+`24681..24710`, comparing the full `11 x 11` boosted reference with `5 x 5`
+and factor `1.30`. The candidate retained the same `174/174` requested photons
+with zero envelope failures, reduced total event time from `79.87 s` to
+`36.93 s`, and reduced shape time from `74.80 s` to `31.87 s`. It also stayed
+below the matching full-reference trial/bound ratio on every seed, with global
+maximum ratio `0.361652` versus `0.384364` for the full reference. The
+narrowest per-seed margin was very small (`0.361696 - 0.361652` for seed
+`24699`), so the candidate is promising but should still be validated with a
+stricter stress gate before any default-policy change.
+
+The first stricter gate audited the narrowest-margin events. For seed `24699`,
+the audit found maximum full/reduced base-probe ratio `1.74104` and `372`
+severe cells above the `1.1` threshold, so the small candidate margin is
+associated with a real reduced-probe severity tail. Because only `14` of those
+severe cells were calibration-suspect, calibration alone is still not a
+reliable promotion rule. A small factor scan on the narrow events showed that
+raising the compensation factor from `1.30` to `1.35` increases the seed-`24699`
+margin from `0.000044` to `0.013439` with essentially unchanged runtime and
+unchanged photon counts. The current algorithmic interpretation is therefore:
+`5 x 5` with factor `1.30` is the fastest validated diagnostic candidate so
+far, but `5 x 5` with factor `1.35` may be the more natural safety-margin
+candidate and should be broadened before a default-policy discussion.
+
+The full thirty-seed factor-`1.35` check shows that it is not a clean
+replacement for factor `1.30`. It retained the same photons and zero failures,
+with total time `37.12 s`, but seed `24684` overshot its full-reference
+trial/bound ratio (`0.373041` versus `0.371033`) even though most other seeds
+improved relative to factor `1.30`. Audit-enabled reruns of seed `24684` show
+the same reduced/full severity tail for factors `1.30`, `1.35`, and `1.50`
+(maximum full/reduced ratio `1.43156`, `392` severe cells, severe proposal
+mass `0.0647186`). Since factor changes modify the envelope sampling
+distribution, the observed trial/bound maximum is not monotonic event by
+event. The current interpretation is that factor `1.30` remains the fastest
+thirty-seed candidate with a clean per-event record; factor `1.35` should not
+replace it; factor `1.50` is the next conservative candidate if more margin is
+required.
+
+The broadened factor-`1.50` check passed the same thirty boosted seeds without
+per-seed overshoots relative to the full `11 x 11` reference. It kept
+`174/174` photons, zero envelope failures, and a similar diagnostic runtime
+(`36.76 s` total), while reducing the global maximum trial/bound ratio to
+`0.321687`. The cost is that the larger envelope inflation lowers accepted
+trial efficiency: for the same `428000` trial points, accepted trial count was
+`79004`, compared with `90602` for factor `1.30`. Thus factor `1.50` is the
+more conservative diagnostic candidate, but factor `1.30` remains relevant as
+the less inflated performance candidate. The algorithmic policy should not be
+"choose the largest safe factor"; it should choose an explicit validation
+criterion that balances envelope safety against proposal efficiency.
+
+For independent review, the compact recommendation is to use factor `1.50` as
+the conservative reduced-probe candidate and factor `1.30` as the performance
+comparison. Factor `1.35` is not useful as an intermediate recommendation
+because it failed the per-seed full-reference criterion in the thirty-seed
+block. The remaining algorithmic question is not whether compensation changes
+the physics density; it does not. The question is what validation criterion is
+strong enough to justify using a reduced base-probe lattice in event-record
+unweighting: no envelope failures, no per-seed overshoot relative to the full
+reference in a held-out event block, adequate trial acceptance, and explicit
+diagnostics for any event close to the bound are the current minimum criteria.
+
+The fresh held-out block `24711..24740` makes the safety/efficiency split
+sharper. Factor `1.30` still gives the same order-of-two speed gain relative
+to the full `11 x 11` reference, but it overshoots the matching full-reference
+trial/bound ratio on four seeds. Factor `1.50` keeps essentially the same wall
+time as factor `1.30`, stays below the full reference on every seed, and lowers
+the maximum trial/bound ratio from `0.395003` for the full reference to
+`0.351192`. Its price is lower rejection-sampling efficiency: accepted trials
+drop from `138274` at factor `1.30` to `120172` at factor `1.50` over
+`662000` trial points. Algorithmically, this supports factor `1.50` as the
+current conservative reduced-probe review candidate and demotes factor `1.30`
+to a performance comparison, not a candidate with a clean safety record.
+The compact review note in `docs/reduced-probe-review-note-stefan.md` frames
+this as an envelope-safety tradeoff, not a physics-density change.
+
 Shape unweighting is separate from event multiplicity. After the photon shape
 can be sampled without weights, LowMC still needs a normalization rule for how
 many photons to add to a given input event in the configured phase space. The
@@ -1093,6 +1182,17 @@ replaces each flat patch by a separable compact triangular kernel in `eta` and
 `phi`, truncated to the configured acceptance and normalized analytically. A
 uniform floor again keeps support nonzero over the full acceptance. This
 proposal is diagnostic-only and weighted; it is not a majorant.
+
+A first analytic leg-centred proposal is now also available. Each charged-leg
+component is normalized on the full photon sphere and proportional to
+`1 / (1 - beta_i cos(theta_i_gamma))`. Absolute charge sets the component
+mixture weights, and a uniform full-sphere component guarantees support. The
+conversion `d Omega = sech^2(eta) d eta d phi` supplies the proposal density in
+the existing fixed-`kT` measure. Samples outside the configured angular
+acceptance receive zero target weight. Inside it, every weight uses the exact
+coherent `S(k)`; the analytic component is never substituted for the physical
+density. This remains a weighted diagnostic rather than a majorant or
+production envelope.
 
 ## Eta-Phi Sampling
 

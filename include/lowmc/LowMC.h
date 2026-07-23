@@ -8,6 +8,7 @@
 #include "lowmc/FourVector.h"
 #include "lowmc/GridEtaPhiProposal.h"
 #include "lowmc/KTProposal.h"
+#include "lowmc/LegCenteredEtaPhiProposal.h"
 #include "lowmc/LowCurrent.h"
 #include "lowmc/PDGCharge.h"
 #include "lowmc/Photon.h"

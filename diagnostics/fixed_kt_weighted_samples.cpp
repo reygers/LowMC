@@ -1,4 +1,5 @@
 #include "lowmc/LowMC.h"
+#include "ParticleInput.h"
 
 #include <cmath>
 #include <cstdint>
@@ -16,6 +17,7 @@ namespace {
 
 struct Options {
     std::string outputPath = "fixed_kt_weighted_samples.csv";
+    std::string particlesPath;
     int samples = 1000;
     std::uint64_t seed = 12345;
     double kT = 0.02;
@@ -29,6 +31,7 @@ struct Options {
     std::string proposal = "uniform";
     lowmc::AdaptiveEtaPhiProposalConfig adaptiveConfig;
     lowmc::SmoothEtaPhiProposalConfig smoothConfig;
+    lowmc::LegCenteredEtaPhiProposalConfig legConfig;
     lowmc::GridAdaptiveEtaPhiProposalConfig gridConfig = lowmc::tunedMassGridAdaptiveEtaPhiConfig();
 };
 
@@ -36,12 +39,14 @@ void printUsage(const char* programName) {
     std::cout << "Usage: " << programName
               << " [output.csv] [--samples n] [--seed n] [--kt GeV]\n"
               << "       [--momentum GeV] [--particle-eta eta] [--particle-phi phi]\n"
+              << "       [--particles event.lowmc]\n"
               << "       [--eta-min eta] [--eta-max eta] [--phi-min phi] [--phi-max phi]\n"
-              << "       [--proposal uniform|adaptive|smooth|grid]\n\n"
+              << "       [--proposal uniform|adaptive|smooth|leg|grid]\n\n"
               << "       [--adaptive-uniform-fraction f] [--adaptive-width-scale s]\n"
               << "       [--adaptive-min-half-width w] [--adaptive-max-half-width w]\n\n"
               << "       [--smooth-uniform-fraction f] [--smooth-width-scale s]\n"
               << "       [--smooth-min-half-width w] [--smooth-max-half-width w]\n\n"
+              << "       [--leg-uniform-fraction f] [--leg-minimum-one-minus-beta x]\n\n"
               << "       [--grid-eta-bins n] [--grid-phi-bins n]\n"
               << "       [--grid-refinement-levels n] [--grid-refine-fraction f]\n"
               << "       [--grid-uniform-fraction f]\n\n"
@@ -141,6 +146,10 @@ Options parseOptions(int argc, char** argv) {
             options.particlePhi = readDoubleOption(index, argc, argv, argument);
             continue;
         }
+        if (argument == "--particles") {
+            options.particlesPath = readStringOption(index, argc, argv, argument);
+            continue;
+        }
         if (argument == "--eta-min") {
             options.etaMin = readDoubleOption(index, argc, argv, argument);
             continue;
@@ -162,9 +171,10 @@ Options parseOptions(int argc, char** argv) {
             if (options.proposal != "uniform" &&
                 options.proposal != "adaptive" &&
                 options.proposal != "smooth" &&
+                options.proposal != "leg" &&
                 options.proposal != "grid") {
                 throw std::invalid_argument(
-                    "--proposal must be uniform, adaptive, smooth, or grid");
+                    "--proposal must be uniform, adaptive, smooth, leg, or grid");
             }
             continue;
         }
@@ -200,6 +210,16 @@ Options parseOptions(int argc, char** argv) {
         }
         if (argument == "--smooth-max-half-width") {
             options.smoothConfig.maxHalfWidth = readDoubleOption(index, argc, argv, argument);
+            continue;
+        }
+        if (argument == "--leg-uniform-fraction") {
+            options.legConfig.uniformFraction =
+                readDoubleOption(index, argc, argv, argument);
+            continue;
+        }
+        if (argument == "--leg-minimum-one-minus-beta") {
+            options.legConfig.minimumOneMinusBeta =
+                readDoubleOption(index, argc, argv, argument);
             continue;
         }
         if (argument == "--grid-eta-bins") {
@@ -289,8 +309,12 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    const lowmc::LowCurrent current =
+    lowmc::LowCurrent current =
         makeBackToBackToyCurrent(options.momentum, options.particleEta, options.particlePhi);
+    if (!options.particlesPath.empty()) {
+        current = lowmc::LowCurrent(
+            lowmc_diagnostics::readChargedParticlesFromTextFile(options.particlesPath));
+    }
     lowmc::GridAdaptiveEtaPhiProposal gridProposal;
     if (options.proposal == "grid") {
         gridProposal =
@@ -300,11 +324,18 @@ int main(int argc, char** argv) {
                 options.kT,
                 options.gridConfig);
     }
+    lowmc::LegCenteredEtaPhiProposal legProposal;
+    if (options.proposal == "leg") {
+        legProposal = lowmc::makeLegCenteredEtaPhiProposal(
+            phaseSpace,
+            current.particles(),
+            options.legConfig);
+    }
     std::mt19937_64 rng(options.seed);
     std::vector<lowmc::WeightedPhotonSample> samples;
     samples.reserve(static_cast<std::size_t>(options.samples));
 
-    output << "index,kT,eta,phi,E,px,py,pz,proposalDensity,weight\n";
+    output << "index,kT,eta,phi,E,px,py,pz,proposalDensity,weight,insideAcceptance\n";
     output << std::setprecision(17);
 
     for (int index = 0; index < options.samples; ++index) {
@@ -317,6 +348,7 @@ int main(int argc, char** argv) {
         double weight = 0.0;
         double eta = 0.0;
         double phi = 0.0;
+        bool insideAcceptance = true;
 
         if (options.proposal == "adaptive") {
             const lowmc::FixedKTAdaptiveWeightedSample sample =
@@ -350,6 +382,22 @@ int main(int argc, char** argv) {
             weight = sample.weightedPhoton.photon.weight;
             eta = sample.etaPhiProposal.eta;
             phi = sample.etaPhiProposal.phi;
+        } else if (options.proposal == "leg") {
+            const lowmc::FixedKTLegCenteredWeightedSample sample =
+                lowmc::makeFixedKTLegCenteredEtaPhiWeightedSample(
+                    current,
+                    options.kT,
+                    legProposal,
+                    unitComponent,
+                    unitEta,
+                    unitPhi);
+            samples.push_back(sample.weightedPhoton);
+            photon = sample.weightedPhoton.photon.momentum;
+            proposalDensity = sample.weightedPhoton.proposalDensity;
+            weight = sample.weightedPhoton.photon.weight;
+            eta = sample.etaPhiProposal.eta;
+            phi = sample.etaPhiProposal.phi;
+            insideAcceptance = sample.etaPhiProposal.insideAcceptance;
         } else if (options.proposal == "grid") {
             const lowmc::GridAdaptiveEtaPhiProposalPoint etaPhiProposal =
                 lowmc::sampleGridAdaptiveEtaPhi(
@@ -397,7 +445,8 @@ int main(int argc, char** argv) {
                << photon.py << ','
                << photon.pz << ','
                << proposalDensity << ','
-               << weight << '\n';
+               << weight << ','
+               << (insideAcceptance ? 1 : 0) << '\n';
     }
 
     if (!output) {

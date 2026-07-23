@@ -24,6 +24,29 @@ soft-photon emission:
 
 The intended user workflows are summarized in `docs/USAGE.md`.
 
+### Position Relative To VinciaQED
+
+VinciaQED is a close existing comparison point, not only an adjacent decay
+tool. Its multipole mode provides a fully coherent QED shower whose scalar
+eikonal limit overlaps directly with LowMC's leading-Low current. LowMC should
+therefore not be framed merely as a new generic coherent QED shower.
+
+LowMC's intended niche is a generator-independent leading-soft reference and
+afterburner for completed event records. It should provide explicit control of
+the charged particles included in the coherent current, detector-oriented
+soft-photon phase-space limits, transparent weighted densities and diagnostics,
+and workflows that do not require access to an event generator's internal
+shower history. VinciaQED instead supplies an ordered shower integrated with
+Pythia's parton systems, recoil maps, collinear kernels, repeated emissions,
+and other QED evolution.
+
+The different definitions of the coherent system are a physics question that
+must be tested. In particular, LowMC's default use of incoming beams plus final
+stable charged particles is not automatically equivalent to Vincia's
+system-, scale-, and decay-organized coherence. Establishing where those
+descriptions agree or differ is part of the scientific validation of LowMC,
+not just an implementation cross-check.
+
 ## User-Facing Examples
 
 LowMC should eventually provide a small set of example programs in the style of
@@ -49,9 +72,11 @@ Candidate examples:
 - direct Pythia8 in-memory workflow filling histograms without HepMC output
 - optional Pythia8-to-HepMC3 round-trip workflow
 
-PHOTOS is an important related tool and comparison point, but LowMC has a
-different target: event-wide coherent radiation from a configurable set of
-charged external particles, rather than QED radiation in decays.
+VinciaQED and PHOTOS are important related tools and comparison points.
+VinciaQED overlaps directly in the coherent soft kernel but is an integrated
+ordered Pythia shower, while PHOTOS primarily targets QED radiation in decays.
+LowMC's different target is a generator-independent leading-soft calculation
+over a configurable set of charged external particles.
 
 ## Milestone 1: Core Physics Skeleton
 
@@ -79,6 +104,77 @@ phase-space limits.
   not as an incidental implementation detail
 - add sampler diagnostics such as weight spread, acceptance rate, and refined
   cell counts
+
+### Physics-Informed Analytic Proposals
+
+PHOTOS and VinciaQED both generate trial photons from analytically invertible
+soft/collinear approximations and apply the complete target kernel only as a
+final rejection or weight correction. LowMC already follows this principle in
+photon `k_T` by sampling logarithmically. A diagnostic workstream should test
+whether extending it to photon angles can reduce grid construction and
+shape-unweighting cost without changing the leading-Low density.
+
+The first diagnostic prototype of a PHOTOS-inspired analytic leg-centered
+proposal now exists. It:
+
+- uses the finite-mass denominator
+  `p_i . k = E_i E_gamma (1 - beta_i cos(theta_i_gamma))` to define a
+  normalized angular component around each selected charged particle
+- mixes the charged-particle components with an explicit uniform floor so the
+  proposal has support over the complete configured acceptance
+- continues to evaluate the exact coherent `S(k) = -J(k)^2` for every returned
+  weight or accept/reject decision, so interference is never approximated in
+  the physical density
+- begins as a weighted, diagnostic-only option and has unit coverage plus a
+  first three-seed comparison on four controlled multi-particle fixtures
+- can be compared against the uniform, local-box, smooth-triangular, and grid-adaptive
+  proposals using effective sample fraction, weight RMS, unweighting
+  acceptance, maximum target/proposal ratio, proposal-build time, total
+  runtime, and Low-current evaluation count
+- retains the current validated grid path as the default unless the analytic
+  proposal passes both efficiency and correctness checks on boosted toys and
+  realistic Pythia-produced events
+
+The initial controlled comparison finds large effective-sample improvements
+for boosted and clustered fixtures but a clear loss relative to the grid for a
+low-boost HepMC3 validation fixture. The exact contract and first results are
+recorded in `docs/LEG_CENTERED_PROPOSAL_PLAN.md`. The next gate is an
+independent Pythia-event tail study. That first gate is now complete on sixty
+`e+e-` hadronic and sixty SoftQCD events. The analytic proposal has lower
+per-sample ESS than the grid in most realistic events, but substantially higher
+effective-sample throughput and a far more stable observed residual maximum.
+This justifies a separate diagnostic analytic-envelope prototype with strict
+failure detection; it does not justify changing the production default. That
+prototype is now complete for the same `120` Pythia events. A bound calibrated
+from `20000` proposal draws and tested on `100000` independent draws per event
+has zero overshoots at all three predeclared safety factors. At factor `1.2`,
+the largest trial/bound ratio is `0.844` for hadronic Z events and `0.915` for
+SoftQCD, with mean expected acceptance `7.97%` and `6.58%`. This clears a
+finite-sample diagnostic gate only: the bound is empirical, failure detection
+must remain mandatory, and the current cell-local grid stays the production
+default. Further work should be driven by a concrete need for an independent
+reference or by broader stress coverage, rather than making this PHOTOS-
+inspired branch the main LowMC workstream.
+
+A second, more exploratory prototype may use Vincia-inspired charged-pair
+antennae. With signed effective charges `c_i = eta_i Q_i`, candidate pairs can
+be proposed using positive strengths such as `max(0, -c_i c_j)` and angular
+shapes based on
+
+```text
+(p_i . p_j) / ((p_i . k) (p_j . k)).
+```
+
+The exact Low current must again remain the target. This prototype should only
+follow the leg-centered study because a naive pair mixture has `O(N^2)`
+components and may reproduce Vincia's known conservative-overestimate cost at
+high charged multiplicity. Its proposal-density evaluation and memory scaling
+must be included in the comparison.
+
+Sudakov ordering, hardest-emission competition, recoil maps, virtual/no-photon
+normalization, spin-dependent collinear kernels, and iterated shower evolution
+solve different physics problems and should not enter this sampling workstream.
+They require separate explicit physics-model decisions if considered later.
 
 ## Milestone 3: Event Interfaces
 
@@ -167,8 +263,56 @@ Goal: compare LowMC output against analytic and event-level expectations.
 - validate sampler behavior for highly boosted charged particles
 - test coherent interference patterns
 - compare selected event samples against independent Low-theorem calculations
-- define comparison points with PHOTOS where decay radiation overlaps
-  technically, while keeping LowMC's event-wide current distinct
+- add a controlled VinciaQED multipole comparison using the same
+  charge-conserving particle configuration in both programs
+- first compare the one-photon, very-soft limit with Vincia spin-dependent
+  collinear terms disabled, where the scalar eikonal shapes should agree up to
+  documented normalization and phase-space conventions
+- then isolate differences from charged-system selection, spin-collinear
+  terms, recoil, ordering, and repeated emissions
+- determine whether the global current built from incoming beams and final
+  stable charged particles is an adequate approximation for the intended
+  experimental soft-photon observables
+
+### PHOTOS Soft-Decay Benchmark
+
+Add a direct `Z -> mu+ mu-` comparison with PHOTOS as the first external
+afterburner benchmark. For a neutral parent and the same two outgoing muons,
+PHOTOS and LowMC contain the same charge-conserving leading-soft current, so
+their real-photon predictions should converge in the strict soft limit. This
+is a clean test of LowMC's charge signs, normalization, finite-mass behavior,
+interference pattern, sampling, and unweighting in a domain where PHOTOS is a
+mature independently validated reference.
+
+The detailed benchmark contract, staging, and success criteria are recorded in
+`docs/PHOTOS_BENCHMARK_PLAN.md`.
+
+The first comparison should:
+
+- use identical fixed Born events with a `Z` at rest and back-to-back physical
+  muon four-momenta
+- configure PHOTOS for interference-enabled single-photon generation with its
+  universal kernel before comparing process-specific hard-photon corrections
+- align the fine-structure constant, muon mass, infrared cutoff, photon
+  acceptance, and normalization convention explicitly
+- compare the accepted real-photon yield, photon-energy spectrum, angle to the
+  nearest muon, and wide-angle interference-sensitive distributions
+- repeat the comparison for progressively smaller maximum photon energy and
+  demonstrate that the LowMC/PHOTOS ratio approaches one as
+  `E_gamma / m_Z -> 0`
+- define angles relative to the common pre-radiation Born muons, or otherwise
+  quantify PHOTOS recoil effects, because LowMC currently preserves the input
+  charged-particle momenta
+- build on the existing `lowmc_delphi_muon_fsr_diagnostic`, while extending it
+  from a fixed-topology shape/data comparison to a reproducible rate-and-shape
+  comparison with PHOTOS
+
+Agreement would validate LowMC where the two physical models overlap. It would
+not imply that PHOTOS's decay-by-decay event traversal reproduces LowMC's
+single configurable current over a general scattering event with distinct
+incoming legs. PHOTOS remains the natural tool for ordinary decay radiation;
+LowMC's broader target remains a generator-independent leading-soft
+calculation for a user-selected scattering configuration.
 
 ## Milestone 5: Extensions
 
@@ -179,10 +323,16 @@ Potential future work:
 - recoil handling
 - virtual photons
 - dielectron generation
-- double-counting treatment with showers or PHOTOS
+- double-counting treatment with VinciaQED, other QED showers, PHOTOS, and
+  radiative decays
 
 ## Open Questions
 
 - Which validation observables should be considered release-blocking?
 - Should exponentiation be part of LowMC's core model or a separate layer?
 - How much event-record policy should live in adapters versus user configuration?
+- Which charged particles form a physically coherent system for each intended
+  experimental use case, and when are lifetime or formation-length effects
+  needed?
+- Which existing-radiation metadata or configuration is required to prevent
+  LowMC from being applied to overlapping QED photon sources?

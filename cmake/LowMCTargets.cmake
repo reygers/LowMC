@@ -2,6 +2,7 @@ add_library(lowmc_core STATIC
     src/EventYield.cpp
     src/FixedKTWeightedSampler.cpp
     src/GridEtaPhiProposal.cpp
+    src/LegCenteredEtaPhiProposal.cpp
     src/LowCurrent.cpp
     src/ShapeUnweighting.cpp
     src/WeightedEventGenerator.cpp
@@ -214,6 +215,24 @@ add_test(
 )
 
 add_test(
+    NAME lowmc_fixed_kt_leg_weighted_samples_smoke
+    COMMAND lowmc_fixed_kt_weighted_samples
+            ${CMAKE_CURRENT_BINARY_DIR}/fixed_kt_leg_weighted_samples.csv
+            --samples 8
+            --proposal leg
+            --leg-uniform-fraction 0.25
+)
+
+add_test(
+    NAME lowmc_fixed_kt_leg_particles_file_smoke
+    COMMAND lowmc_fixed_kt_weighted_samples
+            ${CMAKE_CURRENT_BINARY_DIR}/fixed_kt_leg_particles_file.csv
+            --samples 8
+            --proposal leg
+            --particles ${CMAKE_CURRENT_SOURCE_DIR}/fixtures/event4_particles.lowmc
+)
+
+add_test(
     NAME lowmc_fixed_kt_grid_weighted_samples_smoke
     COMMAND lowmc_fixed_kt_weighted_samples
             ${CMAKE_CURRENT_BINARY_DIR}/fixed_kt_grid_weighted_samples.csv
@@ -258,6 +277,16 @@ add_test(
             --adaptive-width-scale 10
             --adaptive-min-half-width 0.02
             --adaptive-max-half-width 0.8
+)
+
+add_test(
+    NAME lowmc_weighted_sampler_study_leg_smoke
+    COMMAND lowmc_weighted_sampler_study
+            ${CMAKE_CURRENT_BINARY_DIR}/weighted_sampler_study_leg.csv
+            --samples 8
+            --momentum 10
+            --proposal leg
+            --leg-uniform-fraction 0.25
 )
 
 add_test(
@@ -781,6 +810,81 @@ set_tests_properties(
         PASS_REGULAR_EXPRESSION
             "status=ok .* gamma=430 .* expected_peak_mrad="
 )
+
+if(LOWMC_ENABLE_PHOTOS)
+    add_executable(lowmc_photos_zmumu_benchmark
+        diagnostics/photos_zmumu_benchmark.cpp
+    )
+
+    target_include_directories(lowmc_photos_zmumu_benchmark
+        PRIVATE
+            ${PHOTOS_INCLUDE_DIR}
+    )
+
+    target_link_libraries(lowmc_photos_zmumu_benchmark
+        PRIVATE
+            lowmc_core
+            ${PHOTOS_HEPMC3_LIBRARY}
+            ${PHOTOS_CORE_LIBRARY}
+            HepMC3::HepMC3
+    )
+
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+        target_compile_options(lowmc_photos_zmumu_benchmark PRIVATE -Wall -Wextra -pedantic)
+    elseif(MSVC)
+        target_compile_options(lowmc_photos_zmumu_benchmark PRIVATE /W4)
+    endif()
+
+    add_test(
+        NAME lowmc_photos_zmumu_benchmark_help
+        COMMAND lowmc_photos_zmumu_benchmark --help
+    )
+
+    add_test(
+        NAME lowmc_photos_zmumu_benchmark_smoke
+        COMMAND lowmc_photos_zmumu_benchmark
+                ${CMAKE_CURRENT_BINARY_DIR}/photos_zmumu_photons.csv
+                ${CMAKE_CURRENT_BINARY_DIR}/photos_zmumu_summary.csv
+                --events 64
+                --seed1 1802
+                --seed2 9373
+                --kt-min 0.05
+                --kt-max 0.2
+                --eta-max 2
+                --infrared-cutoff 0.0003
+                --lowmc-samples 128
+                --lowmc-refinement-levels 3
+                --lowmc-output ${CMAKE_CURRENT_BINARY_DIR}/lowmc_zmumu_photons.csv
+    )
+    set_tests_properties(
+        lowmc_photos_zmumu_benchmark_smoke
+        PROPERTIES
+            PASS_REGULAR_EXPRESSION "status=ok.*events=64.*multiphoton_events=0"
+    )
+
+    add_test(
+        NAME lowmc_photos_zmumu_energy_window_smoke
+        COMMAND lowmc_photos_zmumu_benchmark
+                ${CMAKE_CURRENT_BINARY_DIR}/photos_zmumu_energy_photons.csv
+                ${CMAKE_CURRENT_BINARY_DIR}/photos_zmumu_energy_summary.csv
+                --events 64
+                --energy-max 0.1
+                --seed1 1802
+                --seed2 9373
+                --kt-min 0.05
+                --kt-max 0.2
+                --eta-max 2
+                --infrared-cutoff 0.0003
+                --lowmc-samples 64
+                --lowmc-refinement-levels 3
+                --lowmc-output ${CMAKE_CURRENT_BINARY_DIR}/lowmc_zmumu_energy_photons.csv
+    )
+    set_tests_properties(
+        lowmc_photos_zmumu_energy_window_smoke
+        PROPERTIES
+            PASS_REGULAR_EXPRESSION "status=ok.*events=64.*multiphoton_events=0"
+    )
+endif()
 
 add_executable(lowmc_direct_charged_particles_example
     examples/direct_charged_particles.cpp

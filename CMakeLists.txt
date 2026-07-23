@@ -6,18 +6,56 @@ include(GNUInstallDirs)
 
 option(LOWMC_ENABLE_HEPMC3 "Build the optional HepMC3 adapter target" OFF)
 option(LOWMC_ENABLE_PYTHIA8 "Build the optional Pythia8 adapter target" OFF)
+option(LOWMC_ENABLE_PHOTOS "Build the optional PHOTOS HepMC3 benchmark" OFF)
+
+set(PHOTOS_ROOT "" CACHE PATH "PHOTOS installation prefix")
 
 enable_testing()
 
 find_package(Python3 COMPONENTS Interpreter)
 
-if(LOWMC_ENABLE_HEPMC3)
+if(LOWMC_ENABLE_HEPMC3 OR LOWMC_ENABLE_PHOTOS)
     find_package(HepMC3 CONFIG QUIET)
     if(NOT HepMC3_FOUND)
         message(FATAL_ERROR
-            "LOWMC_ENABLE_HEPMC3=ON requires HepMC3, but CMake could not find "
+            "The enabled HepMC3-dependent target requires HepMC3, but CMake could not find "
             "a HepMC3 package configuration. Install HepMC3 or pass its prefix "
             "with -DCMAKE_PREFIX_PATH=/path/to/hepmc3."
+        )
+    endif()
+endif()
+
+if(LOWMC_ENABLE_PHOTOS)
+    if(PHOTOS_ROOT)
+        find_path(
+            PHOTOS_INCLUDE_DIR
+            NAMES Photos/Photos.h
+            PATHS "${PHOTOS_ROOT}/include"
+            NO_DEFAULT_PATH
+        )
+    else()
+        find_path(
+            PHOTOS_INCLUDE_DIR
+            NAMES Photos/Photos.h
+            PATH_SUFFIXES include
+        )
+    endif()
+    find_library(
+        PHOTOS_CORE_LIBRARY
+        NAMES Photospp libPhotospp
+        HINTS "${PHOTOS_ROOT}"
+        PATH_SUFFIXES lib
+    )
+    find_library(
+        PHOTOS_HEPMC3_LIBRARY
+        NAMES PhotosppHepMC3 libPhotosppHepMC3
+        HINTS "${PHOTOS_ROOT}"
+        PATH_SUFFIXES lib
+    )
+    if(NOT PHOTOS_INCLUDE_DIR OR NOT PHOTOS_CORE_LIBRARY OR NOT PHOTOS_HEPMC3_LIBRARY)
+        message(FATAL_ERROR
+            "LOWMC_ENABLE_PHOTOS=ON requires PHOTOS with its HepMC3 interface. "
+            "Pass the installation prefix with -DPHOTOS_ROOT=/path/to/photospp."
         )
     endif()
 endif()
@@ -159,5 +197,25 @@ if(Python3_Interpreter_FOUND)
     add_test(
         NAME lowmc_plot_delphi_muon_benchmark_help
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/plot_delphi_muon_benchmark.py --help
+    )
+    add_test(
+        NAME lowmc_plot_photos_zmumu_comparison_help
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/plot_photos_zmumu_comparison.py --help
+    )
+    add_test(
+        NAME lowmc_run_photos_zmumu_soft_scan_help
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/run_photos_zmumu_soft_scan.py --help
+    )
+    add_test(
+        NAME lowmc_compare_leg_centered_proposal_help
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/compare_leg_centered_proposal.py --help
+    )
+    add_test(
+        NAME lowmc_summarize_pythia_leg_tail_study_help
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/summarize_pythia_leg_tail_study.py --help
+    )
+    add_test(
+        NAME lowmc_summarize_pythia_leg_envelope_help
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/summarize_pythia_leg_envelope.py --help
     )
 endif()

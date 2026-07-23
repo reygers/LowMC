@@ -4,42 +4,39 @@ This file should contain exactly one immediate task for Codex or another coding
 agent. Broader plans belong in `docs/ROADMAP.md`; project state belongs in
 `docs/STATUS.md`.
 
-Validate compensated candidates with boosted-cell probes.
+Wait for independent review feedback on the reduced-probe recommendation.
 
 Requirements:
 
 - review `docs/STATUS.md`, `docs/ALGORITHM.md`, `docs/DECISIONS.md`, and
   `docs/USAGE.md`
 - keep the factorized event-yield estimator, spatial-indexed shape-unweighting
-  path, known-cell interior probe shortcut, and full `11 x 11` base-probe
-  reference as current defaults
+  path, known-cell interior probe shortcut, and full `11 x 11` boosted-cell
+  reference as the current defaults
 - do not change physics densities, `max_trial_bound_ratio` accounting,
-  multiplicity conventions, or failure policy semantics
-- keep compensated reduced probing diagnostic-only; do not make reduced probing
-  or compensation a default
-- start from the ten-seed no-boosted result: all candidates stayed below the
-  full-reference ratio, but `7 x 7` with factor `1.10` had only a small margin;
-  `7 x 7` with `1.20` is the safer candidate and `5 x 5` with `1.30` is the
-  aggressive speed candidate
-- run the same bounded seeds `24681..24690` with the default boosted-cell
-  probe path enabled for the full `11 x 11` reference, `7 x 7` with
-  compensation factor `1.20`, and `5 x 5` with compensation factor `1.30`
-- include `7 x 7` with factor `1.10` only if the first two candidates leave
-  enough ambiguity to justify the extra runs
-- compare total event time, shape time, `max_trial_bound_ratio`, envelope
-  failures, accepted/retained photon counts, compensated-cell counts, promoted
-  cell counts, and boosted-probe time
-- decide whether boosted-cell probes still add useful safety on top of
-  compensation, or whether they mostly erase the speed advantage
+  multiplicity conventions, output metadata, or failure policy semantics
+- keep reduced probing and compensation diagnostic-only; do not make
+  `5 x 5` with any compensation factor a default
+- send or discuss `docs/reduced-probe-review-note-stefan.md` with Stefan
+- ask Stefan to focus on:
+  - whether the no-per-seed-overshoot criterion relative to the full `11 x 11`
+    reference is the right current safety criterion
+  - whether factor `1.50`'s accepted-trial penalty is acceptable for a
+    non-default diagnostic option
+  - whether the next validation should use more fresh Pythia seeds, different
+    Pythia processes, or targeted topology classes
+  - whether additional diagnostics are needed to identify calibration,
+    boosted-cell-promotion, or residual reduced-probe under-bounding failures
+- do not run more validation or change defaults until review feedback is
+  available
 - update `docs/STATUS.md`, `docs/ALGORITHM.md`, and `docs/NEXT_TASK.md`
   afterward
 
 Open questions:
 
-- With boosted-cell probes enabled, does compensation still affect enough cells
-  to matter?
-- Does the boosted-cell path reduce `max_trial_bound_ratio` further, or only
-  increase runtime for these candidates?
-- Should the eventual validation criterion require both no-boosted and boosted
-  scans to beat the full-reference ratio, or is the no-boosted comparison the
-  cleaner criterion for the reduced-base-probe policy?
+- Does Stefan agree that factor `1.50` is the only current conservative
+  reduced-probe candidate?
+- What validation should be required before reduced probing becomes a
+  documented non-default diagnostic option?
+- Should the next validation broaden Pythia seeds, process types, or topology
+  classes?
