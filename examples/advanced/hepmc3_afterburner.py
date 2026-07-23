@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the installed LowMC HepMC3 quickstart example."""
+"""Run the LowMC HepMC3 afterburner example."""
 
 from __future__ import annotations
 
@@ -11,14 +11,14 @@ from pathlib import Path
 
 def default_tool_dir() -> Path:
     script = Path(__file__).resolve()
-    # <prefix>/share/lowmc/examples/hepmc3/hepmc3_quickstart.py
+    # <prefix>/share/lowmc/examples/hepmc3/hepmc3_afterburner.py
     return script.parents[4] / "bin"
 
 
 def parse_args() -> argparse.Namespace:
     script_dir = Path(__file__).resolve().parent
     parser = argparse.ArgumentParser(
-        description="Run the installed LowMC HepMC3 quickstart example."
+        description="Run the LowMC HepMC3 afterburner example."
     )
     parser.add_argument(
         "--tool-dir",
@@ -35,14 +35,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=Path("lowmc-hepmc3-quickstart-output"),
-        help="directory where the quickstart output file is written",
+        default=Path("lowmc-hepmc3-example-output"),
+        help="directory where the example output file is written",
     )
     parser.add_argument(
         "--enhancement-factor",
         type=float,
         default=10.0,
-        help="LowMC photon enhancement factor for the quickstart run",
+        help="LowMC photon enhancement factor for the example run",
     )
     parser.add_argument("--multiplicity-seed", type=int, default=2)
     parser.add_argument("--shape-seed", type=int, default=67890)
@@ -53,7 +53,7 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help=(
             "use the diagnostic afterburner's streaming output mode instead of "
-            "the quickstart default --atomic-output mode"
+            "the example default --atomic-output mode"
         ),
     )
     return parser.parse_args()

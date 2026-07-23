@@ -337,15 +337,20 @@ install(
 
 install(
     PROGRAMS
-        ${CMAKE_CURRENT_SOURCE_DIR}/../../examples/hepmc3/hepmc3_quickstart.py
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../examples/advanced/hepmc3_afterburner.py
     DESTINATION ${CMAKE_INSTALL_DATADIR}/lowmc/examples/hepmc3
 )
 
 install(
     FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/../../examples/hepmc3/README.md
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/charge_conserving_event.hepmc3
     DESTINATION ${CMAKE_INSTALL_DATADIR}/lowmc/examples/hepmc3
+)
+
+install(
+    FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../examples/advanced/hepmc3_afterburner.md
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/lowmc/examples/hepmc3
+    RENAME README.md
 )
 
 set_target_properties(
@@ -1140,44 +1145,44 @@ if(Python3_Interpreter_FOUND)
     )
 
     add_test(
-        NAME lowmc_hepmc3_quickstart_help
+        NAME lowmc_example_hepmc3_afterburner_help
         COMMAND ${Python3_EXECUTABLE}
-                ${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/hepmc3_quickstart.py
+                ${CMAKE_CURRENT_SOURCE_DIR}/../../examples/advanced/hepmc3_afterburner.py
                 --help
     )
 
     add_test(
-        NAME lowmc_hepmc3_quickstart_smoke
+        NAME lowmc_example_hepmc3_afterburner_smoke
         COMMAND ${Python3_EXECUTABLE}
-                ${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/hepmc3_quickstart.py
+                ${CMAKE_CURRENT_SOURCE_DIR}/../../examples/advanced/hepmc3_afterburner.py
                 --tool-dir $<TARGET_FILE_DIR:lowmc_hepmc3_afterburner_diagnostic>
                 --input ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/charge_conserving_event.hepmc3
                 --output-dir ${CMAKE_CURRENT_BINARY_DIR}/quickstart
     )
     set_tests_properties(
-        lowmc_hepmc3_quickstart_smoke
+        lowmc_example_hepmc3_afterburner_smoke
         PROPERTIES
             PASS_REGULAR_EXPRESSION
                 "atomic_output=1.*event_index=0 lowmc_photons=4 photon_mode=enhanced enhancement_factor=10 photon_weight_sum=0.4 photon_weight_attributes=4 event_metadata=1"
     )
 
     add_test(
-        NAME lowmc_hepmc3_installed_examples_install
+        NAME lowmc_example_hepmc3_installed_examples
         COMMAND ${CMAKE_COMMAND}
                 --install ${CMAKE_BINARY_DIR}
                 --prefix ${CMAKE_CURRENT_BINARY_DIR}/installed_examples_prefix
     )
 
     add_test(
-        NAME lowmc_hepmc3_installed_quickstart_smoke
+        NAME lowmc_example_hepmc3_installed_afterburner
         COMMAND ${Python3_EXECUTABLE}
-                ${CMAKE_CURRENT_BINARY_DIR}/installed_examples_prefix/${CMAKE_INSTALL_DATADIR}/lowmc/examples/hepmc3/hepmc3_quickstart.py
+                ${CMAKE_CURRENT_BINARY_DIR}/installed_examples_prefix/${CMAKE_INSTALL_DATADIR}/lowmc/examples/hepmc3/hepmc3_afterburner.py
                 --output-dir ${CMAKE_CURRENT_BINARY_DIR}/installed_examples_quickstart
     )
     set_tests_properties(
-        lowmc_hepmc3_installed_quickstart_smoke
+        lowmc_example_hepmc3_installed_afterburner
         PROPERTIES
-            DEPENDS lowmc_hepmc3_installed_examples_install
+            DEPENDS lowmc_example_hepmc3_installed_examples
             PASS_REGULAR_EXPRESSION
                 "atomic_output=1.*event_index=0 lowmc_photons=4 photon_mode=enhanced enhancement_factor=10 photon_weight_sum=0.4 photon_weight_attributes=4 event_metadata=1"
     )

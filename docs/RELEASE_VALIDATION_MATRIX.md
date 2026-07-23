@@ -134,7 +134,7 @@ Pass criteria:
 - HepMC3 selection, units, charge lookup, weighted sampling, physical and
   enhanced output, metadata round-trip, preservation, skip/fail behavior,
   atomic output, generated samples, count/yield checks, and build-tree and
-  installed quickstarts pass;
+  installed afterburner examples pass;
 - Pythia toy and SoftQCD selection and weighted diagnostics pass;
 - the direct-Pythia versus Pythia-to-HepMC3 cross-check passes.
 
@@ -209,11 +209,11 @@ requires investigation and documentation.
 
 On 2026-07-23, the complete driver implementation check reported:
 
-- the dependency-free Release build passed all `95` tests and installed;
+- the dependency-free Release build passed all `98` tests and installed;
 - the `R2` count-plus-shape gate passed all `18` rows;
 - the `R3` strict shape-envelope gate passed;
-- the combined HepMC3 plus Pythia8 Release build passed all `188` tests;
-- the PHOTOS 3.64 Release build passed all `98` tests.
+- the combined HepMC3 plus Pythia8 Release build passed all `192` tests;
+- the PHOTOS 3.64 Release build passed all `101` tests.
 
 These counts are evidence, not permanent pass criteria; newly added tests must
 also pass. This implementation check used an uncommitted development tree; the

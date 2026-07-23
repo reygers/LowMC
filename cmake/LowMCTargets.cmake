@@ -930,24 +930,55 @@ if(LOWMC_ENABLE_PHOTOS)
     )
 endif()
 
-add_executable(lowmc_direct_charged_particles_example
-    examples/direct_charged_particles.cpp
+function(lowmc_add_core_example target source)
+    add_executable(${target} ${source})
+    target_link_libraries(${target} PRIVATE lowmc_core)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+        target_compile_options(${target} PRIVATE -Wall -Wextra -pedantic)
+    elseif(MSVC)
+        target_compile_options(${target} PRIVATE /W4)
+    endif()
+endfunction()
+
+lowmc_add_core_example(
+    lowmc_example_low_current
+    examples/basic/evaluate_low_current.cpp
+)
+lowmc_add_core_example(
+    lowmc_example_weighted_photons
+    examples/basic/generate_weighted_photons.cpp
+)
+lowmc_add_core_example(
+    lowmc_example_event_multiplicity
+    examples/basic/sample_event_multiplicity.cpp
+)
+lowmc_add_core_example(
+    lowmc_example_shape_unweighting
+    examples/advanced/shape_unweighting.cpp
 )
 
-target_link_libraries(lowmc_direct_charged_particles_example
-    PRIVATE
-        lowmc_core
+add_test(NAME lowmc_example_low_current COMMAND lowmc_example_low_current)
+set_tests_properties(
+    lowmc_example_low_current
+    PROPERTIES PASS_REGULAR_EXPRESSION "charge_conserved=1"
 )
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
-    target_compile_options(lowmc_direct_charged_particles_example PRIVATE -Wall -Wextra -pedantic)
-elseif(MSVC)
-    target_compile_options(lowmc_direct_charged_particles_example PRIVATE /W4)
-endif()
+add_test(NAME lowmc_example_weighted_photons COMMAND lowmc_example_weighted_photons)
+set_tests_properties(
+    lowmc_example_weighted_photons
+    PROPERTIES PASS_REGULAR_EXPRESSION "weighted_photons=1000"
+)
 
-add_test(
-    NAME lowmc_direct_charged_particles_example_smoke
-    COMMAND lowmc_direct_charged_particles_example
+add_test(NAME lowmc_example_event_multiplicity COMMAND lowmc_example_event_multiplicity)
+set_tests_properties(
+    lowmc_example_event_multiplicity
+    PROPERTIES PASS_REGULAR_EXPRESSION "integration_status=ok"
+)
+
+add_test(NAME lowmc_example_shape_unweighting COMMAND lowmc_example_shape_unweighting)
+set_tests_properties(
+    lowmc_example_shape_unweighting
+    PROPERTIES PASS_REGULAR_EXPRESSION "status_ok=1.*envelope_failures=0"
 )
 
 if(LOWMC_ENABLE_HEPMC3)

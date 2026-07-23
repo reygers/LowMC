@@ -193,26 +193,26 @@ For a minimal end-to-end check using the checked-in charge-conserving fixture,
 run:
 
 ```sh
-python3 scripts/hepmc3_quickstart.py \
+python3 examples/advanced/hepmc3_afterburner.py \
   --tool-dir build-hepmc3/adapters/hepmc3 \
-  --output-dir build/hepmc3_quickstart
+  --output-dir build/hepmc3_example
 ```
 
 The script reads the fixture, writes a new HepMC3 output file under the chosen
 output directory, and then runs the output-summary diagnostic on that file. For
 installed tools, pass the installed `bin/` directory as `--tool-dir`. The
-quickstart uses the afterburner's `--atomic-output` mode by default, because it
-is a user-facing repository example rather than a low-level diagnostic
+example uses the afterburner's `--atomic-output` mode by default, because it is
+a user-facing repository example rather than a low-level diagnostic
 streaming test. To exercise the diagnostic streaming mode explicitly, pass
 `--no-atomic-output`.
 
-The repository quickstart remains useful for build-tree checks. Installed
-packages also provide a self-contained HepMC3 example directory:
+The repository example remains useful for build-tree checks. Installed packages
+also provide a self-contained HepMC3 example directory:
 
 ```text
 <prefix>/share/lowmc/examples/hepmc3/
   README.md
-  hepmc3_quickstart.py
+  hepmc3_afterburner.py
   charge_conserving_event.hepmc3
 ```
 
@@ -220,11 +220,11 @@ After installation, run the installed example with:
 
 ```sh
 cd /path/to/lowmc-install/share/lowmc/examples/hepmc3
-python3 hepmc3_quickstart.py --output-dir quickstart-output
+python3 hepmc3_afterburner.py --output-dir example-output
 ```
 
-The installed quickstart uses the installed `bin/` tools from the same prefix
-by default and writes output only to the selected output directory.
+The installed example uses the installed `bin/` tools from the same prefix by
+default and writes output only to the selected output directory.
 
 Run on a HepMC3 ASCII input file:
 
@@ -328,7 +328,7 @@ the command is understood.
 Safe for users to try:
 
 - build-tree and installed diagnostic executables
-- repository and installed quickstarts
+- repository and installed examples
 - physical output with enhancement factor `1`
 - explicitly enhanced output with `--enhancement-factor F` and documented
   `LowMC:weight = 1 / F`
@@ -435,8 +435,8 @@ Implemented checks cover:
 - per-photon and event-level LowMC metadata round-tripping through HepMC3 ASCII
 - the read-only output-summary diagnostic
 - installation of the optional HepMC3 diagnostic executables
-- the repository quickstart helper using the checked-in fixture
-- the installed HepMC3 quickstart example
+- the repository afterburner example using the checked-in fixture
+- the installed HepMC3 afterburner example
 
 Remaining validation gaps before calling the afterburner a first usable
 prototype:

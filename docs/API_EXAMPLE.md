@@ -4,9 +4,9 @@ This example uses the generator-independent core API directly. This is the
 simplest path for hand-made toy events: provide the charged particles, configure
 the photon phase space, and call the weighted generator.
 
-Event-record adapters such as future HepMC3 or Pythia8 adapters should select
-charged particles before calling the core. Adapter-support selection types are
-not needed for manual toy events.
+The optional HepMC3 and Pythia8 adapters select charged particles before
+calling the same core. Adapter-support selection types are not needed for
+manual toy events.
 
 ## Two Charged Pions
 
@@ -100,11 +100,13 @@ understood as either a deliberate selection choice or a sign/selection mistake.
 The same direct-input pattern is available as a tiny compiled example:
 
 ```sh
-./build/lowmc_direct_charged_particles_example
+./build/lowmc_example_weighted_photons
 ```
 
-It prints a compact summary with the sample count, mean weight, effective
-sample size, signed charge sum, and the first weighted photon.
+Its source is
+`examples/basic/generate_weighted_photons.cpp`. It prints a compact summary
+with the sample count, mean weight, effective sample size, signed charge sum,
+and the first weighted photon.
 
 A CSV-writing diagnostic executable is also available:
 
@@ -167,10 +169,10 @@ std::cout << "envelope failures: "
           << unweighted.envelope.failedEnvelopeCount << "\n";
 ```
 
-These candidates only have the correct sampled Low-photon shape. They are not
-yet a complete physical photon multiplicity model and should not be written as
-ordinary HepMC3 final-state photons until the multiplicity/normalization layer
-is defined.
+These candidates only have the correct sampled Low-photon shape. They are not,
+by themselves, a complete physical photon multiplicity model. The provisional
+HepMC3 afterburner composes the separately implemented event-yield, Poisson
+multiplicity, shape-unweighting, and event-record layers.
 
 With `EnvelopeFailurePolicy::Strict`, any observed envelope violation clears
 the returned candidates and sets `status` to `EnvelopeFailed`. Use

@@ -115,6 +115,22 @@ install(
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/LowMC
 )
 
+install(
+    FILES ${CMAKE_CURRENT_SOURCE_DIR}/examples/README.md
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/lowmc/examples
+)
+
+install(
+    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/examples/basic/
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/lowmc/examples/basic
+    FILES_MATCHING PATTERN "*.cpp"
+)
+
+install(
+    FILES ${CMAKE_CURRENT_SOURCE_DIR}/examples/advanced/shape_unweighting.cpp
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/lowmc/examples/advanced
+)
+
 if(Python3_Interpreter_FOUND)
     add_test(
         NAME lowmc_plot_eta_phi_help

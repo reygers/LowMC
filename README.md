@@ -73,6 +73,14 @@ cmake -S . -B build-pythia8 -DLOWMC_ENABLE_PYTHIA8=ON
 cmake --build build-pythia8
 ```
 
+## Examples
+
+The repository contains a six-example learning path under
+[examples/](examples/README.md). Descriptive filenames are grouped into
+`basic/` core examples and `advanced/` shape-unweighting, HepMC3, and Pythia8
+examples. The basic executables are built by default; optional examples are
+enabled with their corresponding adapters.
+
 ## Basic Usage
 
 The most stable interface is the direct core workflow:
@@ -121,6 +129,7 @@ See [docs/PHYSICS.md](docs/PHYSICS.md) for the full convention.
   release-blocking and scientific validation gates
 - [docs/RELEASE_NOTES_0.1.0.md](docs/RELEASE_NOTES_0.1.0.md): first public
   research-prototype release notes
+- [examples/README.md](examples/README.md): basic and advanced examples
 - [docs/NEXT_TASK.md](docs/NEXT_TASK.md): next planned development step
 
 ## License

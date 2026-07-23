@@ -31,6 +31,7 @@ int main() {
     const lowmc::WeightedEventGenerationResult result =
         lowmc::generateWeightedPhotons(selectedParticles, config);
 
+    std::cout << "Example: generate weighted Low photons\n";
     std::cout << "selected_particles=" << selectedParticles.size() << '\n';
     std::cout << "weighted_photons=" << result.samples.size() << '\n';
     std::cout << "mean_weight=" << result.weightSummary.meanWeight << '\n';

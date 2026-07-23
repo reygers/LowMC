@@ -20,6 +20,8 @@ programs deliberately keep their `*_diagnostic` names in this release.
 - corrected event-specific shape unweighting with explicit envelope failure
   diagnostics;
 - direct `ChargedParticle` C++ interface;
+- a six-example learning path with descriptive filenames, split into
+  dependency-free basic examples and advanced shape/HepMC3/Pythia8 examples;
 - installed static core library, public headers, and CMake package target
   `LowMC::core`;
 - optional HepMC3 selection, weighted diagnostics, and provisional physical or
@@ -62,10 +64,13 @@ cmake --build build-integrations --parallel
 ctest --test-dir build-integrations --output-on-failure
 ```
 
-The installed HepMC3 quickstart is documented in
+The installed HepMC3 afterburner example is documented in
 [USAGE.md](USAGE.md#4-hepmc3-afterburner-output). Configuration of the
 PHOTOS comparison benchmark and the full fresh-checkout guide are in
 [INSTALL.md](INSTALL.md).
+
+The complete example index and suggested learning order are in
+[examples/README.md](../examples/README.md).
 
 ## Release Validation
 
@@ -88,11 +93,11 @@ applicable gates. The exact gate policy is in
 
 The expected current test inventory is:
 
-- `95` dependency-free tests;
+- `98` dependency-free tests;
 - the `18`-row count-plus-shape gate;
 - the strict shape-envelope gate;
-- `188` tests with HepMC3 and Pythia8 enabled;
-- `98` tests in the PHOTOS benchmark build.
+- `192` tests with HepMC3 and Pythia8 enabled;
+- `101` tests in the PHOTOS benchmark build.
 
 Counts are informative; success requires every discovered test to pass,
 including tests added after these notes were written.

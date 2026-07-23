@@ -204,7 +204,7 @@ commands are maintained separately in `docs/RELEASE_VALIDATION_MATRIX.md`.
   per-photon metadata and event-level duplicate metadata for generated events
 - satisfied: skip/fail behavior is covered for invalid selection, non-conserved
   selected charge, insufficient candidates, and forced envelope failure
-- satisfied: read-only output-summary diagnostics and repository quickstart
+- satisfied: read-only output-summary diagnostics and repository afterburner example
   checks exist for small fixtures
 - satisfied: explicit `--atomic-output` mode publishes the requested output
   only after success and leaves no temporary output after strict failure in the
@@ -236,7 +236,7 @@ commands are maintained separately in `docs/RELEASE_VALIDATION_MATRIX.md`.
   boosted sampling is already covered in the core and single-event HepMC3
   fixtures
 - satisfied: installed examples use a self-contained
-  `share/lowmc/examples/hepmc3/` layout with README, quickstart script,
+  `share/lowmc/examples/hepmc3/` layout with README, afterburner example,
   fixture, and install-tree smoke coverage
 - satisfied: first optional direct Pythia in-memory selected-particle
   diagnostic translates `Pythia8::Event` into `AdapterParticleCandidate`

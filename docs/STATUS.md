@@ -238,9 +238,10 @@ summary calculations.
 primary manual interface for hand-made toy events, including a two-pion example,
 photon phase-space configuration, weighted result diagnostics, and the existing
 CSV-writing diagnostic executable.
-The same pattern is now also available as the compiled
-`lowmc_direct_charged_particles_example`, which prints a compact summary and the
-first weighted photon without command-line or file-I/O complexity.
+The same pattern is now also available as
+`examples/basic/generate_weighted_photons.cpp`, built as
+`lowmc_example_weighted_photons`. It prints a compact summary and the first
+weighted photon without command-line or file-I/O complexity.
 `docs/ADAPTER_PLAN.md` now records the first real event-record adapter planning
 pass. HepMC3 is chosen as the first adapter target because it is a portable
 event-record interface, while Pythia8 remains a later thin generator interface.
@@ -630,25 +631,25 @@ executables to `${CMAKE_INSTALL_BINDIR}`:
 preserved in the installed binaries when needed. Stable shorter aliases are
 deferred; the installed names remain explicitly diagnostic for now.
 
-A minimal end-to-end HepMC3 quickstart helper now exists as
-`scripts/hepmc3_quickstart.py`. It reads the checked-in charge-conserving
+A minimal end-to-end HepMC3 example now exists as
+`examples/advanced/hepmc3_afterburner.py`. It reads the checked-in charge-conserving
 fixture by default, writes the afterburner output to a selected output
 directory, then runs `lowmc_hepmc3_output_summary_diagnostic` on the result.
 The script uses build-tree tools by default and also supports installed tools
-through `--tool-dir /path/to/bin`. The quickstart defaults to the
+through `--tool-dir /path/to/bin`. The example defaults to the
 afterburner's `--atomic-output` mode, with `--no-atomic-output` available when
 the lower-level streaming diagnostic behavior should be exercised explicitly.
-A CTest smoke check validates the default atomic enhanced quickstart path and
+A CTest smoke check validates the default atomic enhanced example path and
 summary output.
 
-The HepMC3 quickstart now has an installed examples/tutorial layout. When
+The HepMC3 afterburner example has an installed tutorial layout. When
 `LOWMC_ENABLE_HEPMC3=ON`, CMake installs
 `share/lowmc/examples/hepmc3/README.md`,
-`share/lowmc/examples/hepmc3/hepmc3_quickstart.py`, and the small
-`charge_conserving_event.hepmc3` fixture. The installed quickstart is a
+`share/lowmc/examples/hepmc3/hepmc3_afterburner.py`, and the small
+`charge_conserving_event.hepmc3` fixture. The installed example is a
 separate install-aware wrapper: it derives the installed `bin/` directory from
 the install prefix by default and writes output only to a user-selected output
-directory. The repository script remains the build-tree quickstart.
+directory. The same example accepts explicit build-tree tools and input paths.
 
 The current HepMC3 afterburner readiness status is summarized in
 `docs/USAGE.md`. The recommended wording is: first controlled usable HepMC3
@@ -668,7 +669,7 @@ generated-sample count/yield scans, the boosted transverse
 fixture, the extreme transverse `p = 1000 GeV` stress fixture, per-photon and
 event-level metadata round-tripping through HepMC3 ASCII, the read-only
 output-summary diagnostic, installed optional HepMC3 tools, and the repository
-quickstart helper. The generated sample is not a substitute for external
+afterburner example. The generated sample is not a substitute for external
 generator output; it mainly checks multi-event file handling, metadata,
 skipped-event behavior, and summary diagnostics without committing a bulky
 sample. A bounded Pythia-produced five-event afterburner validation now
@@ -2085,9 +2086,9 @@ Markdown summaries. Its unit tests cover default and optional command
 construction, CTest-count parsing, and failure propagation without requiring
 optional dependencies.
 
-The first complete implementation check passed `95` default tests, the `18`-row
-count-plus-shape gate, the strict shape-envelope gate, `188` combined
-HepMC3/Pythia8 tests, and `98` PHOTOS-enabled tests. This check used a dirty
+The first complete implementation check passed `98` default tests, the `18`-row
+count-plus-shape gate, the strict shape-envelope gate, `192` combined
+HepMC3/Pythia8 tests, and `101` PHOTOS-enabled tests. This check used a dirty
 development tree and is implementation evidence, not the clean-tree evidence
 for a tagged release.
 

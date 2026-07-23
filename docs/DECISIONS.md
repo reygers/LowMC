@@ -133,7 +133,7 @@ accepted only for the diagnostic default. The same diagnostic also supports
 explicit atomic output through `--atomic-output`, writing to `<output>.tmp` and
 publishing the requested output path only after all events succeed. A stable
 production afterburner command or alias should use atomic output by default.
-The repository quickstart helper follows the production-style default and runs
+The repository afterburner example follows the production-style default and runs
 with atomic output unless `--no-atomic-output` is requested explicitly.
 
 Weighted histogramming outside event-record output may still use an explicit

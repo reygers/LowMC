@@ -183,6 +183,39 @@ add_test(
     COMMAND lowmc_pythia8_weighted_photon_diagnostic --mode softqcd --events 1 --samples 4 --seed 12345
 )
 
+add_executable(
+    lowmc_example_pythia8_weighted_photons
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../examples/advanced/pythia8_weighted_photons.cpp
+)
+
+target_link_libraries(
+    lowmc_example_pythia8_weighted_photons
+    PRIVATE
+        lowmc_pythia8_adapter
+)
+
+target_compile_definitions(
+    lowmc_example_pythia8_weighted_photons
+    PRIVATE
+        LOWMC_PYTHIA8_XMLDOC="${LOWMC_PYTHIA8_XMLDOC_DIR}"
+)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(
+        lowmc_example_pythia8_weighted_photons PRIVATE -Wall -Wextra -pedantic)
+elseif(MSVC)
+    target_compile_options(lowmc_example_pythia8_weighted_photons PRIVATE /W4)
+endif()
+
+add_test(
+    NAME lowmc_example_pythia8_weighted_photons
+    COMMAND lowmc_example_pythia8_weighted_photons
+)
+set_tests_properties(
+    lowmc_example_pythia8_weighted_photons
+    PROPERTIES PASS_REGULAR_EXPRESSION "charge_conserved=1.*weighted_photons=100"
+)
+
 add_executable(lowmc_pythia8_leg_proposal_tail_diagnostic
     diagnostics/pythia8_leg_proposal_tail_diagnostic.cpp
 )
