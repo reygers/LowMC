@@ -151,7 +151,7 @@ normalization, selection, or default configuration changes.
 |---|---|---|---|
 | `P1` | Low density, phase-space measure, weighted sampler, or yield estimator | `python3 scripts/validate_event_yield.py build-release-evidence/event-yield.csv --summary-md build-release-evidence/event-yield.md --output-dir build-release-evidence/event-yield-runs --yield-exe build-release-default/lowmc_event_yield_diagnostic --weighted-exe build-release-default/lowmc_full_weighted_sampler_study --samples 20000 --seed 12345` | Ordinary cases retain the documented adaptive-yield agreement; the `p=1000 GeV` case remains a separately labelled stress case |
 | `P2` | Low current, signs, normalization, DELPHI selection, jet association, or per-jet normalization | Follow `docs/DELPHI_HADRONIC_BENCHMARK_PLAN.md` | Preserve or explain the recorded agreement with DELPHI inner bremsstrahlung; do not compare against the anomalous excess as a LowMC pass criterion |
-| `P3` | Low current, decay normalization, finite-mass treatment, PHOTOS bridge, or common acceptance | Follow `docs/PHOTOS_BENCHMARK_PLAN.md` | Preserve or explain soft-window compatibility with unity; harder-window differences remain model diagnostics |
+| `P3` | Low current, decay normalization, finite-mass treatment, PHOTOS benchmark implementation, or common acceptance | Follow `docs/PHOTOS_BENCHMARK_PLAN.md` | Preserve or explain soft-window compatibility with unity; harder-window differences remain model diagnostics |
 
 `P2` and `P3` use statistical criteria and recorded configurations, not
 bit-for-bit output. A statistically significant change blocks the affected
@@ -159,7 +159,7 @@ physics change until it is classified and documented.
 
 ## Optional External PHOTOS Build
 
-When the PHOTOS bridge or benchmark is changed, also run:
+When the PHOTOS benchmark implementation is changed, also run:
 
 ```sh
 cmake -S . -B build-release-photos \
@@ -224,7 +224,7 @@ tagged release candidate requires a retained clean-tree manifest.
 `scripts/validate_release_candidate.py` implements this matrix without changing
 its physics criteria. By default it runs `R1`, `R2`, and `R3` in fresh
 timestamped build directories. Explicit switches add the combined `C1` gate
-and the optional PHOTOS build. Every run preserves command logs,
+and the opt-in external PHOTOS benchmark build. Every run preserves command logs,
 `manifest.json`, and `summary.md`; it stops on the first blocking failure.
 
 The driver deliberately does not run the DELPHI or PHOTOS

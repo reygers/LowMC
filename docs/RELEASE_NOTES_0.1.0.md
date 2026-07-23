@@ -6,9 +6,11 @@ LowMC 0.1.0 is the first public research-prototype release candidate. It is
 intended for controlled soft-photon studies and validation, not yet as a
 production event-generator afterburner.
 
-The generator-independent C++ core is the primary public interface. HepMC3,
-Pythia8, and PHOTOS support is optional. The HepMC3 programs deliberately keep
-their `*_diagnostic` names in this release.
+The generator-independent C++ core is the primary public interface. HepMC3 and
+Pythia8 are optional event-interface integrations. PHOTOS is on a different
+level: it is used only as an external comparison in the fixed
+`Z -> mu+ mu-` benchmark and is not a LowMC event interface. The HepMC3
+programs deliberately keep their `*_diagnostic` names in this release.
 
 ## Included
 
@@ -24,7 +26,7 @@ their `*_diagnostic` names in this release.
   enhanced unweighted-photon output;
 - optional direct Pythia8 selection and weighted diagnostics, including a
   direct-versus-HepMC3 cross-check;
-- optional PHOTOS `Z -> mu+ mu-` validation benchmark;
+- opt-in external PHOTOS comparison for the fixed `Z -> mu+ mu-` benchmark;
 - DELPHI hadronic inner-bremsstrahlung benchmark;
 - reproducible release-validation driver with JSON, Markdown, and per-command
   log output.
@@ -61,8 +63,9 @@ ctest --test-dir build-integrations --output-on-failure
 ```
 
 The installed HepMC3 quickstart is documented in
-[USAGE.md](USAGE.md#4-hepmc3-afterburner-output). PHOTOS configuration and the
-full fresh-checkout guide are in [INSTALL.md](INSTALL.md).
+[USAGE.md](USAGE.md#4-hepmc3-afterburner-output). Configuration of the
+PHOTOS comparison benchmark and the full fresh-checkout guide are in
+[INSTALL.md](INSTALL.md).
 
 ## Release Validation
 
@@ -89,7 +92,7 @@ The expected current test inventory is:
 - the `18`-row count-plus-shape gate;
 - the strict shape-envelope gate;
 - `188` tests with HepMC3 and Pythia8 enabled;
-- `98` tests with PHOTOS enabled.
+- `98` tests in the PHOTOS benchmark build.
 
 Counts are informative; success requires every discovered test to pass,
 including tests added after these notes were written.

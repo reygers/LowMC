@@ -569,10 +569,11 @@ python3 scripts/validate_release_candidate.py \
   --pythia-prefix /path/to/pythia8
 ```
 
-The optional PHOTOS bridge is selected separately with `--enable-photos`,
-`--hepmc3-prefix`, and `--photos-root`. Use `--dry-run` to inspect and record
-the exact planned commands without executing them. The driver does not launch
-the DELPHI or PHOTOS production-statistics studies; their physics-change
+The opt-in PHOTOS benchmark build is selected separately with
+`--enable-photos`, `--hepmc3-prefix`, and `--photos-root`. This is an external
+comparison target, not a LowMC event interface. Use `--dry-run` to inspect and
+record the exact planned commands without executing them. The driver does not
+launch the DELPHI or PHOTOS production-statistics studies; their physics-change
 triggers remain in `docs/RELEASE_VALIDATION_MATRIX.md`.
 
 ## Grid-vs-weighted stress study

@@ -2057,7 +2057,8 @@ milestone, or known open questions change.
 - optional HepMC3 input, output, round-trip, and installed-example workflows
 - optional direct Pythia8 selection and weighted-photon diagnostics
 - optional Pythia8-to-HepMC3 cross-checks
-- optional PHOTOS `Z -> mu+ mu-` benchmark integration
+- opt-in external PHOTOS comparison target for the fixed
+  `Z -> mu+ mu-` benchmark; this is not an event interface
 
 ## Still Out Of Scope Or Not Yet Production Ready
 

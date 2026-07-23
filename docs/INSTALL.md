@@ -13,11 +13,15 @@ Default build:
 - C++17 compiler
 - Python 3, for helper-script tests
 
-Optional adapters:
+Optional event interfaces:
 
 - HepMC3, only when `LOWMC_ENABLE_HEPMC3=ON`
 - Pythia8, only when `LOWMC_ENABLE_PYTHIA8=ON`
-- PHOTOS with its HepMC3 interface, only when `LOWMC_ENABLE_PHOTOS=ON`
+
+External validation benchmark:
+
+- PHOTOS with its HepMC3 interface, only for the fixed `Z -> mu+ mu-`
+  comparison when `LOWMC_ENABLE_PHOTOS=ON`
 
 ## Default Build
 
