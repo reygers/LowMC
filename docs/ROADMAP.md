@@ -302,21 +302,31 @@ pilot (`20` accepted events, `47` jets), weighted LowMC and the direct Low
 integral agree without rescaling: `LowMC/direct = 1.0018`. Event-level
 jackknife uncertainty is `0.00159 photons/jet`, so the pilot central value
 `0.01916 photons/jet` is statistically compatible with the DELPHI Table 4 sum
-`0.017079`. The next gate is the predeclared three-seed nominal production
-block; PHOTOS and reduced-probe work remain separate.
+`0.017079`.
+
+The predeclared three-seed nominal production block is now complete with
+`1500` accepted events and `3794` jets. The direct result is
+`0.0176225 +/- 0.000226 photons/jet`, or `1.0318` times the DELPHI Table 4
+sum. The diagonal comparison gives `chi2/ndf = 13.70/10`, and weighted LowMC
+agrees with the direct calculation at `LowMC/direct = 1.00377`. The total-rate
+and spectral gates therefore pass without rescaling. One pair of seeds differs
+by `2.32` combined standard errors; the global three-seed consistency test has
+`p = 0.067`. This is not significant evidence of seed dependence, but the
+literal one-standard-error gate remains inconclusive. PHOTOS and reduced-probe
+work remain separate.
 
 The diagnostic now also records the joint `pT`-versus-`theta_gamma`
 distribution needed for DELPHI Figure 4b. The quoted DELPHI signal and
 Table 4 use `pT < 80 MeV`, whereas Figure 4 presents the general-selection
 distributions through `pT = 0.4 GeV`; the two projections must remain
-explicitly distinct. The `20`-event pilot gives
-`LowMC/direct = 1.0071` for the angular projection and a `3.1%` normalized
-shape L1 distance from the vector-digitized DELPHI `Brems` curve. Its absolute
-normalization is `12.4%` high, consistent with the `12.2%` Table 4 offset and
-with the pilot's event uncertainty. The separately retained `pT < 80 MeV`
-theta projection reproduces the primary pT integral and is not compared with
-Figure 4b. Since the paper does not tabulate angular errors, this remains a
-secondary graphical cross-check rather than a separate fit criterion.
+explicitly distinct. In the nominal block, the angular direct result is
+`0.0305835 +/- 0.000345 photons/jet`, `3.4%` below the digitized DELPHI sum,
+and LowMC/direct is `1.00474`. The normalized-shape L1 distance is `4.29%`,
+but the direct/DELPHI ratio has a systematic angular slope from about `1.24`
+to `0.80`. The separately retained `pT < 80 MeV` theta projection reproduces
+the primary pT integral and is not compared with Figure 4b. Since the paper
+does not tabulate angular errors, this remains a secondary graphical
+cross-check rather than a separate fit criterion.
 
 ### PHOTOS Soft-Decay Benchmark
 

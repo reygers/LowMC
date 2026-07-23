@@ -272,13 +272,44 @@ reproduces the published bremsstrahlung baseline are:
 These are validation gates, not a fit. Do not rescale the LowMC prediction to
 the DELPHI curve.
 
-The next nominal production block is predeclared as three Pythia seeds
+The nominal production block was predeclared as three Pythia seeds
 `24680`, `24681`, and `24682`, with `500` accepted events per seed. Use the
 pilot's fine direct settings (`48` log-energy bins, `32 x 48` base angular
 grid, three refinement levels, and two sub-bins) and `100000` independent
 weighted LowMC draws per event. The pilot indicates that this reduces the
 event-statistical uncertainty on the combined total to roughly one percent
 while keeping the independent sampling uncertainty subdominant.
+
+This nominal block is now complete. It contains `1500` accepted events and
+`3794` accepted jets. The combined Table 4-phase-space result is:
+
+```text
+direct Low integral       0.01762249 +/- 0.000226 photons / jet
+weighted LowMC sampling   0.01768899 +/- 0.000227 photons / jet
+LowMC / direct            1.003774
+LowMC integration error   0.00000526 photons / jet
+coarse/fine direct shift  0.815%
+DELPHI Table 4 sum        0.017079 photons / jet
+direct / DELPHI           1.031822
+diagonal chi2/ndf         13.702/10
+```
+
+Thus the total-rate and diagonal-chi-square gates pass without rescaling.
+The three direct seed results are:
+
+```text
+seed 24680   0.01765605 +/- 0.00038587 photons / jet   1264 jets
+seed 24681   0.01826387 +/- 0.00040736 photons / jet   1244 jets
+seed 24682   0.01696909 +/- 0.00038134 photons / jet   1286 jets
+```
+
+The largest pairwise difference, between seeds `24681` and `24682`, is
+`2.32` combined standard errors. A global constant-rate consistency check
+gives `chi2 = 5.41` for two degrees of freedom (`p = 0.067`). This is not
+compelling evidence for seed dependence, but the literal predeclared
+one-standard-error stability wording is not cleanly satisfied. Record the
+gate as inconclusive rather than silently weakening it after inspecting the
+result.
 
 For the new angular projection, weighted LowMC is the production estimator.
 Retain the existing medium-resolution direct calculation in the nominal
@@ -287,10 +318,38 @@ ten accepted events of each seed as a bounded numerical cross-check. Do not
 increase the full production cost by applying that quadrature to all `1500`
 events.
 
+The bounded high-resolution block is also complete. Across its `30` events
+and `69` jets, `LowMC/direct = 0.99949` in the Table 4 phase space and
+`0.99982` for the full Figure 4b angular projection. Seed by seed, the
+high-resolution direct total is only `0.28-0.34%` above the medium-resolution
+calculation on the same events.
+
+For Figure 4b, the nominal full-range angular projection gives:
+
+```text
+direct Low integral       0.03058345 +/- 0.000345 photons / jet
+weighted LowMC sampling   0.03072840 photons / jet
+LowMC / direct            1.004739
+DELPHI Figure 4b sum      0.03166265 photons / jet (digitized)
+direct / DELPHI           0.965916
+normalized-shape L1       0.042899
+```
+
+The integrated normalization is close, but the direct/DELPHI ratio changes
+systematically from about `1.24` at small angle to about `0.80` near
+`0.4 rad`. With no published bin errors or covariance, this is a diagnostic
+shape difference rather than a formal failed gate. It should be tracked when
+testing the bounded jet-definition variations.
+
 After the nominal block, repeat bounded truth-level electron-veto and jet
 algorithm variations. Report event and accepted-jet statistics separately
 for every configuration. Do not tune the photon-to-jet angle cut or rescale
 the prediction after inspecting the DELPHI comparison.
+
+Stage B is therefore not yet closed: the LUCLUS-to-Durham/JADE gate remains
+to be run, and the seed-stability result should be resolved with a
+predeclared independent extension rather than an unplanned choice made from
+the observed seed values.
 
 ### Stage C: Interpret the excess
 

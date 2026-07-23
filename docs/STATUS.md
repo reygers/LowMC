@@ -1244,9 +1244,28 @@ of `2.86e-5`, and `LowMC/direct = 1.00182`. The unscaled Table 4 sum is
 `0.017079 photons/jet`; the pilot central-value difference is about `1.3`
 event-statistical standard errors. A descriptive diagonal bin comparison is
 `chi2/ndf = 11.5/10`. This clears the same-event implementation check, but the
-small pilot is not the published-result validation. The next nominal block is
-three seeds with `500` accepted events each, followed by bounded jet and
+small pilot is not the published-result validation. It motivated the
+three-seed nominal run described below, followed by bounded jet and
 electron-veto variations. The reduced-probe review task remains unchanged.
+
+The nominal DELPHI production block has now been run for seeds `24680`,
+`24681`, and `24682`, with `500` accepted events per seed, `1500` events and
+`3794` accepted jets in total. The direct Table 4-phase-space result is
+`0.0176225 +/- 0.000226 photons/jet`; weighted LowMC gives `0.0176890`, with
+`LowMC/direct = 1.00377` and integration error `5.26e-6 photons/jet`. The
+unscaled DELPHI sum is `0.017079`, so direct/DELPHI is `1.03182`. The
+diagonal comparison is `chi2/ndf = 13.70/10`. Both the predeclared total-rate
+and spectral gates pass. The largest seed-pair difference is `2.32` combined
+standard errors, while a global constant-rate consistency test gives
+`chi2 = 5.41/2` and `p = 0.067`; therefore the literal one-standard-error
+seed-stability gate is recorded as inconclusive, not passed.
+
+The planned high-resolution calculation on the first ten accepted events of
+each seed is complete. Across these `30` events, `LowMC/direct = 0.99949` for
+the Table 4 projection and `0.99982` for the Figure 4b projection. The
+high-resolution direct totals are only `0.28-0.34%` above the medium results
+on the same events, confirming that numerical integration is not responsible
+for the remaining comparison differences.
 
 The same diagnostic now writes an event-level joint
 `pT`-versus-`theta_gamma` histogram for the Figure 4b angular cross-check.
@@ -1265,6 +1284,15 @@ implemented as a secondary shape/normalization check; it is not assigned a
 chi-square gate without published angular uncertainties. A separately
 labelled `pT < 80 MeV` angular diagnostic integrates to the same result as the
 primary pT benchmark; it is not compared with the Figure 4b markers.
+
+In the nominal `1500`-event block, the Figure 4b direct angular integral is
+`0.0305835 +/- 0.000345 photons/jet`, compared with the digitized DELPHI sum
+`0.0316626`; direct/DELPHI is `0.96592`, LowMC/direct is `1.00474`, and the
+normalized-shape L1 distance is `0.0429`. The much smaller event errors reveal
+a systematic direct/DELPHI slope, from about `1.24` in the smallest-angle
+region to about `0.80` near `0.4 rad`. With no published angular covariance,
+this remains a secondary diagnostic difference to follow through the bounded
+jet-definition study rather than a formal chi-square failure.
 
 The command name decision is settled for now: keep
 `lowmc_hepmc3_afterburner_diagnostic` as the only executable name. A shorter
