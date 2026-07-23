@@ -1194,6 +1194,36 @@ coherent `S(k)`; the analytic component is never substituted for the physical
 density. This remains a weighted diagnostic rather than a majorant or
 production envelope.
 
+Stefan's independent analytic-envelope review is recorded in
+`docs/analytic-dipole-envelope-proposal-2026-07-23.md`. It observes the exact
+factorization
+
+$$
+p_i\mathbin{\cdot}k=k_T D_i(\eta,\phi),\qquad
+D_i=M_i^T\cosh(\eta-y_i)-p_i^T\cos(\phi-\phi_i),
+$$
+
+and hence `S(k) = g(eta,phi) / kT^2`. This is consistent with the existing
+factorized event-yield and log-uniform-kT paths. It also supplies a formal
+absolute-value bound based on a positive lower bound for each `D_i`.
+
+This is a promising review proposal, not yet an accepted envelope
+implementation. A rejection envelope must bound `g / q_eta_phi`, not only
+`g`; the global absolute-value sum may be extremely loose because it removes
+interference cancellations and combines leg maxima occurring at different
+angles. The diagonal pair terms are negative in LowMC's metric convention, so
+their absolute cosh-cos shapes may serve as positive proposal components but
+are not a positive decomposition of the physical intensity. Finite-mass,
+on-shell assumptions and numerically stable evaluation of
+`M_i^T-p_i^T = m_i^2/(M_i^T+p_i^T)` also require explicit validation and
+fallback behavior.
+
+The next envelope task is therefore an auditing-only global and cell-local
+analytic-bound prototype alongside the current sampler. It must not alter
+sampling, reduced-probe settings, or failure policies until pointwise
+factorization, bound safety, tightness, and finite-input coverage have been
+measured on controlled and Pythia-produced events.
+
 ## Eta-Phi Sampling
 
 At fixed `k_T`, the main sampling problem is the two-dimensional distribution in
