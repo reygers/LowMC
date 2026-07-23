@@ -59,13 +59,19 @@ efficiency convolution is a separate task.
 
 Figure 4b provides a complementary angular projection in `25` bins of
 `16 mrad` from `theta_gamma = 0` to `0.4 rad`. Its digitized `Brems` markers
-sum to `31.663e-3 photons/jet`, demonstrating that this is the general
-angular projection, not the `pT < 80 MeV` subset used for the Table 4
-integral. The paired diagnostic therefore records a joint histogram with
-`8 MeV` pT bins out to `0.4 GeV` and `16 mrad` angular bins. Table 4 is the
-projection of its first ten pT bins; Figure 4b is the projection over all
-fifty stored pT bins. The code checks both projections against independently
-accumulated one-dimensional arrays on every event.
+sum to `31.663e-3 photons/jet`. Although the paper defines the quoted signal
+rate by integrating `pT < 80 MeV`, Figure 4 is explicitly the set of
+general-selection distributions and its pT panels extend to `0.4 GeV`.
+The angular markers cannot be the `pT < 80 MeV` projection: that projection
+must have the same integral as Table 4, about `17.1e-3 photons/jet`.
+
+The paired diagnostic therefore records a joint histogram with `8 MeV` pT
+bins out to `0.4 GeV` and `16 mrad` angular bins. Table 4 is the projection
+of its first ten pT bins; Figure 4b is compared with the projection over all
+fifty displayed pT bins. The summarizer also records the restricted
+`pT < 80 MeV` angular projection as a consistency diagnostic, but does not
+compare it with Figure 4b. It verifies that this restricted projection
+reproduces the primary Table 4-phase-space total.
 
 The angular plot has no tabulated bin uncertainties or covariance matrix.
 It is consequently a shape and normalization cross-check, not an additional
@@ -233,6 +239,12 @@ The angular normalization offset is therefore essentially the same as the
 Table 4 offset, while the normalized shapes differ by only `3.1%` in L1
 distance. The last two angular bins have large event fluctuations in this
 small sample and should not be interpreted separately.
+
+As an internal cross-check, the restricted `pT < 80 MeV` angular projection
+integrates to `0.01915796 photons/jet`, exactly reproducing the primary pT
+total by construction. It is not compared with Figure 4b; doing so would
+give a misleading normalization ratio because Figure 4b spans the displayed
+`0-0.4 GeV` pT range.
 
 Because `16 mrad` bins are more demanding for deterministic quadrature, a
 separate three-event convergence run used `64` log-energy bins, a `40 x 64`

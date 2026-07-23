@@ -1252,6 +1252,9 @@ The same diagnostic now writes an event-level joint
 `pT`-versus-`theta_gamma` histogram for the Figure 4b angular cross-check.
 The paper's `25` angular `Brems` markers, in `16 mrad` bins through
 `0.4 rad`, were vector-digitized because no table or covariance is published.
+The paper defines its quoted signal by integrating `pT < 80 MeV`, but Figure 4
+shows the general-selection pT distribution through `0.4 GeV`; its angular
+projection is therefore kept distinct from the Table 4 phase space.
 For the same `20`-event pilot, the direct angular integral is
 `0.035581 +/- 0.00266 photons/jet`, LowMC/direct is `1.00708`, and the
 digitized DELPHI sum is `0.031663 photons/jet`. The `12.4%` normalization
@@ -1259,7 +1262,9 @@ offset matches the Table 4 offset, and the normalized angular shapes have L1
 distance `0.0313`. A separate high-resolution three-event convergence check
 gives angular `LowMC/direct = 0.99892`. The angular comparison is therefore
 implemented as a secondary shape/normalization check; it is not assigned a
-chi-square gate without published angular uncertainties.
+chi-square gate without published angular uncertainties. A separately
+labelled `pT < 80 MeV` angular diagnostic integrates to the same result as the
+primary pT benchmark; it is not compared with the Figure 4b markers.
 
 The command name decision is settled for now: keep
 `lowmc_hepmc3_afterburner_diagnostic` as the only executable name. A shorter

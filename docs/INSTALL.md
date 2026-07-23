@@ -215,8 +215,11 @@ per-accepted-jet ratio, and reports the LowMC photon-integration error
 separately. The benchmark executable automatically creates the sibling
 `_joint.csv`; use `--joint-output` to select another path. The Figure 4b
 reference is vector-digitized and has no published covariance, so the angular
-comparison is not assigned a chi-square. The diagnostic does not emit photons
-or modify production defaults.
+comparison is not assigned a chi-square. Figure 4b is the angular projection
+over the displayed `0 < pT < 0.4 GeV` range. The theta summary also records a
+separately labelled `pT < 80 MeV` projection and verifies that its integral
+matches the primary Table 4-phase-space result. The diagnostic does not emit
+photons or modify production defaults.
 
 ## PHOTOS Benchmark
 

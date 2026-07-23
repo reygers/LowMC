@@ -340,7 +340,8 @@ if(Python3_Interpreter_FOUND)
         lowmc_pythia8_delphi_hadronic_summary_smoke
         PROPERTIES
             DEPENDS lowmc_pythia8_delphi_hadronic_benchmark_smoke
-            PASS_REGULAR_EXPRESSION "theta_events=1 theta_jets="
+            PASS_REGULAR_EXPRESSION
+                "theta_events=1 theta_jets=.*theta_pt400_direct_per_jet=.*theta_pt80_diagnostic_direct_per_jet="
     )
 endif()
 

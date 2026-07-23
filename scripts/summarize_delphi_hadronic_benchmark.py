@@ -166,23 +166,60 @@ def read_joint_events(paths):
                         "direct": [0.0] * 25,
                         "coarse": [0.0] * 25,
                         "mc": [0.0] * 25,
-                        "mc_se": [math.nan] * 25,
+                        "mc_second_moment": [0.0] * 25,
+                        "direct_full": [0.0] * 25,
+                        "coarse_full": [0.0] * 25,
+                        "mc_full": [0.0] * 25,
+                        "mc_full_second_moment": [0.0] * 25,
+                        "mc_full_se_reference": [math.nan] * 25,
+                        "mc_samples": int(row["mc_samples"]),
                     }
                     row_counts[key] = 0
                 event = grouped[key]
+                if event["mc_samples"] != int(row["mc_samples"]):
+                    raise ValueError(
+                        f"inconsistent sample count for event {key[2]} "
+                        f"in {path}"
+                    )
+                pt_bin = int(row["pt_bin_index"])
                 theta_bin = int(row["theta_bin_index"])
-                event["direct"][theta_bin] += float(
-                    row["direct_yield_event"]
-                )
-                event["coarse"][theta_bin] += float(
-                    row["direct_coarse_yield_event"]
-                )
-                event["mc"][theta_bin] += float(
-                    row["lowmc_mc_yield_event"]
-                )
-                event["mc_se"][theta_bin] = float(
+                direct = float(row["direct_yield_event"])
+                coarse = float(row["direct_coarse_yield_event"])
+                mc = float(row["lowmc_mc_yield_event"])
+                mc_se = float(row["lowmc_mc_joint_standard_error"])
+                mc_full_se_reference = float(
                     row["lowmc_mc_theta_standard_error_event"]
                 )
+                previous_reference = event["mc_full_se_reference"][theta_bin]
+                if math.isfinite(previous_reference) and not math.isclose(
+                    previous_reference,
+                    mc_full_se_reference,
+                    rel_tol=1.0e-12,
+                    abs_tol=1.0e-15,
+                ):
+                    raise ValueError(
+                        f"inconsistent full-theta MC error for event "
+                        f"{key[2]} in {path}"
+                    )
+                event["mc_full_se_reference"][
+                    theta_bin
+                ] = mc_full_se_reference
+                mc_second_moment = (
+                    event["mc_samples"] * mc_se * mc_se + mc * mc
+                )
+                event["direct_full"][theta_bin] += direct
+                event["coarse_full"][theta_bin] += coarse
+                event["mc_full"][theta_bin] += mc
+                event["mc_full_second_moment"][
+                    theta_bin
+                ] += mc_second_moment
+                if pt_bin < 10:
+                    event["direct"][theta_bin] += direct
+                    event["coarse"][theta_bin] += coarse
+                    event["mc"][theta_bin] += mc
+                    event["mc_second_moment"][
+                        theta_bin
+                    ] += mc_second_moment
                 row_counts[key] += 1
         for key, event in grouped.items():
             if row_counts[key] != 50 * 25:
@@ -190,6 +227,50 @@ def read_joint_events(paths):
                     f"expected 1250 joint rows for event {key[2]} in "
                     f"{path}, found {row_counts[key]}"
                 )
+            samples = event["mc_samples"]
+            event["mc_se"] = [
+                math.sqrt(
+                    max(
+                        0.0,
+                        second_moment - mean * mean,
+                    )
+                    / samples
+                )
+                for second_moment, mean in zip(
+                    event.pop("mc_second_moment"),
+                    event["mc"],
+                )
+            ]
+            event["mc_full_se"] = [
+                math.sqrt(
+                    max(
+                        0.0,
+                        second_moment - mean * mean,
+                    )
+                    / samples
+                )
+                for second_moment, mean in zip(
+                    event.pop("mc_full_second_moment"),
+                    event["mc_full"],
+                )
+            ]
+            for theta_bin, (projected, reference) in enumerate(
+                zip(
+                    event["mc_full_se"],
+                    event.pop("mc_full_se_reference"),
+                )
+            ):
+                if not math.isclose(
+                    projected,
+                    reference,
+                    rel_tol=1.0e-10,
+                    abs_tol=1.0e-14,
+                ):
+                    raise ValueError(
+                        f"joint MC moments do not reproduce the full-theta "
+                        f"error in bin {theta_bin} for event {key[2]} "
+                        f"in {path}"
+                    )
             events.append(event)
     if not events:
         raise ValueError("no joint event rows found")
@@ -207,10 +288,32 @@ def read_theta_reference(path):
     return rows
 
 
-def theta_mc_integration_se(events, bin_index):
+def theta_mc_integration_se(events, bin_index, field="mc_se"):
     total_jets = sum(event["jets"] for event in events)
-    variance = sum(event["mc_se"][bin_index] ** 2 for event in events)
+    variance = sum(event[field][bin_index] ** 2 for event in events)
     return math.sqrt(variance) / total_jets
+
+
+def validate_pt80_projection(events, joint_events):
+    if len(events) != len(joint_events):
+        raise ValueError(
+            "primary and joint inputs contain different event counts"
+        )
+    if sum(event["jets"] for event in events) != sum(
+        event["jets"] for event in joint_events
+    ):
+        raise ValueError(
+            "primary and joint inputs contain different accepted-jet counts"
+        )
+    for field in ("direct", "coarse", "mc"):
+        primary_total = sum(sum(event[field]) for event in events)
+        joint_total = sum(sum(event[field]) for event in joint_events)
+        tolerance = 1.0e-12 * max(1.0, abs(primary_total))
+        if abs(primary_total - joint_total) > tolerance:
+            raise ValueError(
+                f"joint pT < 80 MeV theta projection disagrees with "
+                f"the primary {field} result"
+            )
 
 
 def write_summary(path, events, reference):
@@ -339,13 +442,16 @@ def write_theta_summary(path, events, reference):
     reference_total = sum(
         float(row["bremsstrahlung_per_jet"]) for row in reference
     )
-    direct_total = ratio_of_sums(events, "direct")
+    direct_total = ratio_of_sums(events, "direct_full")
+    direct_pt80_total = ratio_of_sums(events, "direct")
     for bin_index, delphi in enumerate(reference):
         published = float(delphi["bremsstrahlung_per_jet"])
-        direct = ratio_of_sums(events, "direct", bin_index)
-        direct_event_se = jackknife_ratio_se(events, "direct", bin_index)
-        coarse = ratio_of_sums(events, "coarse", bin_index)
-        mc = ratio_of_sums(events, "mc", bin_index)
+        direct = ratio_of_sums(events, "direct_full", bin_index)
+        direct_event_se = jackknife_ratio_se(
+            events, "direct_full", bin_index
+        )
+        coarse = ratio_of_sums(events, "coarse_full", bin_index)
+        mc = ratio_of_sums(events, "mc_full", bin_index)
         rows.append(
             {
                 "theta_bin_index": bin_index,
@@ -360,10 +466,10 @@ def write_theta_summary(path, events, reference):
                 ),
                 "lowmc_mc_per_jet": mc,
                 "lowmc_mc_event_jackknife_se": jackknife_ratio_se(
-                    events, "mc", bin_index
+                    events, "mc_full", bin_index
                 ),
                 "lowmc_mc_integration_se": theta_mc_integration_se(
-                    events, bin_index
+                    events, bin_index, "mc_full_se"
                 ),
                 "lowmc_mc_over_direct": mc / direct if direct else math.nan,
                 "direct_over_delphi_digitized": (
@@ -374,6 +480,27 @@ def write_theta_summary(path, events, reference):
                 ),
                 "delphi_digitized_shape_fraction": (
                     published / reference_total
+                ),
+                "direct_pt80_diagnostic_per_jet": ratio_of_sums(
+                    events, "direct", bin_index
+                ),
+                "direct_pt80_diagnostic_event_jackknife_se": (
+                    jackknife_ratio_se(events, "direct", bin_index)
+                ),
+                "direct_pt80_diagnostic_shape_fraction": safe_ratio(
+                    ratio_of_sums(events, "direct", bin_index),
+                    direct_pt80_total,
+                ),
+                "lowmc_mc_pt80_diagnostic_per_jet": ratio_of_sums(
+                    events, "mc", bin_index
+                ),
+                "lowmc_mc_pt80_diagnostic_event_jackknife_se": (
+                    jackknife_ratio_se(events, "mc", bin_index)
+                ),
+                "lowmc_mc_pt80_diagnostic_integration_se": (
+                    theta_mc_integration_se(
+                        events, bin_index
+                    )
                 ),
             }
         )
@@ -430,7 +557,7 @@ def make_theta_plot(path, rows):
         fmt="s",
         color="#0072B2",
         capsize=2,
-        label="Direct Low integral (event jackknife)",
+        label=r"Direct Low integral, $p_T<400$ MeV",
     )
     axis.errorbar(
         [value + 1.0 for value in centers],
@@ -439,7 +566,7 @@ def make_theta_plot(path, rows):
         fmt="^",
         color="#D55E00",
         capsize=2,
-        label="LowMC sampling (event + integration error)",
+        label=r"LowMC sampling, $p_T<400$ MeV",
     )
     upper_limit = 1.1 * max(
         max(delphi),
@@ -477,7 +604,7 @@ def make_theta_plot(path, rows):
     )
     ratio_axis.grid(alpha=0.22)
     figure.suptitle(
-        "DELPHI hadronic angular benchmark (unscaled)",
+        r"DELPHI Figure 4b angular benchmark, $p_T<400$ MeV (unscaled)",
         fontsize=16,
     )
     figure.savefig(path, dpi=180)
@@ -494,6 +621,7 @@ def main():
 
     if args.joint_inputs:
         joint_events = read_joint_events(args.joint_inputs)
+        validate_pt80_projection(events, joint_events)
         theta_reference = read_theta_reference(args.theta_reference)
         theta_summary_path = args.theta_summary
         if theta_summary_path is None:
@@ -511,9 +639,13 @@ def main():
         if theta_plot_path:
             make_theta_plot(theta_plot_path, theta_rows)
 
-        theta_direct = ratio_of_sums(joint_events, "direct")
-        theta_direct_se = jackknife_ratio_se(joint_events, "direct")
-        theta_mc = ratio_of_sums(joint_events, "mc")
+        theta_direct = ratio_of_sums(joint_events, "direct_full")
+        theta_direct_se = jackknife_ratio_se(
+            joint_events, "direct_full"
+        )
+        theta_mc = ratio_of_sums(joint_events, "mc_full")
+        theta_direct_pt80 = ratio_of_sums(joint_events, "direct")
+        theta_mc_pt80 = ratio_of_sums(joint_events, "mc")
         theta_published = sum(
             float(row["bremsstrahlung_per_jet"])
             for row in theta_reference
@@ -528,15 +660,21 @@ def main():
         print(
             f"theta_events={len(joint_events)} "
             f"theta_jets={sum(event['jets'] for event in joint_events)} "
-            f"theta_direct_per_jet={theta_direct:.8g} "
-            f"theta_direct_event_jackknife_se={theta_direct_se:.3g} "
-            f"theta_lowmc_mc_per_jet={theta_mc:.8g} "
-            f"theta_lowmc_mc_over_direct="
+            f"theta_pt400_direct_per_jet={theta_direct:.8g} "
+            f"theta_pt400_direct_event_jackknife_se={theta_direct_se:.3g} "
+            f"theta_pt400_lowmc_mc_per_jet={theta_mc:.8g} "
+            f"theta_pt400_lowmc_mc_over_direct="
             f"{safe_ratio(theta_mc, theta_direct):.6f} "
             f"theta_delphi_digitized_per_jet={theta_published:.8g} "
-            f"theta_direct_over_delphi_digitized="
+            f"theta_pt400_direct_over_delphi_digitized="
             f"{theta_direct/theta_published:.6f} "
-            f"theta_shape_l1={theta_shape_l1:.6f}"
+            f"theta_pt400_shape_l1={theta_shape_l1:.6f} "
+            f"theta_pt80_diagnostic_direct_per_jet="
+            f"{theta_direct_pt80:.8g} "
+            f"theta_pt80_diagnostic_lowmc_mc_per_jet="
+            f"{theta_mc_pt80:.8g} "
+            f"theta_pt80_diagnostic_lowmc_mc_over_direct="
+            f"{safe_ratio(theta_mc_pt80, theta_direct_pt80):.6f}"
         )
 
     event_count = len(events)

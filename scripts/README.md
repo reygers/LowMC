@@ -86,8 +86,11 @@ The summary keeps event-to-event jackknife uncertainty separate from the
 conditional LowMC photon-integration uncertainty. Its diagonal chi-square is
 a compact diagnostic only because DELPHI and generator-event correlations are
 not available. The angular reference consists of vector-digitized Figure 4b
-markers; it is used for an unscaled shape and normalization cross-check, not a
-formal chi-square.
+markers over the displayed `0 < pT < 0.4 GeV` range; it is used for an
+unscaled shape and normalization cross-check, not a formal chi-square. The
+theta summary retains the `pT < 80 MeV` projection in explicitly labelled
+diagnostic columns and checks that its integral reproduces the primary pT
+benchmark.
 
 ## Direction and acceptance examples
 
