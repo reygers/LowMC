@@ -218,4 +218,8 @@ if(Python3_Interpreter_FOUND)
         NAME lowmc_summarize_pythia_leg_envelope_help
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/summarize_pythia_leg_envelope.py --help
     )
+    add_test(
+        NAME lowmc_summarize_delphi_hadronic_benchmark_help
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/summarize_delphi_hadronic_benchmark.py --help
+    )
 endif()

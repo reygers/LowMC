@@ -76,36 +76,19 @@ the truth-level electron veto separately.
 
 ## Charged System
 
-The paper first writes the complete Low formula for the two incoming beam
-leptons and all charged outgoing hadrons with their generated momenta. It then
-describes a practical per-jet calculation using generated charged particles in
-the jet's forward hemisphere, including the corresponding beam particle, and
-projecting the photon onto the reconstructed jet direction. It reports
-agreement between the Low and Haissinski formulae at generator level.
-
-This leaves an important implementation detail to expose rather than assume.
-The benchmark must calculate both:
+The primary LowMC comparison uses its standard complete, charge-conserving
+event current:
 
 ```text
-A. publication-style per-jet forward-hemisphere construction
-B. charge-conserving full event:
-   incoming e+ and e- + all final stable charged hadrons
+incoming e+ and e- + all final stable charged particles
 ```
 
-Construction A is the direct reproduction reference for Table 4. Construction
-B is the primary LowMC result because it is a complete charge-conserving
-scattering current. If a per-jet subset is not charge conserving, it must not
-be passed through LowMC as though it were a valid standalone current; it
-belongs in the explicitly labelled publication-reference calculator.
-
-LowMC's general default of beams plus all final stable charged particles should
-also be reported as a third selection. This determines whether stable charged
-leptons excluded from B matter.
-
-The comparison between A and B determines whether the paper's per-jet
-construction is numerically equivalent to the full event current in the
-selected region. The comparison between B and the general default isolates
-non-hadronic stable charged particles.
+The paper writes the corresponding Low formula for the incoming beams and
+charged outgoing particles with generated momenta. Its discussion of
+forward-hemisphere particles is useful historical context, but a quark-current
+or non-charge-conserving per-jet current is not part of this first benchmark.
+Alternative charged-system definitions should be studied only if the standard
+full-event comparison exposes a specific discrepancy.
 
 ## What the Existing Analysis Code Provides
 
@@ -126,8 +109,8 @@ configuration:
 
 - it enables only `Z -> u ubar`, rather than all five light and heavy quark
   flavours;
-- it actively selects the incoming beams plus primary quarks, while the
-  published bremsstrahlung calculation uses charged outgoing hadrons;
+- it actively selects the incoming beams plus primary quarks, which is not
+  relevant to this first full-event LowMC comparison;
 - it generates only ten events;
 - it omits the published visible-energy cut and detector-level object
   selections;
@@ -150,9 +133,8 @@ Add an opt-in Pythia diagnostic outside `lowmc_core`. It should:
 3. reconstruct truth jets with Pythia `ClusterJet("Lund")`,
    `yScale = 0`, and `pTscale = 3 GeV`;
 4. apply the generator-level event and accepted-jet cuts above;
-5. evaluate both the publication-style per-jet construction and the
-   charge-conserving LowMC system made from beams plus final stable charged
-   hadrons;
+5. construct the standard charge-conserving LowMC system from the beams plus
+   all final stable charged particles;
 6. integrate or sample the exact Low density with
    `0.2 < E_gamma < 1.0 GeV`,
    `20 deg <= theta_gamma <= 160 deg`, and `pT_jet < 80 MeV`;
@@ -163,11 +145,12 @@ Add an opt-in Pythia diagnostic outside `lowmc_core`. It should:
 10. record event counts, accepted-jet counts, charged multiplicity, flavour,
     statistical uncertainties, integration diagnostics, and runtime.
 
-The `theta_gamma_jet < 0.4 rad` association condition from the exploratory
-source should be enabled for the primary comparison and exposed as a named
-switch. The effect of removing it must be reported because the headline
-kinematic definition emphasizes `E_gamma` and `pT_jet`, whereas the paper's
-angular studies cover the range only up to `400 mrad`.
+The `theta_gamma_jet < 0.4 rad` association condition is mandatory for the
+Figure 4d comparison. It is not stated clearly in the publication's headline
+selection, but the earlier reproduction study found it necessary and it
+matches the upper range of the paper's `theta_gamma` projection. Record this
+as an inferred two-dimensional-histogram projection limit, not as an explicit
+published cut.
 
 ## Staged Validation
 
@@ -175,21 +158,51 @@ angular studies cover the range only up to `400 mrad`.
 
 For a small fixed set of Pythia events, compare:
 
-- a direct angular integration following the exploratory source; and
-- the new LowMC diagnostic using the identical charged system and cuts.
+- direct numerical integration of the Low density into each complete
+  `8 MeV` bin; and
+- standard weighted LowMC photon sampling using the identical charged system
+  and cuts.
 
 The integrated yield and all populated bins should agree within combined
 numerical uncertainties. This isolates implementation and Jacobian mistakes
-before using the publication as an external target. Separately compare the
-publication-style per-jet construction with the charge-conserving full-event
-current; do not include their physics difference in the numerical
-implementation-agreement test.
+before using the publication as an external target. The direct calculation is
+a validation oracle; weighted photon sampling remains the main LowMC method.
+
+This stage is implemented by
+`lowmc_pythia8_delphi_hadronic_benchmark`. The executable writes one row per
+accepted event and `pT` bin, including both estimates, the photon-sampling
+uncertainty, the number of accepted jets, grid diagnostics, and timings. It
+does not emit photons or change any LowMC default.
+
+The fixed-seed pilot with `20` accepted events and `47` accepted jets gives:
+
+```text
+direct Low integral       0.01915796 +/- 0.00159 photons / jet
+weighted LowMC sampling   0.01919287 photons / jet
+LowMC / direct            1.001822
+LowMC integration error   0.0000286 photons / jet
+coarse/fine direct shift  1.53%
+DELPHI Table 4 sum        0.017079 photons / jet
+```
+
+The uncertainty on the direct result is an event-level delete-one jackknife;
+it is much larger than the photon-integration uncertainty. Thus the pilot's
+`12.2%` higher central value than DELPHI is only about `1.3` event-statistical
+standard errors and is not evidence for a discrepancy. A descriptive
+bin-by-bin comparison gives diagonal `chi2/ndf = 11.5/10`; correlations are
+not available, so this is not yet the Stage B validation statistic.
+
+The paired result clears the intended Stage A implementation check. The
+direct and sampled calculations use the same complete event current and agree
+without an arbitrary normalization factor. The first direct-integration
+coarse/fine comparison is weakest in the second bin (`4.25%`), but the fine
+direct value agrees with the independent LowMC estimate there to `0.42%`.
 
 ### Stage B: Published bremsstrahlung benchmark
 
-Run at least three independent seeds and compare both construction A and
-construction B with Table 4. The predeclared first-pass gates for claiming
-that LowMC reproduces the published bremsstrahlung baseline are:
+Run at least three independent seeds and compare the standard LowMC current
+with Table 4. The predeclared first-pass gates for claiming that LowMC
+reproduces the published bremsstrahlung baseline are:
 
 - the sum of the ten bins agrees with `17.10e-3 photons / jet` within `10%`;
 - the binwise comparison has `chi2/ndf < 2` when the published
@@ -202,6 +215,19 @@ that LowMC reproduces the published bremsstrahlung baseline are:
 
 These are validation gates, not a fit. Do not rescale the LowMC prediction to
 the DELPHI curve.
+
+The next nominal production block is predeclared as three Pythia seeds
+`24680`, `24681`, and `24682`, with `500` accepted events per seed. Use the
+pilot's fine direct settings (`48` log-energy bins, `32 x 48` base angular
+grid, three refinement levels, and two sub-bins) and `100000` independent
+weighted LowMC draws per event. The pilot indicates that this reduces the
+event-statistical uncertainty on the combined total to roughly one percent
+while keeping the independent sampling uncertainty subdominant.
+
+After the nominal block, repeat bounded truth-level electron-veto and jet
+algorithm variations. Report event and accepted-jet statistics separately
+for every configuration. Do not tune the photon-to-jet angle cut or rescale
+the prediction after inspecting the DELPHI comparison.
 
 ### Stage C: Interpret the excess
 

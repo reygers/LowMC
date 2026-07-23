@@ -283,11 +283,10 @@ closest accepted jet and an integrated prediction of
 `17.10e-3 photons / accepted jet` for `0.2 < E_gamma < 1 GeV` and
 `pT_jet < 80 MeV`.
 
-The first benchmark must compare the paper's practical per-jet
-forward-hemisphere construction with a complete charge-conserving current made
-from incoming beams plus final charged hadrons, using LUCLUS-like jets with
-`djoin = 3 GeV`. LowMC's general beams-plus-all-stable-charged selection should
-be reported as a further diagnostic alternative.
+The first benchmark uses LowMC's standard complete charge-conserving current
+of incoming beams plus all final stable charged particles, with LUCLUS-like
+jets at `djoin = 3 GeV`. Quark-current and non-charge-conserving per-jet
+variants are not part of this stage.
 The existing exploratory analysis source supplies useful Pythia and jet
 definitions, but its active primary-quark-only configuration and arbitrary
 plot rescaling are not normalization references.
@@ -297,6 +296,14 @@ The implementation and predeclared gates are recorded in
 LowMC reproduces the calculated bremsstrahlung baseline. Comparison with the
 measured excess comes only afterward and must not be described as an
 explanation of that excess.
+
+The paired same-event diagnostic is now implemented. In the first fixed-seed
+pilot (`20` accepted events, `47` jets), weighted LowMC and the direct Low
+integral agree without rescaling: `LowMC/direct = 1.0018`. Event-level
+jackknife uncertainty is `0.00159 photons/jet`, so the pilot central value
+`0.01916 photons/jet` is statistically compatible with the DELPHI Table 4 sum
+`0.017079`. The next gate is the predeclared three-seed nominal production
+block; PHOTOS and reduced-probe work remain separate.
 
 ### PHOTOS Soft-Decay Benchmark
 

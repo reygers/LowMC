@@ -1217,7 +1217,7 @@ does not emit photons. These results make factor `1.2` a reasonable opt-in
 stress-test candidate, not a guaranteed majorant or a production-default
 change. The grid envelope and reduced-probe settings are untouched.
 
-The contract for the next central physics validation is now documented in
+The contract for the current central physics validation is documented in
 `docs/DELPHI_HADRONIC_BENCHMARK_PLAN.md`. The target is DELPHI's
 efficiency-corrected inner-bremsstrahlung prediction for hadronic `Z` decays:
 ten `8 MeV` bins below `pT_jet = 80 MeV` and an integrated rate of
@@ -1230,9 +1230,23 @@ for the LUCLUS `3 GeV` joining scale, cuts, closest-jet definition, and
 per-jet normalization, but its active configuration is not the published
 benchmark: it uses only `Z -> u ubar`, a primary-quark current, ten events,
 `16 MeV` bins, and an arbitrary plot scaling. The planned primary LowMC
-comparison instead uses incoming beams plus all final stable charged hadrons
-and the unscaled published spectrum. No DELPHI event production has been run,
-and the reduced-probe review task remains unchanged.
+comparison instead uses incoming beams plus all final stable charged particles
+and the unscaled published spectrum.
+
+The first paired DELPHI diagnostic pilot is complete. It compares a direct
+bin integral with weighted LowMC sampling on identical Pythia hadronic-Z
+events, with QED showering disabled, LUCLUS-style truth jets, the standard
+complete event current, and the inferred `theta_gamma_jet < 0.4` projection
+limit. For `20` accepted events and `47` accepted jets, the direct result is
+`0.019158 +/- 0.00159 photons/jet` using an event delete-one jackknife. LowMC
+sampling gives `0.019193 photons/jet`, with a photon-integration uncertainty
+of `2.86e-5`, and `LowMC/direct = 1.00182`. The unscaled Table 4 sum is
+`0.017079 photons/jet`; the pilot central-value difference is about `1.3`
+event-statistical standard errors. A descriptive diagonal bin comparison is
+`chi2/ndf = 11.5/10`. This clears the same-event implementation check, but the
+small pilot is not the published-result validation. The next nominal block is
+three seeds with `500` accepted events each, followed by bounded jet and
+electron-veto variations. The reduced-probe review task remains unchanged.
 
 The command name decision is settled for now: keep
 `lowmc_hepmc3_afterburner_diagnostic` as the only executable name. A shorter

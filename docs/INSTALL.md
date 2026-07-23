@@ -175,6 +175,43 @@ python3 scripts/compare_leg_centered_proposal.py \
 This is a weighted diagnostic. It does not select the leg-centred proposal as
 a production default or construct a rejection envelope.
 
+## DELPHI Hadronic Bremsstrahlung Benchmark
+
+With the optional Pythia8 adapter configured, build and run the paired direct
+integral/LowMC diagnostic:
+
+```sh
+cmake --build build-pythia8 \
+  --target lowmc_pythia8_delphi_hadronic_benchmark
+./build-pythia8/adapters/pythia8/lowmc_pythia8_delphi_hadronic_benchmark \
+  build-pythia8/delphi_hadronic_seed24680.csv \
+  --events 20 \
+  --seed 24680 \
+  --mc-samples 300000 \
+  --direct-loge-bins 48 \
+  --direct-eta-bins 32 \
+  --direct-phi-bins 48 \
+  --direct-refinement-levels 3 \
+  --direct-subbins 2
+```
+
+Aggregate event-level uncertainties and make the unscaled comparison to
+DELPHI Table 4 with:
+
+```sh
+MPLCONFIGDIR=build-pythia8/matplotlib \
+python3 scripts/summarize_delphi_hadronic_benchmark.py \
+  build-pythia8/delphi_hadronic_seed24680.csv \
+  --summary build-pythia8/delphi_hadronic_summary.csv \
+  --plot build-pythia8/delphi_hadronic.png
+```
+
+Multiple independent input CSVs may be passed to the summarizer. It treats
+Pythia events as the statistical units, uses a delete-one jackknife for the
+per-accepted-jet ratio, and reports the LowMC photon-integration error
+separately. The diagnostic does not emit photons or modify production
+defaults.
+
 ## PHOTOS Benchmark
 
 PHOTOS remains an opt-in benchmark dependency and is not linked into the

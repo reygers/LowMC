@@ -276,6 +276,53 @@ add_test(
             --trial-samples 16
             --seed 12345
 )
+
+add_executable(lowmc_pythia8_delphi_hadronic_benchmark
+    diagnostics/pythia8_delphi_hadronic_benchmark.cpp
+)
+
+target_link_libraries(lowmc_pythia8_delphi_hadronic_benchmark
+    PRIVATE
+        lowmc_pythia8_adapter
+)
+
+target_compile_definitions(lowmc_pythia8_delphi_hadronic_benchmark
+    PRIVATE
+        LOWMC_PYTHIA8_XMLDOC="${LOWMC_PYTHIA8_XMLDOC_DIR}"
+)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(
+        lowmc_pythia8_delphi_hadronic_benchmark PRIVATE -Wall -Wextra -pedantic)
+elseif(MSVC)
+    target_compile_options(lowmc_pythia8_delphi_hadronic_benchmark PRIVATE /W4)
+endif()
+
+add_test(
+    NAME lowmc_pythia8_delphi_hadronic_benchmark_help
+    COMMAND lowmc_pythia8_delphi_hadronic_benchmark --help
+)
+
+add_test(
+    NAME lowmc_pythia8_delphi_hadronic_benchmark_smoke
+    COMMAND lowmc_pythia8_delphi_hadronic_benchmark
+            ${CMAKE_CURRENT_BINARY_DIR}/pythia8_delphi_hadronic_smoke.csv
+            --events 1
+            --mc-samples 64
+            --direct-loge-bins 2
+            --direct-eta-bins 4
+            --direct-phi-bins 4
+            --direct-refinement-levels 0
+            --direct-subbins 1
+            --seed 12345
+)
+set_tests_properties(
+    lowmc_pythia8_delphi_hadronic_benchmark_smoke
+    PROPERTIES
+        PASS_REGULAR_EXPRESSION
+            "aggregate_status=ok accepted_events=1"
+)
+
 set_tests_properties(
     lowmc_pythia8_weighted_photon_diagnostic_softqcd
     PROPERTIES

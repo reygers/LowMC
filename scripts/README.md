@@ -65,6 +65,25 @@ The fixed grid has configurable point counts. The defaults are unchanged at
   --phi-bins 481
 ```
 
+## DELPHI hadronic bremsstrahlung summary
+
+Aggregate one or more event-level CSV files from
+`lowmc_pythia8_delphi_hadronic_benchmark` and compare the unscaled result with
+the published DELPHI Table 4 curve:
+
+```sh
+MPLCONFIGDIR=build-pythia8/matplotlib \
+python3 scripts/summarize_delphi_hadronic_benchmark.py \
+  build-pythia8/delphi_hadronic_seed*.csv \
+  --summary build-pythia8/delphi_hadronic_summary.csv \
+  --plot build-pythia8/delphi_hadronic.png
+```
+
+The summary keeps event-to-event jackknife uncertainty separate from the
+conditional LowMC photon-integration uncertainty. Its diagonal chi-square is
+a compact diagnostic only because DELPHI and generator-event correlations are
+not available.
+
 ## Direction and acceptance examples
 
 The first toy particle direction can be changed with `--particle-eta` and
