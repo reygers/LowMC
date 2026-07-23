@@ -346,10 +346,10 @@ algorithm variations. Report event and accepted-jet statistics separately
 for every configuration. Do not tune the photon-to-jet angle cut or rescale
 the prediction after inspecting the DELPHI comparison.
 
-Stage B is therefore not yet closed: the LUCLUS-to-Durham/JADE gate remains
-to be run, and the seed-stability result should be resolved with a
-predeclared independent extension rather than an unplanned choice made from
-the observed seed values.
+At this point in the study, Stage B was not yet closed: the
+LUCLUS-to-Durham/JADE gate remained to be run, and the seed-stability result
+needed a predeclared independent extension rather than an unplanned choice
+made from the observed seed values.
 
 The independent extension is fixed before running as follows:
 
@@ -378,6 +378,62 @@ The bounded jet/electron variations are also fixed before running:
 
 The variation block is diagnostic: no jet cut, photon cut, or normalization
 may be tuned after inspecting its outcome.
+
+Both predeclared follow-ups are now complete. The independent extension has
+`1500` accepted events and `3729` accepted jets. Its direct rate is
+`0.0176347 +/- 0.000222 photons/jet`, only `0.039` combined jackknife standard
+errors from the original block. Across all six seeds, the constant-rate test
+gives `chi2 = 8.38` for five degrees of freedom (`p = 0.136`). The extension
+therefore resolves the seed-stability gate as passed.
+
+Combining all six nominal seeds gives:
+
+```text
+accepted events / jets    3000 / 7523
+direct Low integral       0.01762855 +/- 0.000158 photons / jet
+weighted LowMC sampling   0.01768964 photons / jet
+LowMC / direct            1.003465
+direct / DELPHI           1.032177
+diagonal chi2/ndf         12.082/10
+```
+
+The six-seed Figure 4b projection is also stable: its direct integral is
+`0.0306705 +/- 0.000244 photons/jet`, LowMC/direct is `1.00381`,
+direct/DELPHI is `0.96867`, and the normalized-shape L1 distance is `0.04139`.
+
+The bounded `600`-event variations give:
+
+| configuration | accepted jets | rate estimator | photons/jet | ratio to LUCLUS |
+|---|---:|---|---:|---:|
+| LUCLUS, electron veto | 1525 | weighted LowMC | 0.0174565 | 1.0000 |
+| Durham, `ycut = 0.01` | 1265 | weighted LowMC | 0.0193359 | 1.1077 |
+| JADE, `ycut = 0.01` | 1415 | weighted LowMC | 0.0179980 | 1.0310 |
+| LUCLUS, no electron veto | 1659 | weighted LowMC | 0.0192899 | 1.1050 |
+
+For the two jet-algorithm comparisons, the direct ratios to the bounded
+LUCLUS baseline are `1.1082` for Durham and `1.0322` for JADE. JADE therefore
+meets the intended few-percent check, while Durham does not. The normalized
+shape changes are much smaller than the rate changes: the pT L1 distances
+from LUCLUS are `0.00971` and `0.00553`, and the angular L1 distances are
+`0.01019` and `0.00675`, for Durham and JADE respectively. The principal
+difference is thus the accepted-jet count and per-jet normalization, not a
+large deformation of the photon spectra.
+
+The no-electron-veto row must use weighted LowMC as its rate estimator.
+The deterministic angular grid is not sufficiently resolved for the narrow
+electron-collinear structures: its aggregate coarse/fine shift is `10.3%`,
+and one seed shifts by `27.2%`. Weighted LowMC shows that removing the veto
+raises the rate by `10.5%`; this is a useful truth-selection diagnostic, not
+evidence of a LowMC/direct inconsistency.
+
+The total-rate, spectral, implementation, and seed-stability gates pass.
+Stage B as a whole remains open under its original wording because the Durham
+variation is about `11%`, rather than a few percent. Do not tune `ycut` or the
+photon cuts to remove this result. The next bounded task is to trace the
+normalization shift through event-by-event jet multiplicities and matched
+accepted jets, and to determine whether the difference is caused by the
+truth-level jet approximation relative to DELPHI's reconstructed-jet study.
+Stage C should wait for that interpretation.
 
 ### Stage C: Interpret the excess
 

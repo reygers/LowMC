@@ -1269,6 +1269,42 @@ fixed before execution: `200` accepted events for each original seed,
 Durham and JADE at `ycut = 0.01`, plus LUCLUS with the truth-level electron
 veto disabled, all using the nominal photon settings.
 
+That resolution block is now complete. The new block contains `1500` accepted
+events and `3729` accepted jets, with direct rate
+`0.0176347 +/- 0.000222 photons/jet`. It differs from the original block by
+only `0.039` combined jackknife standard errors. The six-seed constant-rate
+test gives `chi2 = 8.38/5` (`p = 0.136`), so the seed-stability gate passes.
+All six nominal seeds together contain `3000` accepted events and `7523`
+accepted jets. Their direct result is
+`0.0176286 +/- 0.000158 photons/jet`; weighted LowMC gives `0.0176896`, with
+`LowMC/direct = 1.00347`. Direct/DELPHI is `1.03218`, and the diagonal
+comparison is `chi2/ndf = 12.08/10`.
+
+The bounded jet/electron block is complete as well. Its matching LUCLUS
+subset has `600` events, `1525` accepted jets, and weighted LowMC rate
+`0.0174565 photons/jet`. Durham has `1265` accepted jets and rate
+`0.0193359`; its direct rate is `10.82%` above LUCLUS. JADE has `1415`
+accepted jets and rate `0.0179980`; its direct rate is `3.22%` above LUCLUS.
+The normalized pT-shape L1 distances from LUCLUS are `0.00971` for Durham and
+`0.00553` for JADE; the corresponding angular distances are `0.01019` and
+`0.00675`. Thus JADE satisfies the intended few-percent variation, while
+Durham does not, despite only small normalized-shape changes.
+
+The no-electron-veto LUCLUS sample has `1659` accepted jets and weighted
+LowMC rate `0.0192899 photons/jet`, `10.50%` above the vetoed subset. Its
+deterministic direct calculation is not used for the comparison: narrow
+electron-collinear peaks cause a `10.3%` aggregate coarse/fine shift and a
+`27.2%` shift in one seed. This is a documented limitation of the bounded
+grid diagnostic, not of the weighted production estimator.
+
+The total-rate, spectral, same-event, and seed-stability gates now pass.
+Stage B remains open only because the Durham normalization change is about
+`11%`, outside the predeclared few-percent expectation. The next task is a
+bounded event-by-event comparison of jet multiplicities and matched accepted
+jets to determine whether the truth-level Durham implementation is a faithful
+proxy for the reconstructed-jet systematic quoted by DELPHI. No jet or photon
+cut should be tuned in response to this result.
+
 The planned high-resolution calculation on the first ten accepted events of
 each seed is complete. Across these `30` events, `LowMC/direct = 0.99949` for
 the Table 4 projection and `0.99982` for the Figure 4b projection. The

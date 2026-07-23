@@ -315,12 +315,30 @@ by `2.32` combined standard errors; the global three-seed consistency test has
 literal one-standard-error gate remains inconclusive. PHOTOS and reduced-probe
 work remain separate.
 
-The resolution block is predeclared before execution: three independent
-seeds `24683..24685`, `500` accepted events each, must agree with the original
-block within two combined jackknife errors, and the six seed estimates must
-pass a constant-rate consistency test with `p > 0.05`. Bounded jet/electron
-variations use `200` accepted events for each original seed, Durham and JADE
-at `ycut = 0.01`, and LUCLUS with the truth-level electron veto disabled.
+The predeclared resolution block is complete. Three independent seeds
+`24683..24685`, with `500` accepted events each, agree with the original
+three-seed block within `0.039` combined jackknife standard errors. The
+constant-rate test over all six seeds gives `p = 0.136`, so seed stability is
+now passed. The combined `3000`-event, `7523`-jet result is
+`0.0176286 +/- 0.000158 photons/jet` from direct integration, with
+`LowMC/direct = 1.00347`, direct/DELPHI `= 1.03218`, and diagonal
+`chi2/ndf = 12.08/10`.
+
+The bounded jet/electron variations are also complete, using `200` accepted
+events for each original seed. Relative to the matching LUCLUS subset, the
+direct rate changes by `+3.22%` for JADE and `+10.82%` for Durham at
+`ycut = 0.01`. JADE passes the intended few-percent check; Durham does not.
+Normalized pT and angular shapes move by only about `0.6-1.0%` in L1
+distance, so the Durham discrepancy is predominantly an accepted-jet and
+per-jet-normalization effect. Disabling the truth-level electron veto raises
+the weighted LowMC rate by `10.50%`; deterministic quadrature is unreliable
+for that diagnostic because of unresolved electron-collinear peaks.
+
+The DELPHI total-rate, spectrum, implementation, and seed gates pass, but the
+original Stage B jet-variation gate remains open. The next bounded task is an
+event/jet-matching diagnosis of the Durham normalization shift, with no tuning
+of jet or photon cuts. The PHOTOS comparison and the reduced-probe review
+remain separate workstreams.
 
 The diagnostic now also records the joint `pT`-versus-`theta_gamma`
 distribution needed for DELPHI Figure 4b. The quoted DELPHI signal and
