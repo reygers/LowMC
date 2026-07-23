@@ -323,6 +323,21 @@ set_tests_properties(
             "aggregate_status=ok accepted_events=1"
 )
 
+add_test(
+    NAME lowmc_pythia8_delphi_hadronic_jet_accounting_smoke
+    COMMAND lowmc_pythia8_delphi_hadronic_benchmark
+            ${CMAKE_CURRENT_BINARY_DIR}/pythia8_delphi_hadronic_jet_accounting_smoke.csv
+            --events 1
+            --jet-accounting-only
+            --seed 12345
+)
+set_tests_properties(
+    lowmc_pythia8_delphi_hadronic_jet_accounting_smoke
+    PROPERTIES
+        PASS_REGULAR_EXPRESSION
+            "jet_accounting_status=ok seed=12345 events=1"
+)
+
 foreach(LOWMC_DELPHI_JET_ALGORITHM IN ITEMS Durham Jade)
     string(
         TOLOWER

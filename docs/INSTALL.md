@@ -204,6 +204,7 @@ python3 scripts/summarize_delphi_hadronic_benchmark.py \
   build-pythia8/delphi_hadronic_seed24680.csv \
   --summary build-pythia8/delphi_hadronic_summary.csv \
   --plot build-pythia8/delphi_hadronic.png \
+  --final-plot build-pythia8/delphi_hadronic_final.png \
   --joint-inputs build-pythia8/delphi_hadronic_seed24680_joint.csv \
   --theta-summary build-pythia8/delphi_hadronic_theta_summary.csv \
   --theta-plot build-pythia8/delphi_hadronic_theta.png
@@ -225,6 +226,26 @@ The default jet algorithm is LUCLUS (`--jet-algorithm Lund`) with
 `djoin = 3 GeV`. The bounded DELPHI jet variations use
 `--jet-algorithm Durham` or `--jet-algorithm Jade`; both select
 `ycut = 0.01`. The chosen algorithm and scale are written to both CSV files.
+
+For a fast same-event comparison of jet counts and axes, without evaluating
+the Low current, run:
+
+```sh
+./build-pythia8/adapters/pythia8/lowmc_pythia8_delphi_hadronic_benchmark \
+  build-pythia8/delphi_jet_accounting_seed24680.csv \
+  --events 200 \
+  --seed 24680 \
+  --jet-accounting-only
+
+python3 scripts/summarize_delphi_jet_accounting.py \
+  build-pythia8/delphi_jet_accounting_seed24680.csv \
+  --summary build-pythia8/delphi_jet_accounting_summary.csv \
+  --plot build-pythia8/delphi_jet_accounting.png
+```
+
+The accounting mode selects events with the nominal LUCLUS-like Lund
+configuration and records Lund, Durham, and JADE results for each identical
+generated event.
 
 ## PHOTOS Benchmark
 

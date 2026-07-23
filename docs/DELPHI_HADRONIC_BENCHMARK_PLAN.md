@@ -426,18 +426,46 @@ and one seed shifts by `27.2%`. Weighted LowMC shows that removing the veto
 raises the rate by `10.5%`; this is a useful truth-selection diagnostic, not
 evidence of a LowMC/direct inconsistency.
 
-The total-rate, spectral, implementation, and seed-stability gates pass.
-Stage B as a whole remains open under its original wording because the Durham
-variation is about `11%`, rather than a few percent. Do not tune `ycut` or the
-photon cuts to remove this result. The next bounded task is to trace the
-normalization shift through event-by-event jet multiplicities and matched
-accepted jets, and to determine whether the difference is caused by the
-truth-level jet approximation relative to DELPHI's reconstructed-jet study.
-Stage C should wait for that interpretation.
+The total-rate, spectral, implementation, and seed-stability gates pass. The
+Durham variation remains a literal non-pass of the predeclared few-percent
+expectation; no `ycut` or photon cut was tuned in response.
+
+A final accounting-only run applies all three algorithms to exactly the same
+`600` LUCLUS-selected Pythia events, without repeating a Low-current
+calculation:
+
+| algorithm | accepted events | all jets | accepted jets | accepted jets / LUCLUS |
+|---|---:|---:|---:|---:|
+| LUCLUS-like Lund | 600 | 1821 | 1525 | 1.0000 |
+| Durham | 595 | 1458 | 1255 | 0.8230 |
+| JADE | 598 | 1813 | 1412 | 0.9259 |
+
+Durham has fewer accepted jets than LUCLUS in `233` events, the same count in
+`366`, and more in only one. Its median closest-axis displacement from a
+LUCLUS accepted jet is only `0.033 rad` (`0.121 rad` at the 90th percentile),
+so the main effect is a lower jet multiplicity rather than uniformly unrelated
+jet axes. In the independent photon samples, Durham reduces the total direct
+photon numerator to `0.9193` of LUCLUS but reduces the accepted-jet
+denominator further, to `0.8295`; their ratio is the observed
+`1.1082` per-jet shift. JADE gives the analogous ratios `0.9578/0.9279 =
+1.0322`.
+
+This resolves the source of the Durham result. Pythia's truth-level Durham
+configuration produces substantially fewer jets at the fixed `ycut`, whereas
+the few-percent statement in DELPHI refers to an algorithm variation inside
+its reconstructed-jet analysis. The present truth-level switch is therefore
+not a like-for-like reproduction of that detector-level systematic. Record it
+as a documented limitation of the proxy, not as a LowMC physics discrepancy.
+
+The DELPHI benchmark is now complete. It establishes the intended result:
+unscaled LowMC reproduces the published inner-bremsstrahlung pT spectrum and
+normalization. The final six-seed figure includes the DELPHI curve, direct Low
+integral, weighted LowMC result, and binwise ratios. No further DELPHI
+production run is planned.
 
 ### Stage C: Interpret the excess
 
-Only after Stages A and B pass, overlay:
+For interpretation and presentation, one may overlay:
 
 - the efficiency-corrected DELPHI inner-bremsstrahlung prediction;
 - the validated LowMC prediction; and
@@ -448,10 +476,12 @@ which lies well below the excess. That establishes the Standard Model
 leading-soft reference used in the soft-photon puzzle; it does not generate or
 explain the anomalous component.
 
-## Scope Boundary While Review Is Pending
+The validated unscaled bremsstrahlung comparison is complete. A future overlay
+with the efficiency-corrected `RD - MC` points is a presentation extension,
+not another LowMC validation gate.
 
-This plan is independent of the reduced-probe recommendation sent to Stefan.
-Preparing and later running this benchmark must not change reduced-probe
-settings, production envelope defaults, particle-selection defaults, or
-failure policies. The PHOTOS and analytic-envelope studies remain closed
-unless a specific discrepancy in this benchmark motivates reopening them.
+## Scope Boundary
+
+This benchmark is independent of the reduced-probe and analytic-envelope
+work. It does not change production envelope defaults, particle-selection
+defaults, or failure policies.

@@ -1297,13 +1297,35 @@ electron-collinear peaks cause a `10.3%` aggregate coarse/fine shift and a
 `27.2%` shift in one seed. This is a documented limitation of the bounded
 grid diagnostic, not of the weighted production estimator.
 
-The total-rate, spectral, same-event, and seed-stability gates now pass.
-Stage B remains open only because the Durham normalization change is about
-`11%`, outside the predeclared few-percent expectation. The next task is a
-bounded event-by-event comparison of jet multiplicities and matched accepted
-jets to determine whether the truth-level Durham implementation is a faithful
-proxy for the reconstructed-jet systematic quoted by DELPHI. No jet or photon
-cut should be tuned in response to this result.
+The total-rate, spectral, same-event, and seed-stability gates pass. The
+predeclared Durham few-percent expectation remains a documented non-pass; no
+jet or photon cut was tuned in response.
+
+The bounded same-event jet-accounting follow-up is now complete. It runs
+LUCLUS-like Lund, Durham, and JADE clustering on exactly the same `600`
+LUCLUS-selected events without repeating the Low calculation. Lund gives
+`1821` total and `1525` accepted jets. Durham gives `1458` total and `1255`
+accepted jets, only `82.30%` of the Lund accepted count; it has fewer accepted
+jets in `233` events, the same number in `366`, and more in one. JADE gives
+`1813` total and `1412` accepted jets, `92.59%` of Lund. The median
+alternative-to-Lund closest-axis displacement is `0.0331 rad` for Durham and
+`0.0202 rad` for JADE.
+
+The independent photon variations decompose consistently with those counts.
+For Durham, the total direct photon numerator is `0.9193` of Lund and the
+accepted-jet denominator is `0.8295`, producing the `1.1082` per-jet ratio.
+For JADE, the corresponding factors are `0.9578/0.9279 = 1.0322`. The Durham
+shift is therefore predominantly a truth-jet multiplicity and normalization
+effect. Pythia's truth-level switch is not a like-for-like implementation of
+the reconstructed-jet algorithm systematic quoted by DELPHI.
+
+The DELPHI study is closed with that limitation recorded. The key conclusion
+is unchanged: the six-seed unscaled Low prediction reproduces the DELPHI
+inner-bremsstrahlung pT spectrum and normalization. A final plot with a ratio
+panel is produced by `scripts/summarize_delphi_hadronic_benchmark.py
+--final-plot`; the accounting-only mode and
+`scripts/summarize_delphi_jet_accounting.py` preserve the closing jet
+diagnostic. No further DELPHI production run is planned.
 
 The planned high-resolution calculation on the first ten accepted events of
 each seed is complete. Across these `30` events, `LowMC/direct = 0.99949` for

@@ -19,6 +19,13 @@ def parse_args():
     parser.add_argument("--summary", required=True, type=Path)
     parser.add_argument("--plot", type=Path)
     parser.add_argument(
+        "--final-plot",
+        type=Path,
+        help=(
+            "Write a final pT comparison with a LowMC/DELPHI ratio panel."
+        ),
+    )
+    parser.add_argument(
         "--joint-inputs",
         nargs="+",
         type=Path,
@@ -436,6 +443,166 @@ def make_plot(path, rows):
     plt.close(figure)
 
 
+def make_final_plot(path, rows, events):
+    import matplotlib.pyplot as plt
+
+    centers = [
+        500.0 * (float(row["pt_min_GeV"]) + float(row["pt_max_GeV"]))
+        for row in rows
+    ]
+    delphi = [row["delphi_bremsstrahlung_per_jet"] for row in rows]
+    delphi_error = [
+        math.hypot(
+            row["delphi_statistical_uncertainty"],
+            row["delphi_systematic_uncertainty"],
+        )
+        for row in rows
+    ]
+    direct = [row["direct_per_jet"] for row in rows]
+    direct_error = [row["direct_event_jackknife_se"] for row in rows]
+    mc = [row["lowmc_mc_per_jet"] for row in rows]
+    mc_error = [
+        math.hypot(
+            row["lowmc_mc_event_jackknife_se"],
+            row["lowmc_mc_integration_se"],
+        )
+        for row in rows
+    ]
+    direct_ratio = [
+        value / reference for value, reference in zip(direct, delphi)
+    ]
+    mc_ratio = [
+        value / reference for value, reference in zip(mc, delphi)
+    ]
+    direct_ratio_error = [
+        ratio
+        * math.hypot(
+            prediction_error / prediction,
+            reference_error / reference,
+        )
+        for ratio, prediction, prediction_error, reference, reference_error
+        in zip(
+            direct_ratio,
+            direct,
+            direct_error,
+            delphi,
+            delphi_error,
+        )
+    ]
+    mc_ratio_error = [
+        ratio
+        * math.hypot(
+            prediction_error / prediction,
+            reference_error / reference,
+        )
+        for ratio, prediction, prediction_error, reference, reference_error
+        in zip(mc_ratio, mc, mc_error, delphi, delphi_error)
+    ]
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    figure, (axis, ratio_axis) = plt.subplots(
+        2,
+        1,
+        figsize=(7.2, 6.2),
+        sharex=True,
+        gridspec_kw={"height_ratios": [3.0, 1.15], "hspace": 0.06},
+    )
+    axis.errorbar(
+        [value - 0.7 for value in centers],
+        delphi,
+        yerr=delphi_error,
+        fmt="o",
+        color="black",
+        capsize=2,
+        label="DELPHI Table 4 Brems",
+    )
+    axis.errorbar(
+        centers,
+        direct,
+        yerr=direct_error,
+        fmt="s",
+        color="#0072B2",
+        capsize=2,
+        label="Direct Low integral",
+    )
+    axis.errorbar(
+        [value + 0.7 for value in centers],
+        mc,
+        yerr=mc_error,
+        fmt="^",
+        color="#D55E00",
+        capsize=2,
+        label="LowMC sampling",
+    )
+    axis.set(
+        ylabel="photons / accepted jet / 8 MeV",
+        xlim=(0.0, 80.0),
+    )
+    axis.grid(alpha=0.22)
+    axis.legend(frameon=False, fontsize=9)
+
+    ratio_axis.errorbar(
+        [value - 0.35 for value in centers],
+        direct_ratio,
+        yerr=direct_ratio_error,
+        fmt="s",
+        color="#0072B2",
+        capsize=2,
+        label="direct / DELPHI",
+    )
+    ratio_axis.errorbar(
+        [value + 0.35 for value in centers],
+        mc_ratio,
+        yerr=mc_ratio_error,
+        fmt="^",
+        color="#D55E00",
+        capsize=2,
+        label="LowMC / DELPHI",
+    )
+    ratio_axis.axhline(1.0, color="black", linewidth=1)
+    ratio_axis.set(
+        xlabel=r"$p_{\mathrm{T},\gamma}$ relative to closest jet [MeV]",
+        ylabel="ratio to\nDELPHI",
+        xlim=(0.0, 80.0),
+    )
+    ratio_axis.grid(alpha=0.22)
+
+    delphi_total = sum(delphi)
+    direct_total = ratio_of_sums(events, "direct")
+    mc_total = ratio_of_sums(events, "mc")
+    axis.text(
+        0.025,
+        0.045,
+        (
+            f"{len(events)} events, "
+            f"{sum(event['jets'] for event in events)} jets\n"
+            f"direct / DELPHI = {direct_total/delphi_total:.4f}\n"
+            f"LowMC / DELPHI = {mc_total/delphi_total:.4f}"
+        ),
+        transform=axis.transAxes,
+        fontsize=8.5,
+        va="bottom",
+        bbox={
+            "boxstyle": "round,pad=0.3",
+            "facecolor": "white",
+            "edgecolor": "0.75",
+            "alpha": 0.9,
+        },
+    )
+    figure.suptitle(
+        "LowMC reproduction of DELPHI inner bremsstrahlung (unscaled)",
+        fontsize=15,
+    )
+    figure.subplots_adjust(
+        left=0.14,
+        right=0.98,
+        bottom=0.11,
+        top=0.92,
+    )
+    figure.savefig(path, dpi=180)
+    plt.close(figure)
+
+
 def write_theta_summary(path, events, reference):
     path.parent.mkdir(parents=True, exist_ok=True)
     rows = []
@@ -618,6 +785,8 @@ def main():
     rows = write_summary(args.summary, events, reference)
     if args.plot:
         make_plot(args.plot, rows)
+    if args.final_plot:
+        make_final_plot(args.final_plot, rows, events)
 
     if args.joint_inputs:
         joint_events = read_joint_events(args.joint_inputs)

@@ -55,6 +55,7 @@ struct Options {
     std::uint64_t samplingSeed = 0;
     double legUniformFraction = 0.1;
     bool electronVeto = true;
+    bool jetAccountingOnly = false;
 };
 
 struct JetAxis {
@@ -109,6 +110,8 @@ void printUsage(std::ostream& output) {
         << "  --seed N --sampling-seed N\n"
         << "  --leg-uniform-fraction F\n"
         << "  --no-electron-veto\n"
+        << "  --jet-accounting-only\n"
+        << "      Write fast same-event Lund/Durham/JADE jet diagnostics only.\n"
         << "  --help\n";
 }
 
@@ -232,6 +235,8 @@ Options parseOptions(int argc, char** argv) {
                 readOption(index, argc, argv, argument), argument);
         } else if (argument == "--no-electron-veto") {
             options.electronVeto = false;
+        } else if (argument == "--jet-accounting-only") {
+            options.jetAccountingOnly = true;
         } else if (!argument.empty() && argument.front() == '-') {
             throw std::invalid_argument("unknown argument: " + argument);
         } else if (outputSpecified) {
@@ -693,11 +698,212 @@ int hardFlavor(const Pythia8::Event& event) {
     return 0;
 }
 
+struct NearestAxisSummary {
+    double meanAngle = std::numeric_limits<double>::quiet_NaN();
+    double maxAngle = std::numeric_limits<double>::quiet_NaN();
+};
+
+NearestAxisSummary nearestAxisSummary(
+    const std::vector<JetAxis>& from,
+    const std::vector<JetAxis>& to) {
+    if (from.empty() || to.empty()) {
+        return {};
+    }
+    double angleSum = 0.0;
+    double maxAngle = 0.0;
+    for (const JetAxis& source : from) {
+        double closestCosine = -1.0;
+        for (const JetAxis& target : to) {
+            closestCosine = std::max(
+                closestCosine,
+                source.nx * target.nx +
+                    source.ny * target.ny +
+                    source.nz * target.nz);
+        }
+        const double angle =
+            std::acos(std::clamp(closestCosine, -1.0, 1.0));
+        angleSum += angle;
+        maxAngle = std::max(maxAngle, angle);
+    }
+    return NearestAxisSummary{
+        angleSum / static_cast<double>(from.size()),
+        maxAngle,
+    };
+}
+
+void writeJetAccountingRow(
+    std::ostream& output,
+    const Options& options,
+    int eventIndex,
+    int attemptedEvents,
+    int flavor,
+    const std::string& algorithm,
+    double yScale,
+    double ptScale,
+    const EventSelection& selection,
+    const EventSelection& lundSelection) {
+    const NearestAxisSummary algorithmToLund =
+        nearestAxisSummary(
+            selection.acceptedJets,
+            lundSelection.acceptedJets);
+    const NearestAxisSummary lundToAlgorithm =
+        nearestAxisSummary(
+            lundSelection.acceptedJets,
+            selection.acceptedJets);
+    output
+        << options.seed << ','
+        << eventIndex << ','
+        << attemptedEvents << ','
+        << flavor << ','
+        << lundSelection.chargedMultiplicity << ','
+        << lundSelection.visibleEnergy << ','
+        << algorithm << ','
+        << yScale << ','
+        << ptScale << ','
+        << (selection.accepted ? 1 : 0) << ','
+        << selection.totalJets << ','
+        << selection.acceptedJets.size() << ','
+        << lundSelection.acceptedJets.size() << ','
+        << algorithmToLund.meanAngle << ','
+        << algorithmToLund.maxAngle << ','
+        << lundToAlgorithm.meanAngle << ','
+        << lundToAlgorithm.maxAngle << '\n';
+}
+
+int runJetAccounting(const Options& options) {
+    std::ofstream output(options.outputPath);
+    if (!output) {
+        throw std::runtime_error(
+            "could not open output CSV: " + options.outputPath);
+    }
+    output
+        << "seed,event_index,attempt_index,hard_flavor,"
+           "charged_multiplicity,visible_energy,jet_algorithm,"
+           "jet_y_scale,jet_pt_scale_GeV,event_accepted,total_jets,"
+           "accepted_jets,lund_accepted_jets,"
+           "mean_algorithm_to_lund_angle_rad,"
+           "max_algorithm_to_lund_angle_rad,"
+           "mean_lund_to_algorithm_angle_rad,"
+           "max_lund_to_algorithm_angle_rad\n";
+    output << std::setprecision(17);
+
+    Pythia8::Pythia pythia(LOWMC_PYTHIA8_XMLDOC, false);
+    initializePythia(pythia, options);
+    Pythia8::Thrust lundThrust;
+    Pythia8::Thrust durhamThrust;
+    Pythia8::Thrust jadeThrust;
+    Pythia8::ClusterJet lundClustering("Lund");
+    Pythia8::ClusterJet durhamClustering("Durham");
+    Pythia8::ClusterJet jadeClustering("Jade");
+
+    int writtenEvents = 0;
+    int validLundEventIndex = 0;
+    int attemptedEvents = 0;
+    while (writtenEvents < options.events) {
+        ++attemptedEvents;
+        if (attemptedEvents > (options.firstEvent + options.events) * 100) {
+            throw std::runtime_error(
+                "too many generated events failed the DELPHI selection");
+        }
+        if (!pythia.next()) {
+            continue;
+        }
+        const EventSelection lundSelection =
+            selectEvent(
+                pythia.event,
+                lundThrust,
+                lundClustering,
+                0.0,
+                3.0,
+                options.electronVeto);
+        if (!lundSelection.accepted) {
+            continue;
+        }
+        const lowmc::AdapterParticleSelectionResult particleSelection =
+            lowmc::pythia8::selectChargedParticles(pythia.event);
+        if (!particleSelection.diagnostic.selectedChargedCount() ||
+            std::abs(particleSelection.diagnostic.signedChargeSum) >
+                1.0e-12) {
+            continue;
+        }
+        const int eventIndex = validLundEventIndex++;
+        if (eventIndex < options.firstEvent) {
+            continue;
+        }
+
+        const EventSelection durhamSelection =
+            selectEvent(
+                pythia.event,
+                durhamThrust,
+                durhamClustering,
+                0.01,
+                0.0,
+                options.electronVeto);
+        const EventSelection jadeSelection =
+            selectEvent(
+                pythia.event,
+                jadeThrust,
+                jadeClustering,
+                0.01,
+                0.0,
+                options.electronVeto);
+        const int flavor = hardFlavor(pythia.event);
+        writeJetAccountingRow(
+            output,
+            options,
+            eventIndex,
+            attemptedEvents,
+            flavor,
+            "Lund",
+            0.0,
+            3.0,
+            lundSelection,
+            lundSelection);
+        writeJetAccountingRow(
+            output,
+            options,
+            eventIndex,
+            attemptedEvents,
+            flavor,
+            "Durham",
+            0.01,
+            0.0,
+            durhamSelection,
+            lundSelection);
+        writeJetAccountingRow(
+            output,
+            options,
+            eventIndex,
+            attemptedEvents,
+            flavor,
+            "Jade",
+            0.01,
+            0.0,
+            jadeSelection,
+            lundSelection);
+        ++writtenEvents;
+    }
+    if (!output) {
+        throw std::runtime_error(
+            "failed while writing jet-accounting CSV");
+    }
+    std::cout
+        << "jet_accounting_status=ok"
+        << " seed=" << options.seed
+        << " events=" << writtenEvents
+        << " output=" << options.outputPath
+        << '\n';
+    return EXIT_SUCCESS;
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
     try {
         const Options options = parseOptions(argc, argv);
+        if (options.jetAccountingOnly) {
+            return runJetAccounting(options);
+        }
         std::ofstream output(options.outputPath);
         if (!output) {
             throw std::runtime_error(

@@ -334,11 +334,24 @@ per-jet-normalization effect. Disabling the truth-level electron veto raises
 the weighted LowMC rate by `10.50%`; deterministic quadrature is unreliable
 for that diagnostic because of unresolved electron-collinear peaks.
 
-The DELPHI total-rate, spectrum, implementation, and seed gates pass, but the
-original Stage B jet-variation gate remains open. The next bounded task is an
-event/jet-matching diagnosis of the Durham normalization shift, with no tuning
-of jet or photon cuts. The PHOTOS comparison and the reduced-probe review
-remain separate workstreams.
+The same-event jet-accounting diagnosis is now complete. On the same `600`
+LUCLUS-selected events, Durham produces `1255` accepted jets versus `1525`
+for LUCLUS, while JADE produces `1412`. Durham has fewer accepted jets in
+`233` events, the same count in `366`, and more in only one. Its median
+nearest-axis displacement is only `0.033 rad`; the main difference is jet
+multiplicity and per-jet normalization. The independent photon samples make
+the decomposition explicit: the Durham direct numerator changes by `-8.1%`,
+but its accepted-jet denominator changes by `-17.0%`, leaving the observed
+`+10.8%` per-jet rate.
+
+The original Durham few-percent gate remains recorded as not satisfied, but
+the follow-up shows that the truth-level Pythia switch is not a like-for-like
+proxy for DELPHI's reconstructed-jet systematic. It is not a discrepancy in
+the Low calculation. The DELPHI benchmark is therefore complete, with this
+limitation documented and no cut tuning. Its final result is that unscaled
+LowMC reproduces the published bremsstrahlung baseline; comparison with the
+measured excess remains an optional presentation extension. PHOTOS and
+envelope development remain separate workstreams.
 
 The diagnostic now also records the joint `pT`-versus-`theta_gamma`
 distribution needed for DELPHI Figure 4b. The quoted DELPHI signal and
