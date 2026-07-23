@@ -351,6 +351,34 @@ to be run, and the seed-stability result should be resolved with a
 predeclared independent extension rather than an unplanned choice made from
 the observed seed values.
 
+The independent extension is fixed before running as follows:
+
+- use new Pythia seeds `24683`, `24684`, and `24685`;
+- generate `500` accepted events per seed with exactly the nominal LUCLUS,
+  direct-integration, and weighted-sampling settings;
+- require the aggregate rate of the new block to agree with the original
+  three-seed block within two combined event-level jackknife standard errors;
+- evaluate a constant-rate consistency statistic across all six seed
+  estimates and require `p > 0.05`.
+
+These criteria supersede neither the original recorded seed values nor the
+other Stage B gates. They provide a statistically explicit resolution of the
+otherwise ambiguous literal one-standard-error wording.
+
+The bounded jet/electron variations are also fixed before running:
+
+- use the original seeds `24680`, `24681`, and `24682`;
+- process `200` accepted events per seed and retain the nominal photon
+  integration and sampling settings;
+- compare LUCLUS (`djoin = 3 GeV`) with Durham and JADE at `ycut = 0.01`,
+  matching the settings in the existing DELPHI reproduction example;
+- repeat LUCLUS with the truth-level electron veto disabled;
+- compare unscaled per-accepted-jet totals, accepted-jet counts, pT shapes,
+  and the Figure 4b angular diagnostic.
+
+The variation block is diagnostic: no jet cut, photon cut, or normalization
+may be tuned after inspecting its outcome.
+
 ### Stage C: Interpret the excess
 
 Only after Stages A and B pass, overlay:

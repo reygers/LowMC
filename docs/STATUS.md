@@ -1260,6 +1260,15 @@ standard errors, while a global constant-rate consistency test gives
 `chi2 = 5.41/2` and `p = 0.067`; therefore the literal one-standard-error
 seed-stability gate is recorded as inconclusive, not passed.
 
+Before extending the sample, the resolution criteria are fixed as an
+independent `500`-event block for each of seeds `24683..24685`: the new and
+original three-seed aggregate rates must agree within two combined
+event-level jackknife errors, and a constant-rate test over all six seed
+estimates must give `p > 0.05`. The bounded variation contract is likewise
+fixed before execution: `200` accepted events for each original seed,
+Durham and JADE at `ycut = 0.01`, plus LUCLUS with the truth-level electron
+veto disabled, all using the nominal photon settings.
+
 The planned high-resolution calculation on the first ten accepted events of
 each seed is complete. Across these `30` events, `LowMC/direct = 0.99949` for
 the Table 4 projection and `0.99982` for the Figure 4b projection. The

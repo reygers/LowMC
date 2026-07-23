@@ -315,6 +315,13 @@ by `2.32` combined standard errors; the global three-seed consistency test has
 literal one-standard-error gate remains inconclusive. PHOTOS and reduced-probe
 work remain separate.
 
+The resolution block is predeclared before execution: three independent
+seeds `24683..24685`, `500` accepted events each, must agree with the original
+block within two combined jackknife errors, and the six seed estimates must
+pass a constant-rate consistency test with `p > 0.05`. Bounded jet/electron
+variations use `200` accepted events for each original seed, Durham and JADE
+at `ycut = 0.01`, and LUCLUS with the truth-level electron veto disabled.
+
 The diagnostic now also records the joint `pT`-versus-`theta_gamma`
 distribution needed for DELPHI Figure 4b. The quoted DELPHI signal and
 Table 4 use `pT < 80 MeV`, whereas Figure 4 presents the general-selection
