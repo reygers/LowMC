@@ -2084,6 +2084,95 @@ void testShapeUnweightingAnalyticBoundAuditIsNonMutatingAndSafe() {
         "analytic audit should report pair evaluations");
 }
 
+std::vector<lowmc::ChargedParticle> slowForwardPionPair() {
+    const double mass = 0.13957039;
+    const double momentum = 0.1;
+    const double pseudorapidity = 2.0;
+    const double pT =
+        momentum / std::cosh(pseudorapidity);
+    const double pz =
+        pT * std::sinh(pseudorapidity);
+    const double energy =
+        std::sqrt(mass * mass + momentum * momentum);
+    return {
+        {
+            lowmc::FourVector{energy, pT, 0.0, pz},
+            +1.0,
+            lowmc::InOutSign::Outgoing,
+        },
+        {
+            lowmc::FourVector{energy, -pT, 0.0, -pz},
+            -1.0,
+            lowmc::InOutSign::Outgoing,
+        },
+    };
+}
+
+void testShapeUnweightingTrueRapidityCentersAreDiagnosticOnly() {
+    lowmc::ShapeUnweightingConfig pseudorapidityConfig =
+        shapeUnweightingTestConfig(97531);
+    pseudorapidityConfig.trials = 64;
+    pseudorapidityConfig.calibrationTrials = 32;
+    pseudorapidityConfig.probePolicy =
+        lowmc::ShapeUnweightingProbePolicy::BoostedCells;
+    pseudorapidityConfig.boostedProbeBins = 5;
+    pseudorapidityConfig.boostedCellSafetyFactor = 100.0;
+    lowmc::ShapeUnweightingConfig rapidityConfig =
+        pseudorapidityConfig;
+    rapidityConfig.chargedParticleEtaCenter =
+        lowmc::ChargedParticleEtaCenter::Rapidity;
+
+    const std::vector<lowmc::ChargedParticle> particles =
+        slowForwardPionPair();
+    const lowmc::ShapeUnweightingResult pseudorapidity =
+        lowmc::generateShapeUnweightedPhotonCandidates(
+            particles, pseudorapidityConfig);
+    const lowmc::ShapeUnweightingResult rapidity =
+        lowmc::generateShapeUnweightedPhotonCandidates(
+            particles, rapidityConfig);
+
+    require(
+        pseudorapidity.envelope.chargedParticleEtaCenter ==
+            lowmc::ChargedParticleEtaCenter::Pseudorapidity,
+        "shape unweighting should keep pseudorapidity centers by default");
+    require(
+        rapidity.envelope.chargedParticleEtaCenter ==
+            lowmc::ChargedParticleEtaCenter::Rapidity,
+        "shape diagnostic should report true-rapidity centers");
+    require(
+        pseudorapidity.envelope.gridCellCount ==
+            rapidity.envelope.gridCellCount,
+        "center-only probe targeting should not change the adaptive grid");
+    require(
+        pseudorapidity.gridBuildKT == rapidity.gridBuildKT &&
+            pseudorapidity.chargeConservation.netCharge ==
+                rapidity.chargeConservation.netCharge,
+        "eta-center selection should not change physics inputs");
+
+    const lowmc::LowCurrent pseudorapidityCurrent(particles);
+    const lowmc::LowCurrent rapidityCurrent(particles);
+    for (int etaIndex = 0; etaIndex < 7; ++etaIndex) {
+        const double eta = -3.0 + static_cast<double>(etaIndex);
+        for (int phiIndex = 0; phiIndex < 8; ++phiIndex) {
+            const double phi =
+                2.0 * std::acos(-1.0) *
+                static_cast<double>(phiIndex) / 8.0;
+            const lowmc::FourVector photon =
+                lowmc::photonMomentumFromKTEtaPhi(
+                    pseudorapidity.gridBuildKT, eta, phi);
+            const double reference =
+                lowmc::lowPhotonDensity(
+                    pseudorapidityCurrent, photon);
+            requireNear(
+                lowmc::lowPhotonDensity(
+                    rapidityCurrent, photon),
+                reference,
+                0.0,
+                "eta-center mode must not enter the exact Low density");
+        }
+    }
+}
+
 void testShapeUnweightingTargetedBaseProbesFullProbeChargedCells() {
     lowmc::ShapeUnweightingConfig config = shapeUnweightingTestConfig(123);
     config.baseProbeBins = 1;
@@ -2618,6 +2707,7 @@ int main() {
     testWeightedEventGeneratorRejectsInvalidInputs();
     testShapeUnweightingReturnsDiagnosticsAndUnitWeightCandidates();
     testShapeUnweightingAnalyticBoundAuditIsNonMutatingAndSafe();
+    testShapeUnweightingTrueRapidityCentersAreDiagnosticOnly();
     testShapeUnweightingTargetedBaseProbesFullProbeChargedCells();
     testShapeUnweightingReducedVsFullProbeAuditReportsUnderBoundedCells();
     testShapeUnweightingCompensatesOnlyReducedBaseProbeCells();

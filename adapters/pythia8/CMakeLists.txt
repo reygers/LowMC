@@ -411,7 +411,24 @@ set_tests_properties(
     lowmc_pythia8_analytic_bound_audit_smoke
     PROPERTIES
         PASS_REGULAR_EXPRESSION
-            "analytic_bound_audit_status=ok mode=ee-hadrons seed=12345 events=1"
+            "analytic_bound_audit_status=ok mode=ee-hadrons seed=12345 eta_center=pseudorapidity events=1"
+)
+
+add_test(
+    NAME lowmc_pythia8_true_rapidity_center_smoke
+    COMMAND lowmc_pythia8_analytic_bound_audit
+            ${CMAKE_CURRENT_BINARY_DIR}/pythia8_true_rapidity_center_smoke.csv
+            --events 1
+            --trials 64
+            --calibration-trials 16
+            --seed 12345
+            --true-rapidity-centers
+)
+set_tests_properties(
+    lowmc_pythia8_true_rapidity_center_smoke
+    PROPERTIES
+        PASS_REGULAR_EXPRESSION
+            "analytic_bound_audit_status=ok mode=ee-hadrons seed=12345 eta_center=rapidity events=1"
 )
 
 if(Python3_Interpreter_FOUND)

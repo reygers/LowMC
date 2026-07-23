@@ -143,6 +143,37 @@ python3 scripts/summarize_analytic_bound_audit.py \
 This is a certification and tightness diagnostic only. Even a zero-violation
 result does not make the analytic bound the active rejection envelope.
 
+To run a paired charged-particle eta-center comparison, execute the same event
+block twice:
+
+```sh
+./build-pythia8/adapters/pythia8/lowmc_pythia8_analytic_bound_audit \
+  build-pythia8/rapidity_center_ee-hadrons_57911_pseudo.csv \
+  --mode ee-hadrons --events 5 --trials 10000 \
+  --calibration-trials 1000 --seed 57911 \
+  --skip-analytic-bound-audit
+
+./build-pythia8/adapters/pythia8/lowmc_pythia8_analytic_bound_audit \
+  build-pythia8/rapidity_center_ee-hadrons_57911_rapid.csv \
+  --mode ee-hadrons --events 5 --trials 10000 \
+  --calibration-trials 1000 --seed 57911 \
+  --skip-analytic-bound-audit --true-rapidity-centers
+```
+
+Summarize paired hadronic-Z and SoftQCD files with:
+
+```sh
+python3 scripts/summarize_rapidity_center_audit.py \
+  build-pythia8/rapidity_center_ee-hadrons_*.csv \
+  build-pythia8/rapidity_center_softqcd_*.csv \
+  --pairs build-pythia8/rapidity_center_pairs.csv \
+  --summary build-pythia8/rapidity_center_summary.csv \
+  --plot build-pythia8/rapidity_center_audit.png
+```
+
+The switch changes only charged-direction targeting; it does not modify the
+physical Low density.
+
 ### macOS Pythia8 Troubleshooting
 
 If the Pythia8 tests segfault very early, including in simple operations such

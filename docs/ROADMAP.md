@@ -421,6 +421,13 @@ margin on realistic multi-particle events. LowMC should therefore:
   positive decomposition or cancellation-aware bound is found; and
 - evaluate true-rapidity proposal centers separately from the bound result.
 
+The separate eta-center study is complete. True rapidity is exact for the
+single-leg denominator, but it does not improve the current grid/envelope
+construction: hadronic Z is unchanged and SoftQCD becomes modestly more
+conservative. Pseudorapidity remains the default. This closes the center-only
+variation; it should be revisited only together with a redesigned local safety
+or analytic proposal policy.
+
 ## Milestone 5: Extensions
 
 Potential future work:

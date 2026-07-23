@@ -32,6 +32,8 @@ struct Options {
     lowmc::ShapeUnweightingProbeRule probeRule = lowmc::ShapeUnweightingProbeRule::Interior;
     lowmc::ShapeUnweightingProbePolicy probePolicy = lowmc::ShapeUnweightingProbePolicy::Fixed;
     bool analyticBoundAudit = false;
+    lowmc::ChargedParticleEtaCenter chargedParticleEtaCenter =
+        lowmc::ChargedParticleEtaCenter::Pseudorapidity;
     int boostedProbeBins = 21;
     double boostedCellSafetyFactor = 20.0;
     double boostedCellNeighborScale = 1.0;
@@ -71,6 +73,7 @@ void printUsage(std::ostream& out, const char* programName) {
         << "  --probe-rule RULE        Probe rule: interior or edge (default: interior)\n"
         << "  --probe-policy POLICY    Probe policy: fixed or boosted-cells (default: fixed)\n"
         << "  --analytic-bound-audit   Audit closed-form global/cell bounds without using them\n"
+        << "  --true-rapidity-centers  Use true rapidity for charged-direction targeting\n"
         << "  --boosted-probe-bins N   Dense probe bins for promoted cells (default: 21)\n"
         << "  --boosted-safety-factor X  Safety factor for promoted cells (default: 20)\n"
         << "  --boosted-neighbor-scale X  Charged-direction cell-neighborhood scale (default: 1)\n"
@@ -295,6 +298,11 @@ Options parseOptions(int argc, char** argv) {
         }
         if (argument == "--analytic-bound-audit") {
             options.analyticBoundAudit = true;
+            continue;
+        }
+        if (argument == "--true-rapidity-centers") {
+            options.chargedParticleEtaCenter =
+                lowmc::ChargedParticleEtaCenter::Rapidity;
             continue;
         }
         if (argument == "--boosted-probe-bins") {
@@ -523,6 +531,8 @@ int main(int argc, char** argv) {
         config.probeRule = options.probeRule;
         config.probePolicy = options.probePolicy;
         config.auditAnalyticBounds = options.analyticBoundAudit;
+        config.chargedParticleEtaCenter =
+            options.chargedParticleEtaCenter;
         config.boostedProbeBins = options.boostedProbeBins;
         config.boostedCellSafetyFactor = options.boostedCellSafetyFactor;
         config.boostedCellNeighborScale = options.boostedCellNeighborScale;
@@ -600,6 +610,11 @@ int main(int argc, char** argv) {
                   << " boosted_probe_bins=" << result.envelope.boostedProbeBins
                   << " probe_rule=" << probeRuleName(result.envelope.probeRule)
                   << " probe_policy=" << probePolicyName(result.envelope.probePolicy)
+                  << " charged_particle_eta_center="
+                  << (result.envelope.chargedParticleEtaCenter ==
+                              lowmc::ChargedParticleEtaCenter::Rapidity
+                          ? "rapidity"
+                          : "pseudorapidity")
                   << " topology=" << (options.particlesPath.empty() ? options.topology : "particles")
                   << " particle_file="
                   << (options.particlesPath.empty() ? "none" : options.particlesPath)

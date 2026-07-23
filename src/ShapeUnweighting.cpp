@@ -120,14 +120,34 @@ struct ProbePlan {
 [[nodiscard]] bool chargedParticleEtaPhi(
     const ChargedParticle& particle,
     const PhotonPhaseSpace& phaseSpace,
+    ChargedParticleEtaCenter etaCenter,
     double& eta,
     double& phi) {
     const double pT =
         std::hypot(particle.momentum.px, particle.momentum.py);
-    if (!(pT > 0.0) || !std::isfinite(pT)) {
+    if (!std::isfinite(pT)) {
         return false;
     }
-    eta = std::asinh(particle.momentum.pz / pT);
+    if (etaCenter == ChargedParticleEtaCenter::Rapidity) {
+        const double massSquared =
+            particle.momentum.mass2();
+        if (!std::isfinite(massSquared)) {
+            return false;
+        }
+        const double transverseMass =
+            std::hypot(pT, std::sqrt(std::max(0.0, massSquared)));
+        if (!(transverseMass > 0.0) ||
+            !std::isfinite(transverseMass)) {
+            return false;
+        }
+        eta =
+            std::asinh(particle.momentum.pz / transverseMass);
+    } else {
+        if (!(pT > 0.0)) {
+            return false;
+        }
+        eta = std::asinh(particle.momentum.pz / pT);
+    }
     phi = wrapPhiIntoRange(std::atan2(particle.momentum.py, particle.momentum.px), phaseSpace);
     return std::isfinite(eta) && std::isfinite(phi);
 }
@@ -163,11 +183,13 @@ struct ProbePlan {
     const GridAdaptiveEtaPhiCell& cell,
     const std::vector<ChargedParticle>& selectedParticles,
     const PhotonPhaseSpace& phaseSpace,
+    ChargedParticleEtaCenter etaCenter,
     double neighborScale) {
     for (const ChargedParticle& particle : selectedParticles) {
         double eta = 0.0;
         double phi = 0.0;
-        if (!chargedParticleEtaPhi(particle, phaseSpace, eta, phi)) {
+        if (!chargedParticleEtaPhi(
+                particle, phaseSpace, etaCenter, eta, phi)) {
             continue;
         }
         if (eta < phaseSpace.etaMin || eta > phaseSpace.etaMax ||
@@ -194,7 +216,12 @@ struct ProbePlan {
     for (const ChargedParticle& particle : selectedParticles) {
         double eta = 0.0;
         double phi = 0.0;
-        if (!chargedParticleEtaPhi(particle, phaseSpace, eta, phi)) {
+        if (!chargedParticleEtaPhi(
+                particle,
+                phaseSpace,
+                config.chargedParticleEtaCenter,
+                eta,
+                phi)) {
             continue;
         }
         if (eta < phaseSpace.etaMin || eta > phaseSpace.etaMax ||
@@ -259,6 +286,7 @@ void refineGridNearChargedParticles(
     double kT,
     int refinementLevels,
     double neighborScale,
+    ChargedParticleEtaCenter etaCenter,
     GridAdaptiveEtaPhiProposal& proposal) {
     if (refinementLevels <= 0) {
         return;
@@ -269,7 +297,12 @@ void refineGridNearChargedParticles(
         for (const ChargedParticle& particle : selectedParticles) {
             double eta = 0.0;
             double phi = 0.0;
-            if (!chargedParticleEtaPhi(particle, proposal.phaseSpace, eta, phi)) {
+            if (!chargedParticleEtaPhi(
+                    particle,
+                    proposal.phaseSpace,
+                    etaCenter,
+                    eta,
+                    phi)) {
                 continue;
             }
             if (eta < proposal.phaseSpace.etaMin || eta > proposal.phaseSpace.etaMax ||
@@ -709,7 +742,12 @@ void refineGridNearChargedParticles(
         for (const ChargedParticle& particle : selectedParticles) {
             double eta = 0.0;
             double phi = 0.0;
-            if (!chargedParticleEtaPhi(particle, phaseSpace, eta, phi)) {
+            if (!chargedParticleEtaPhi(
+                    particle,
+                    phaseSpace,
+                    config.chargedParticleEtaCenter,
+                    eta,
+                    phi)) {
                 continue;
             }
             if (eta < phaseSpace.etaMin || eta > phaseSpace.etaMax ||
@@ -884,6 +922,8 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
     result.envelope.boostedProbeBins = config.boostedProbeBins;
     result.envelope.probeRule = config.probeRule;
     result.envelope.probePolicy = config.probePolicy;
+    result.envelope.chargedParticleEtaCenter =
+        config.chargedParticleEtaCenter;
 
     if (config.trials == 0) {
         result.status = ShapeUnweightingStatus::NoTrials;
@@ -903,6 +943,7 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
         result.gridBuildKT,
         config.targetedRefinementLevels,
         config.targetedRefinementNeighborScale,
+        config.chargedParticleEtaCenter,
         gridProposal);
     result.envelope.gridCellCount = gridProposal.cells.size();
     const PointCellIndex pointCellIndex = makePointCellIndex(gridProposal);
@@ -1009,6 +1050,7 @@ ShapeUnweightingResult generateShapeUnweightedPhotonCandidates(
                     cell,
                     selectedParticles,
                     config.phaseSpace,
+                    config.chargedParticleEtaCenter,
                     1.0);
             double calibrationOverBase = 0.0;
             if (base > 0.0 && std::isfinite(base) &&
@@ -1389,6 +1431,7 @@ ShapeUnweightingIndexConsistencyDiagnostic validateShapeUnweightingIndexConsiste
         gridBuildKT,
         config.targetedRefinementLevels,
         config.targetedRefinementNeighborScale,
+        config.chargedParticleEtaCenter,
         gridProposal);
     const PointCellIndex pointCellIndex = makePointCellIndex(gridProposal);
 

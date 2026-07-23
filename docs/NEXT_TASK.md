@@ -4,24 +4,21 @@ This file should contain exactly one immediate task for Codex or another coding
 agent. Broader plans belong in `docs/ROADMAP.md`; project state belongs in
 `docs/STATUS.md`.
 
-Measure the effect of true-rapidity rather than pseudorapidity proposal centers
-without changing the default sampler.
+Define a release-blocking validation matrix for the first public LowMC
+afterburner workflow.
 
 Requirements:
 
-- add an explicit diagnostic switch that changes only leg-centered proposal or
-  refinement centers from pseudorapidity to true rapidity
-- use the same generated event and random stream for paired A/B measurements
-  wherever possible
-- include controlled massive low-velocity fixtures where the two centers
-  visibly differ, ordinary relativistic fixtures, hadronic Z events, and
-  SoftQCD events
-- compare envelope integral, expected and observed acceptance, cell/probe
-  count, failure count, and runtime
-- verify that target densities and exact Low-current values are identical
-  between the two modes
-- state separately whether the change helps controlled nonrelativistic cases
-  and whether it matters for realistic selected particles
-- keep pseudorapidity as the default until the paired result justifies a change
-- do not alter the analytic-bound audit conclusion, reduced-probe policy,
-  physics density, event yield, multiplicity, or output semantics
+- inventory the existing core, weighted-sampling, yield, count-plus-shape,
+  HepMC3 round-trip, Pythia, DELPHI, PHOTOS, envelope, and performance tests
+- distinguish release-blocking correctness gates from scientific benchmarks
+  and optional stress diagnostics
+- identify stale or contradictory status statements about already implemented
+  Pythia, HepMC3, unweighting, and external-tool support
+- specify exact commands, optional dependencies, expected outcomes, and
+  acceptable failure criteria for a clean release candidate
+- keep DELPHI, PHOTOS, analytic-bound, and eta-center conclusions unchanged
+- do not tune physics cuts or sampling defaults as part of the inventory
+- produce one concise validation document and update the roadmap/status links
+- leave implementation of any newly discovered missing gate as a subsequent
+  task rather than expanding the inventory without a predeclared contract

@@ -587,3 +587,16 @@ events and `40.5` times for SoftQCD. The global bound was billions of times too
 large. LowMC therefore keeps the existing sampler and failure semantics. The
 cosh-cos inverse-CDF proposal is deferred; it should be reconsidered only with
 a materially tighter construction.
+
+### Keep pseudorapidity for charged-direction targeting
+
+True rapidity is the exact center of each massive-leg fixed-`kT` denominator,
+but it is not a better default for the present shape-unweighting algorithm.
+The grid is already constructed from exact Low intensities; the center
+convention affects only optional targeted refinement and boosted-cell probing.
+
+In a thirty-event paired Pythia audit, true rapidity changed the median
+hadronic-Z envelope by `+0.03%` and the SoftQCD envelope by `+1.77%`, with no
+failures in either convention. It also increased the median SoftQCD probe
+count. Keep pseudorapidity as the default and retain true rapidity as an
+explicit diagnostic option for future algorithm studies.

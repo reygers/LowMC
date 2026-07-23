@@ -13,6 +13,8 @@
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <utility>
+#include <vector>
 
 #ifndef LOWMC_PYTHIA8_XMLDOC
 #define LOWMC_PYTHIA8_XMLDOC "../share/Pythia8/xmldoc"
@@ -30,6 +32,9 @@ struct Options {
     std::uint64_t seed = 12345;
     std::uint64_t shapeSeed = 0;
     double eCM = 0.0;
+    bool auditAnalyticBounds = true;
+    lowmc::ChargedParticleEtaCenter etaCenter =
+        lowmc::ChargedParticleEtaCenter::Pseudorapidity;
 };
 
 void printUsage(std::ostream& output) {
@@ -43,6 +48,8 @@ void printUsage(std::ostream& output) {
         << "  --events N --first-event N\n"
         << "  --trials N --calibration-trials N\n"
         << "  --seed N --shape-seed N\n"
+        << "  --true-rapidity-centers\n"
+        << "  --skip-analytic-bound-audit\n"
         << "  --ecm GEV\n"
         << "  --help\n";
 }
@@ -140,6 +147,11 @@ Options parseOptions(int argc, char** argv) {
             options.shapeSeed = parseUInt64(
                 readOption(index, argc, argv, argument),
                 argument);
+        } else if (argument == "--true-rapidity-centers") {
+            options.etaCenter =
+                lowmc::ChargedParticleEtaCenter::Rapidity;
+        } else if (argument == "--skip-analytic-bound-audit") {
+            options.auditAnalyticBounds = false;
         } else if (argument == "--ecm") {
             options.eCM = parsePositiveDouble(
                 readOption(index, argc, argv, argument),
@@ -233,6 +245,46 @@ double maximumOutgoingBeta(
     return maximum;
 }
 
+std::pair<double, double> etaCenterDifferenceSummary(
+    const std::vector<lowmc::ChargedParticle>& particles) {
+    std::vector<double> differences;
+    differences.reserve(particles.size());
+    for (const lowmc::ChargedParticle& particle : particles) {
+        const double pT = std::hypot(
+            particle.momentum.px,
+            particle.momentum.py);
+        const double massSquared =
+            particle.momentum.mass2();
+        if (!(pT > 0.0) || !std::isfinite(pT) ||
+            !std::isfinite(massSquared)) {
+            continue;
+        }
+        const double transverseMass =
+            std::hypot(
+                pT,
+                std::sqrt(std::max(0.0, massSquared)));
+        const double pseudorapidity =
+            std::asinh(particle.momentum.pz / pT);
+        const double rapidity =
+            std::asinh(
+                particle.momentum.pz / transverseMass);
+        differences.push_back(
+            std::abs(pseudorapidity - rapidity));
+    }
+    if (differences.empty()) {
+        return {0.0, 0.0};
+    }
+    std::sort(differences.begin(), differences.end());
+    const std::size_t middle = differences.size() / 2;
+    const double median =
+        differences.size() % 2 == 0
+            ? 0.5 *
+                  (differences[middle - 1] +
+                   differences[middle])
+            : differences[middle];
+    return {median, differences.back()};
+}
+
 lowmc::ShapeUnweightingConfig makeShapeConfig(
     const Options& options,
     std::uint64_t eventSeed) {
@@ -252,8 +304,30 @@ lowmc::ShapeUnweightingConfig makeShapeConfig(
         lowmc::ShapeUnweightingProbePolicy::BoostedCells;
     config.failurePolicy =
         lowmc::EnvelopeFailurePolicy::Diagnostic;
-    config.auditAnalyticBounds = true;
+    config.auditAnalyticBounds = options.auditAnalyticBounds;
+    config.chargedParticleEtaCenter = options.etaCenter;
     return config;
+}
+
+const char* etaCenterName(
+    lowmc::ChargedParticleEtaCenter etaCenter) {
+    return etaCenter ==
+                   lowmc::ChargedParticleEtaCenter::Rapidity
+               ? "rapidity"
+               : "pseudorapidity";
+}
+
+double totalMeasuredSeconds(
+    const lowmc::ShapeUnweightingEnvelopeDiagnostics& envelope) {
+    return envelope.gridSeconds +
+           envelope.baseProbeSeconds +
+           envelope.calibrationSeconds +
+           envelope.probePlanSeconds +
+           envelope.boostedProbeSeconds +
+           envelope.envelopeBuildSeconds +
+           envelope.trialSeconds +
+           envelope.finalizationSeconds +
+           envelope.analyticBoundSeconds;
 }
 
 void writeRow(
@@ -265,19 +339,28 @@ void writeRow(
     const lowmc::ShapeUnweightingResult& result) {
     const lowmc::ShapeUnweightingEnvelopeDiagnostics& envelope =
         result.envelope;
+    const auto etaDifferences =
+        etaCenterDifferenceSummary(selection.selectedParticles);
     output
         << options.mode << ','
         << options.seed << ','
         << eventIndex << ','
         << eventSeed << ','
+        << etaCenterName(options.etaCenter) << ','
         << selection.selectedParticles.size() << ','
         << selection.diagnostic.selectedIncomingCharged << ','
         << selection.diagnostic.selectedOutgoingCharged << ','
         << maximumOutgoingBeta(selection.selectedParticles) << ','
+        << etaDifferences.first << ','
+        << etaDifferences.second << ','
         << statusName(result.status) << ','
         << envelope.gridCellCount << ','
+        << envelope.probeEvaluations << ','
+        << envelope.promotedCellCount << ','
         << envelope.envelopeIntegral << ','
         << envelope.expectedAcceptanceEfficiency << ','
+        << envelope.observedAcceptanceEfficiency << ','
+        << envelope.acceptedCount << ','
         << envelope.maxTrialBoundRatio << ','
         << envelope.failedEnvelopeCount << ','
         << (envelope.analyticBoundAvailable ? 1 : 0) << ','
@@ -297,7 +380,8 @@ void writeRow(
         << envelope.baseProbeSeconds << ','
         << envelope.calibrationSeconds << ','
         << envelope.boostedProbeSeconds << ','
-        << envelope.trialSeconds << '\n';
+        << envelope.trialSeconds << ','
+        << totalMeasuredSeconds(envelope) << '\n';
 }
 
 }  // namespace
@@ -312,10 +396,14 @@ int main(int argc, char** argv) {
                 options.outputPath);
         }
         output
-            << "mode,seed,event_index,shape_seed,selected_charged,"
+            << "mode,seed,event_index,shape_seed,eta_center,selected_charged,"
                "selected_incoming,selected_outgoing,max_outgoing_beta,"
-               "status,grid_cells,current_envelope_integral,"
-               "current_expected_acceptance,max_trial_bound_ratio,"
+               "median_abs_eta_center_difference,"
+               "max_abs_eta_center_difference,"
+               "status,grid_cells,probe_evaluations,promoted_cells,"
+               "current_envelope_integral,current_expected_acceptance,"
+               "current_observed_acceptance,current_accepted_count,"
+               "max_trial_bound_ratio,"
                "current_envelope_failures,analytic_bound_available,"
                "analytic_invalid_particles,analytic_fallback_cells,"
                "analytic_observed_violations,analytic_trial_violations,"
@@ -327,7 +415,7 @@ int main(int argc, char** argv) {
                "analytic_max_trial_over_bound,"
                "analytic_pair_evaluations,analytic_seconds,"
                "grid_seconds,base_probe_seconds,calibration_seconds,"
-               "boosted_probe_seconds,trial_seconds\n";
+               "boosted_probe_seconds,trial_seconds,total_measured_seconds\n";
         output << std::setprecision(17);
 
         Pythia8::Pythia pythia(
@@ -386,6 +474,7 @@ int main(int argc, char** argv) {
             << "analytic_bound_audit_status=ok"
             << " mode=" << options.mode
             << " seed=" << options.seed
+            << " eta_center=" << etaCenterName(options.etaCenter)
             << " events=" << analyzedEvents
             << " output=" << options.outputPath
             << '\n';

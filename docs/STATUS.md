@@ -2085,6 +2085,23 @@ construction is therefore retained for auditing or possible future cell
 certification, not as a standalone sampler. Detailed criteria and results are
 in `docs/ANALYTIC_BOUND_AUDIT_PLAN.md`.
 
+## Charged-Particle Eta-Center Audit
+
+A diagnostic-only `chargedParticleEtaCenter` option now selects
+pseudorapidity or true rapidity for charged-direction refinement and
+boosted-cell targeting. It does not enter the exact Low current or target
+density, and pseudorapidity remains the default.
+
+The controlled slow-pion study shows that true rapidity identifies the exact
+massive-leg peak but enlarges the current conservative boosted-cell envelope
+by about `9.9%`; explicit local refinement changes by only `0.02%`. Ordinary
+relativistic pions are numerically unchanged. In thirty paired Pythia events,
+the median true/pseudorapidity envelope ratio is `1.00031` for hadronic Z and
+`1.01765` for SoftQCD, with zero failures in both modes. The SoftQCD
+true-rapidity mode also adds a median `6174` probe evaluations and `14`
+promoted cells. The study therefore does not justify changing the default.
+Full results are in `docs/RAPIDITY_CENTER_AUDIT.md`.
+
 ## Open Questions
 
 - Is a no-incoming-particle LowMC afterburner vertex the best HepMC3 topology

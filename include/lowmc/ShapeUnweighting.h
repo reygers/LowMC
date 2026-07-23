@@ -21,6 +21,11 @@ enum class ShapeUnweightingProbePolicy {
     BoostedCells,
 };
 
+enum class ChargedParticleEtaCenter {
+    Pseudorapidity,
+    Rapidity,
+};
+
 enum class EnvelopeFailurePolicy {
     Strict,
     Diagnostic,
@@ -59,6 +64,8 @@ struct ShapeUnweightingConfig {
     double safetyFactor = 3.0;
     EnvelopeFailurePolicy failurePolicy = EnvelopeFailurePolicy::Strict;
     bool auditAnalyticBounds = false;
+    ChargedParticleEtaCenter chargedParticleEtaCenter =
+        ChargedParticleEtaCenter::Pseudorapidity;
 };
 
 struct ShapeUnweightedPhotonCandidate {
@@ -156,6 +163,8 @@ struct ShapeUnweightingEnvelopeDiagnostics {
     int boostedProbeBins = 0;
     ShapeUnweightingProbeRule probeRule = ShapeUnweightingProbeRule::Interior;
     ShapeUnweightingProbePolicy probePolicy = ShapeUnweightingProbePolicy::Fixed;
+    ChargedParticleEtaCenter chargedParticleEtaCenter =
+        ChargedParticleEtaCenter::Pseudorapidity;
 };
 
 struct ShapeUnweightingResult {

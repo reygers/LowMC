@@ -1245,6 +1245,15 @@ times larger. These fail the predeclared tightness gates. The analytic bounds
 remain audit-only; the current envelope, reduced-probe settings, and failure
 policies are unchanged, and the cosh-cos inverse-CDF proposal is deferred.
 
+The separate charged-particle eta-center A/B study is recorded in
+`docs/RAPIDITY_CENTER_AUDIT.md`. The adaptive grid itself uses exact Low
+intensities and is not centered on particle pseudorapidities. True rapidity
+therefore changes only charged-direction targeting for optional refinement and
+boosted-cell probing. In thirty paired Pythia events it leaves the hadronic-Z
+envelope effectively unchanged and enlarges the SoftQCD envelope by `1.77%` at
+the median. Pseudorapidity remains the default; true rapidity is available as
+a diagnostic center convention.
+
 ## Eta-Phi Sampling
 
 At fixed `k_T`, the main sampling problem is the two-dimensional distribution in

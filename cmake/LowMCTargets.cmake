@@ -635,6 +635,26 @@ set_tests_properties(
 )
 
 add_test(
+    NAME lowmc_shape_unweighting_true_rapidity_center_smoke
+    COMMAND lowmc_shape_unweighting_diagnostic
+            --trials 16
+            --calibration-trials 16
+            --safety-factor 100
+            --probe-bins 2
+            --probe-policy boosted-cells
+            --seed 12345
+            --momentum 0.1
+            --particle-eta 2
+            --true-rapidity-centers
+)
+set_tests_properties(
+    lowmc_shape_unweighting_true_rapidity_center_smoke
+    PROPERTIES
+        PASS_REGULAR_EXPRESSION
+            "status=ok.*charged_particle_eta_center=rapidity"
+)
+
+add_test(
     NAME lowmc_shape_unweighting_analytic_bound_audit_smoke
     COMMAND lowmc_shape_unweighting_diagnostic
             --trials 16
