@@ -323,6 +323,27 @@ set_tests_properties(
             "aggregate_status=ok accepted_events=1"
 )
 
+if(Python3_Interpreter_FOUND)
+    add_test(
+        NAME lowmc_pythia8_delphi_hadronic_summary_smoke
+        COMMAND ${Python3_EXECUTABLE}
+                ${CMAKE_SOURCE_DIR}/scripts/summarize_delphi_hadronic_benchmark.py
+                ${CMAKE_CURRENT_BINARY_DIR}/pythia8_delphi_hadronic_smoke.csv
+                --summary
+                ${CMAKE_CURRENT_BINARY_DIR}/pythia8_delphi_hadronic_smoke_summary.csv
+                --joint-inputs
+                ${CMAKE_CURRENT_BINARY_DIR}/pythia8_delphi_hadronic_smoke_joint.csv
+                --theta-summary
+                ${CMAKE_CURRENT_BINARY_DIR}/pythia8_delphi_hadronic_smoke_theta_summary.csv
+    )
+    set_tests_properties(
+        lowmc_pythia8_delphi_hadronic_summary_smoke
+        PROPERTIES
+            DEPENDS lowmc_pythia8_delphi_hadronic_benchmark_smoke
+            PASS_REGULAR_EXPRESSION "theta_events=1 theta_jets="
+    )
+endif()
+
 set_tests_properties(
     lowmc_pythia8_weighted_photon_diagnostic_softqcd
     PROPERTIES

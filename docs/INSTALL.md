@@ -196,21 +196,27 @@ cmake --build build-pythia8 \
 ```
 
 Aggregate event-level uncertainties and make the unscaled comparison to
-DELPHI Table 4 with:
+DELPHI Table 4 and Figure 4b with:
 
 ```sh
 MPLCONFIGDIR=build-pythia8/matplotlib \
 python3 scripts/summarize_delphi_hadronic_benchmark.py \
   build-pythia8/delphi_hadronic_seed24680.csv \
   --summary build-pythia8/delphi_hadronic_summary.csv \
-  --plot build-pythia8/delphi_hadronic.png
+  --plot build-pythia8/delphi_hadronic.png \
+  --joint-inputs build-pythia8/delphi_hadronic_seed24680_joint.csv \
+  --theta-summary build-pythia8/delphi_hadronic_theta_summary.csv \
+  --theta-plot build-pythia8/delphi_hadronic_theta.png
 ```
 
 Multiple independent input CSVs may be passed to the summarizer. It treats
 Pythia events as the statistical units, uses a delete-one jackknife for the
 per-accepted-jet ratio, and reports the LowMC photon-integration error
-separately. The diagnostic does not emit photons or modify production
-defaults.
+separately. The benchmark executable automatically creates the sibling
+`_joint.csv`; use `--joint-output` to select another path. The Figure 4b
+reference is vector-digitized and has no published covariance, so the angular
+comparison is not assigned a chi-square. The diagnostic does not emit photons
+or modify production defaults.
 
 ## PHOTOS Benchmark
 

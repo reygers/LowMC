@@ -305,6 +305,15 @@ jackknife uncertainty is `0.00159 photons/jet`, so the pilot central value
 `0.017079`. The next gate is the predeclared three-seed nominal production
 block; PHOTOS and reduced-probe work remain separate.
 
+The diagnostic now also records the joint `pT`-versus-`theta_gamma`
+distribution needed for DELPHI Figure 4b. The `20`-event pilot gives
+`LowMC/direct = 1.0071` for the angular projection and a `3.1%` normalized
+shape L1 distance from the vector-digitized DELPHI `Brems` curve. Its absolute
+normalization is `12.4%` high, consistent with the `12.2%` Table 4 offset and
+with the pilot's event uncertainty. Since the paper does not tabulate angular
+errors, this remains a secondary graphical cross-check rather than a separate
+fit criterion.
+
 ### PHOTOS Soft-Decay Benchmark
 
 Add a direct `Z -> mu+ mu-` comparison with PHOTOS as the first external

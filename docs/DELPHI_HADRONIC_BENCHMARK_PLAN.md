@@ -21,6 +21,10 @@ Primary reference:
 
 The machine-readable Table 4 values are stored in
 `fixtures/reference/delphi_hadronic_bremsstrahlung_table4.csv`.
+The Figure 4b angular `Brems` markers are not tabulated in the paper. Their
+vector-digitized values are stored separately in
+`fixtures/reference/delphi_hadronic_bremsstrahlung_figure4b_theta_digitized.csv`
+and must be labelled as digitized whenever they are shown.
 
 ## Published Target
 
@@ -52,6 +56,20 @@ The much smaller `0.340e-3 photons / jet` number is the prediction after
 convolution with DELPHI's conversion and reconstruction efficiency. LowMC
 should first compare with the efficiency-corrected `17.10e-3` value; detector
 efficiency convolution is a separate task.
+
+Figure 4b provides a complementary angular projection in `25` bins of
+`16 mrad` from `theta_gamma = 0` to `0.4 rad`. Its digitized `Brems` markers
+sum to `31.663e-3 photons/jet`, demonstrating that this is the general
+angular projection, not the `pT < 80 MeV` subset used for the Table 4
+integral. The paired diagnostic therefore records a joint histogram with
+`8 MeV` pT bins out to `0.4 GeV` and `16 mrad` angular bins. Table 4 is the
+projection of its first ten pT bins; Figure 4b is the projection over all
+fifty stored pT bins. The code checks both projections against independently
+accumulated one-dimensional arrays on every event.
+
+The angular plot has no tabulated bin uncertainties or covariance matrix.
+It is consequently a shape and normalization cross-check, not an additional
+chi-square validation gate.
 
 ## Published Event and Jet Definition
 
@@ -172,7 +190,9 @@ This stage is implemented by
 `lowmc_pythia8_delphi_hadronic_benchmark`. The executable writes one row per
 accepted event and `pT` bin, including both estimates, the photon-sampling
 uncertainty, the number of accepted jets, grid diagnostics, and timings. It
-does not emit photons or change any LowMC default.
+also writes a sibling `_joint.csv` containing the event-level
+`pT`-versus-`theta_gamma` histogram. It does not emit photons or change any
+LowMC default.
 
 The fixed-seed pilot with `20` accepted events and `47` accepted jets gives:
 
@@ -197,6 +217,30 @@ direct and sampled calculations use the same complete event current and agree
 without an arbitrary normalization factor. The first direct-integration
 coarse/fine comparison is weakest in the second bin (`4.25%`), but the fine
 direct value agrees with the independent LowMC estimate there to `0.42%`.
+
+For the angular projection, the same `20`-event pilot gives:
+
+```text
+direct Low integral       0.0355813 +/- 0.00266 photons / jet
+weighted LowMC sampling   0.0358333 photons / jet
+LowMC / direct            1.00708
+DELPHI Figure 4b sum      0.0316626 photons / jet (digitized)
+direct / DELPHI           1.12376
+normalized-shape L1       0.0313
+```
+
+The angular normalization offset is therefore essentially the same as the
+Table 4 offset, while the normalized shapes differ by only `3.1%` in L1
+distance. The last two angular bins have large event fluctuations in this
+small sample and should not be interpreted separately.
+
+Because `16 mrad` bins are more demanding for deterministic quadrature, a
+separate three-event convergence run used `64` log-energy bins, a `40 x 64`
+base angular grid, four refinement levels, four sub-bins, and one million
+weighted samples per event. It gives `LowMC/direct = 0.99892` for the full
+angular projection and `0.99774` for the Table 4 projection. This clears the
+angular implementation check without making the expensive high-resolution
+quadrature the production estimator.
 
 ### Stage B: Published bremsstrahlung benchmark
 
@@ -223,6 +267,13 @@ grid, three refinement levels, and two sub-bins) and `100000` independent
 weighted LowMC draws per event. The pilot indicates that this reduces the
 event-statistical uncertainty on the combined total to roughly one percent
 while keeping the independent sampling uncertainty subdominant.
+
+For the new angular projection, weighted LowMC is the production estimator.
+Retain the existing medium-resolution direct calculation in the nominal
+files, and additionally run the high-resolution settings above on the first
+ten accepted events of each seed as a bounded numerical cross-check. Do not
+increase the full production cost by applying that quadrature to all `1500`
+events.
 
 After the nominal block, repeat bounded truth-level electron-veto and jet
 algorithm variations. Report event and accepted-jet statistics separately

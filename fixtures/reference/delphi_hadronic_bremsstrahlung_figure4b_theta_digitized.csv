@@ -1,0 +1,26 @@
+theta_min_rad,theta_max_rad,bremsstrahlung_per_jet,source
+0.000,0.016,0.000386484,Figure 4b vector-digitized
+0.016,0.032,0.001045631,Figure 4b vector-digitized
+0.032,0.048,0.001454709,Figure 4b vector-digitized
+0.048,0.064,0.001659248,Figure 4b vector-digitized
+0.064,0.080,0.001727371,Figure 4b vector-digitized
+0.080,0.096,0.001727371,Figure 4b vector-digitized
+0.096,0.112,0.001682013,Figure 4b vector-digitized
+0.112,0.128,0.001636314,Figure 4b vector-digitized
+0.128,0.144,0.001568361,Figure 4b vector-digitized
+0.144,0.160,0.001500238,Figure 4b vector-digitized
+0.160,0.176,0.001431945,Figure 4b vector-digitized
+0.176,0.192,0.001386416,Figure 4b vector-digitized
+0.192,0.208,0.001318463,Figure 4b vector-digitized
+0.208,0.224,0.001272934,Figure 4b vector-digitized
+0.224,0.240,0.001227406,Figure 4b vector-digitized
+0.240,0.256,0.001204641,Figure 4b vector-digitized
+0.256,0.272,0.001159282,Figure 4b vector-digitized
+0.272,0.288,0.001113754,Figure 4b vector-digitized
+0.288,0.304,0.001091159,Figure 4b vector-digitized
+0.304,0.320,0.001068395,Figure 4b vector-digitized
+0.320,0.336,0.001045631,Figure 4b vector-digitized
+0.336,0.352,0.001022866,Figure 4b vector-digitized
+0.352,0.368,0.001000102,Figure 4b vector-digitized
+0.368,0.384,0.000977338,Figure 4b vector-digitized
+0.384,0.400,0.000954573,Figure 4b vector-digitized

@@ -76,13 +76,18 @@ MPLCONFIGDIR=build-pythia8/matplotlib \
 python3 scripts/summarize_delphi_hadronic_benchmark.py \
   build-pythia8/delphi_hadronic_seed*.csv \
   --summary build-pythia8/delphi_hadronic_summary.csv \
-  --plot build-pythia8/delphi_hadronic.png
+  --plot build-pythia8/delphi_hadronic.png \
+  --joint-inputs build-pythia8/delphi_hadronic_seed*_joint.csv \
+  --theta-summary build-pythia8/delphi_hadronic_theta_summary.csv \
+  --theta-plot build-pythia8/delphi_hadronic_theta.png
 ```
 
 The summary keeps event-to-event jackknife uncertainty separate from the
 conditional LowMC photon-integration uncertainty. Its diagonal chi-square is
 a compact diagnostic only because DELPHI and generator-event correlations are
-not available.
+not available. The angular reference consists of vector-digitized Figure 4b
+markers; it is used for an unscaled shape and normalization cross-check, not a
+formal chi-square.
 
 ## Direction and acceptance examples
 

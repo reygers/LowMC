@@ -27,14 +27,20 @@ namespace {
 using Clock = std::chrono::steady_clock;
 
 constexpr int BinCount = 10;
+constexpr int JointPtBinCount = 50;
+constexpr int ThetaBinCount = 25;
+constexpr int JointBinCount = JointPtBinCount * ThetaBinCount;
 constexpr double EnergyMin = 0.2;
 constexpr double EnergyMax = 1.0;
 constexpr double PtBinWidth = 0.008;
 constexpr double PtMax = BinCount * PtBinWidth;
+constexpr double JointPtMax = JointPtBinCount * PtBinWidth;
 constexpr double JetAngleMax = 0.4;
+constexpr double ThetaBinWidth = JetAngleMax / ThetaBinCount;
 
 struct Options {
     std::string outputPath = "pythia8_delphi_hadronic_benchmark.csv";
+    std::string jointOutputPath;
     int events = 2;
     int firstEvent = 0;
     int mcSamples = 200000;
@@ -59,6 +65,10 @@ struct JetAxis {
 struct BinEstimate {
     std::array<double, BinCount> yield{};
     std::array<double, BinCount> standardError{};
+    std::array<double, JointBinCount> jointYield{};
+    std::array<double, JointBinCount> jointStandardError{};
+    std::array<double, ThetaBinCount> thetaYield{};
+    std::array<double, ThetaBinCount> thetaStandardError{};
     double totalStandardError = 0.0;
     int evaluations = 0;
     int gridCells = 0;
@@ -78,13 +88,15 @@ void printUsage(std::ostream& output) {
         << "Usage: lowmc_pythia8_delphi_hadronic_benchmark [output.csv] [options]\n\n"
         << "Compare direct bin integration and weighted LowMC sampling for the\n"
         << "DELPHI Figure 4d inner-bremsstrahlung phase space on identical\n"
-        << "Pythia hadronic-Z events. This diagnostic does not emit photons.\n\n"
+        << "Pythia hadronic-Z events. A joint pT-theta CSV also supports the\n"
+        << "Figure 4b angular projection. This diagnostic does not emit photons.\n\n"
         << "Primary fixed cuts:\n"
         << "  0.2 < E_gamma < 1 GeV, theta_beam in [20,160] deg,\n"
         << "  theta_gamma_jet < 0.4 rad, pT_gamma_jet < 80 MeV,\n"
         << "  ten 8 MeV pT bins, normalized per accepted jet.\n\n"
         << "Options:\n"
         << "  --events N --first-event N\n"
+        << "  --joint-output PATH\n"
         << "  --mc-samples N\n"
         << "  --direct-loge-bins N\n"
         << "  --direct-eta-bins N --direct-phi-bins N\n"
@@ -150,6 +162,9 @@ Options parseOptions(int argc, char** argv) {
         } else if (argument == "--first-event") {
             options.firstEvent = parseInteger(
                 readOption(index, argc, argv, argument), argument, true);
+        } else if (argument == "--joint-output") {
+            options.jointOutputPath =
+                readOption(index, argc, argv, argument);
         } else if (argument == "--mc-samples") {
             options.mcSamples = parseInteger(
                 readOption(index, argc, argv, argument), argument, false);
@@ -186,6 +201,21 @@ Options parseOptions(int argc, char** argv) {
         } else {
             options.outputPath = argument;
             outputSpecified = true;
+        }
+    }
+    if (options.jointOutputPath.empty()) {
+        const std::string suffix = ".csv";
+        if (options.outputPath.size() >= suffix.size() &&
+            options.outputPath.compare(
+                options.outputPath.size() - suffix.size(),
+                suffix.size(),
+                suffix) == 0) {
+            options.jointOutputPath =
+                options.outputPath.substr(
+                    0, options.outputPath.size() - suffix.size()) +
+                "_joint.csv";
+        } else {
+            options.jointOutputPath = options.outputPath + "_joint.csv";
         }
     }
     return options;
@@ -319,19 +349,40 @@ double closestJetCosine(
     return std::clamp(result, -1.0, 1.0);
 }
 
-int ptBin(double energy, double closestCosine) {
+struct PhotonBins {
+    int primaryPt = -1;
+    int jointPt = -1;
+    int theta = -1;
+    int joint = -1;
+};
+
+PhotonBins photonBins(double energy, double closestCosine) {
+    PhotonBins result;
     if (closestCosine <= std::cos(JetAngleMax)) {
-        return -1;
+        return result;
     }
+    const double theta =
+        std::acos(std::clamp(closestCosine, -1.0, 1.0));
     const double sine =
         std::sqrt(std::max(0.0, 1.0 - closestCosine * closestCosine));
     const double pt = energy * sine;
-    if (!(pt >= 0.0 && pt < PtMax)) {
-        return -1;
+    if (!(pt >= 0.0 && pt < JointPtMax) ||
+        !(theta >= 0.0 && theta < JetAngleMax)) {
+        return result;
     }
-    return std::min(
-        BinCount - 1,
+    result.jointPt = std::min(
+        JointPtBinCount - 1,
         static_cast<int>(pt / PtBinWidth));
+    result.theta = std::min(
+        ThetaBinCount - 1,
+        static_cast<int>(theta / ThetaBinWidth));
+    result.joint = result.jointPt * ThetaBinCount + result.theta;
+    if (pt < PtMax) {
+        result.primaryPt = std::min(
+            BinCount - 1,
+            static_cast<int>(pt / PtBinWidth));
+    }
+    return result;
 }
 
 lowmc::FourVector photonFromEnergyEtaPhi(
@@ -393,17 +444,30 @@ BinEstimate directIntegrate(
                         (static_cast<double>(phiIndex) + 0.5) * dPhi;
                     const double nx = inverseCosh * std::cos(phi);
                     const double ny = inverseCosh * std::sin(phi);
-                    const int bin =
-                        ptBin(energy, closestJetCosine(nx, ny, nz, jets));
-                    if (bin >= 0) {
+                    const PhotonBins bins =
+                        photonBins(
+                            energy,
+                            closestJetCosine(nx, ny, nz, jets));
+                    if (bins.joint >= 0) {
                         const lowmc::FourVector photon =
                             photonFromEnergyEtaPhi(energy, eta, phi);
                         const double physicalMeasure =
                             energy * energy * inverseCosh * inverseCosh *
                             dLogEnergy * dEta * dPhi;
-                        result.yield[static_cast<std::size_t>(bin)] +=
+                        const double contribution =
                             lowmc::lowPhotonDensity(current, photon) *
                             physicalMeasure;
+                        result.jointYield[
+                            static_cast<std::size_t>(bins.joint)] +=
+                            contribution;
+                        result.thetaYield[
+                            static_cast<std::size_t>(bins.theta)] +=
+                            contribution;
+                        if (bins.primaryPt >= 0) {
+                            result.yield[
+                                static_cast<std::size_t>(bins.primaryPt)] +=
+                                contribution;
+                        }
                     }
                     ++result.evaluations;
                 }
@@ -433,6 +497,10 @@ BinEstimate sampleLowMC(
             });
     std::array<double, BinCount> sums{};
     std::array<double, BinCount> sums2{};
+    std::array<double, JointBinCount> jointSums{};
+    std::array<double, JointBinCount> jointSums2{};
+    std::array<double, ThetaBinCount> thetaSums{};
+    std::array<double, ThetaBinCount> thetaSums2{};
     double totalSum = 0.0;
     double totalSum2 = 0.0;
     std::mt19937_64 rng(seed);
@@ -455,9 +523,11 @@ BinEstimate sampleLowMC(
         const double nx = inverseCosh * std::cos(point.phi);
         const double ny = inverseCosh * std::sin(point.phi);
         const double nz = std::tanh(point.eta);
-        const int bin =
-            ptBin(energy, closestJetCosine(nx, ny, nz, jets));
-        if (bin < 0) {
+        const PhotonBins bins =
+            photonBins(
+                energy,
+                closestJetCosine(nx, ny, nz, jets));
+        if (bins.joint < 0) {
             continue;
         }
         const lowmc::FourVector photon =
@@ -466,10 +536,17 @@ BinEstimate sampleLowMC(
             lowmc::lowPhotonDensity(current, photon) *
             energy * energy * inverseCosh * inverseCosh *
             logEnergyRange / point.density;
-        sums[static_cast<std::size_t>(bin)] += weight;
-        sums2[static_cast<std::size_t>(bin)] += weight * weight;
-        totalSum += weight;
-        totalSum2 += weight * weight;
+        jointSums[static_cast<std::size_t>(bins.joint)] += weight;
+        jointSums2[static_cast<std::size_t>(bins.joint)] += weight * weight;
+        thetaSums[static_cast<std::size_t>(bins.theta)] += weight;
+        thetaSums2[static_cast<std::size_t>(bins.theta)] += weight * weight;
+        if (bins.primaryPt >= 0) {
+            sums[static_cast<std::size_t>(bins.primaryPt)] += weight;
+            sums2[static_cast<std::size_t>(bins.primaryPt)] +=
+                weight * weight;
+            totalSum += weight;
+            totalSum2 += weight * weight;
+        }
     }
 
     BinEstimate result;
@@ -487,6 +564,32 @@ BinEstimate sampleLowMC(
         result.standardError[static_cast<std::size_t>(bin)] =
             std::sqrt(variance / static_cast<double>(samples));
     }
+    for (int bin = 0; bin < JointBinCount; ++bin) {
+        const double mean =
+            jointSums[static_cast<std::size_t>(bin)] /
+            static_cast<double>(samples);
+        const double secondMoment =
+            jointSums2[static_cast<std::size_t>(bin)] /
+            static_cast<double>(samples);
+        const double variance =
+            std::max(0.0, secondMoment - mean * mean);
+        result.jointYield[static_cast<std::size_t>(bin)] = mean;
+        result.jointStandardError[static_cast<std::size_t>(bin)] =
+            std::sqrt(variance / static_cast<double>(samples));
+    }
+    for (int bin = 0; bin < ThetaBinCount; ++bin) {
+        const double mean =
+            thetaSums[static_cast<std::size_t>(bin)] /
+            static_cast<double>(samples);
+        const double secondMoment =
+            thetaSums2[static_cast<std::size_t>(bin)] /
+            static_cast<double>(samples);
+        const double variance =
+            std::max(0.0, secondMoment - mean * mean);
+        result.thetaYield[static_cast<std::size_t>(bin)] = mean;
+        result.thetaStandardError[static_cast<std::size_t>(bin)] =
+            std::sqrt(variance / static_cast<double>(samples));
+    }
     const double totalMean = totalSum / static_cast<double>(samples);
     const double totalSecondMoment =
         totalSum2 / static_cast<double>(samples);
@@ -496,6 +599,46 @@ BinEstimate sampleLowMC(
     result.milliseconds =
         std::chrono::duration<double, std::milli>(Clock::now() - start).count();
     return result;
+}
+
+void validateJointProjections(
+    const BinEstimate& estimate,
+    const std::string& label) {
+    constexpr double tolerance = 1.0e-12;
+    for (int ptBinIndex = 0; ptBinIndex < BinCount; ++ptBinIndex) {
+        double projection = 0.0;
+        for (int thetaBin = 0; thetaBin < ThetaBinCount; ++thetaBin) {
+            projection += estimate.jointYield[
+                static_cast<std::size_t>(
+                    ptBinIndex * ThetaBinCount + thetaBin)];
+        }
+        if (std::abs(
+                projection -
+                estimate.yield[static_cast<std::size_t>(ptBinIndex)]) >
+            tolerance *
+                std::max(1.0, std::abs(projection))) {
+            throw std::runtime_error(
+                label + " joint-to-pT projection is inconsistent");
+        }
+    }
+    for (int thetaBin = 0; thetaBin < ThetaBinCount; ++thetaBin) {
+        double projection = 0.0;
+        for (int ptBinIndex = 0;
+             ptBinIndex < JointPtBinCount;
+             ++ptBinIndex) {
+            projection += estimate.jointYield[
+                static_cast<std::size_t>(
+                    ptBinIndex * ThetaBinCount + thetaBin)];
+        }
+        if (std::abs(
+                projection -
+                estimate.thetaYield[static_cast<std::size_t>(thetaBin)]) >
+            tolerance *
+                std::max(1.0, std::abs(projection))) {
+            throw std::runtime_error(
+                label + " joint-to-theta projection is inconsistent");
+        }
+    }
 }
 
 int hardFlavor(const Pythia8::Event& event) {
@@ -519,6 +662,12 @@ int main(int argc, char** argv) {
             throw std::runtime_error(
                 "could not open output CSV: " + options.outputPath);
         }
+        std::ofstream jointOutput(options.jointOutputPath);
+        if (!jointOutput) {
+            throw std::runtime_error(
+                "could not open joint output CSV: " +
+                options.jointOutputPath);
+        }
         output
             << "seed,event_index,sampling_seed,hard_flavor,charged_multiplicity,"
                "visible_energy,total_jets,accepted_jets,selected_charged,"
@@ -531,6 +680,14 @@ int main(int argc, char** argv) {
                "direct_evaluations,direct_grid_cells,direct_milliseconds,"
                "direct_coarse_milliseconds,lowmc_mc_milliseconds\n";
         output << std::setprecision(17);
+        jointOutput
+            << "seed,event_index,sampling_seed,accepted_jets,"
+               "pt_bin_index,pt_min_GeV,pt_max_GeV,"
+               "theta_bin_index,theta_min_rad,theta_max_rad,"
+               "direct_yield_event,direct_coarse_yield_event,"
+               "lowmc_mc_yield_event,lowmc_mc_joint_standard_error,"
+               "lowmc_mc_theta_standard_error_event,mc_samples\n";
+        jointOutput << std::setprecision(17);
 
         Pythia8::Pythia pythia(LOWMC_PYTHIA8_XMLDOC, false);
         initializePythia(pythia, options);
@@ -541,6 +698,10 @@ int main(int argc, char** argv) {
         std::array<double, BinCount> coarseTotal{};
         std::array<double, BinCount> mcTotal{};
         std::array<double, BinCount> mcVarianceTotal{};
+        std::array<double, ThetaBinCount> directThetaTotal{};
+        std::array<double, ThetaBinCount> coarseThetaTotal{};
+        std::array<double, ThetaBinCount> mcThetaTotal{};
+        std::array<double, ThetaBinCount> mcThetaVarianceTotal{};
         double mcTotalVariance = 0.0;
         int acceptedEvents = 0;
         int validEventIndex = 0;
@@ -606,6 +767,9 @@ int main(int argc, char** argv) {
                 options.mcSamples,
                 eventSamplingSeed,
                 options.legUniformFraction);
+            validateJointProjections(direct, "direct");
+            validateJointProjections(coarse, "direct coarse");
+            validateJointProjections(mc, "LowMC");
             mcTotalVariance +=
                 mc.totalStandardError * mc.totalStandardError;
 
@@ -658,10 +822,53 @@ int main(int argc, char** argv) {
                     << coarse.milliseconds << ','
                     << mc.milliseconds << '\n';
             }
+            for (int thetaBin = 0; thetaBin < ThetaBinCount; ++thetaBin) {
+                const std::size_t thetaIndex =
+                    static_cast<std::size_t>(thetaBin);
+                directThetaTotal[thetaIndex] +=
+                    direct.thetaYield[thetaIndex];
+                coarseThetaTotal[thetaIndex] +=
+                    coarse.thetaYield[thetaIndex];
+                mcThetaTotal[thetaIndex] += mc.thetaYield[thetaIndex];
+                mcThetaVarianceTotal[thetaIndex] +=
+                    mc.thetaStandardError[thetaIndex] *
+                    mc.thetaStandardError[thetaIndex];
+                for (int ptBinIndex = 0;
+                     ptBinIndex < JointPtBinCount;
+                     ++ptBinIndex) {
+                    const int jointBin =
+                        ptBinIndex * ThetaBinCount + thetaBin;
+                    const std::size_t jointIndex =
+                        static_cast<std::size_t>(jointBin);
+                    jointOutput
+                        << options.seed << ','
+                        << eventIndex << ','
+                        << eventSamplingSeed << ','
+                        << eventSelection.acceptedJets.size() << ','
+                        << ptBinIndex << ','
+                        << static_cast<double>(ptBinIndex) * PtBinWidth
+                        << ','
+                        << static_cast<double>(ptBinIndex + 1) *
+                               PtBinWidth
+                        << ','
+                        << thetaBin << ','
+                        << static_cast<double>(thetaBin) * ThetaBinWidth
+                        << ','
+                        << static_cast<double>(thetaBin + 1) *
+                               ThetaBinWidth
+                        << ','
+                        << direct.jointYield[jointIndex] << ','
+                        << coarse.jointYield[jointIndex] << ','
+                        << mc.jointYield[jointIndex] << ','
+                        << mc.jointStandardError[jointIndex] << ','
+                        << mc.thetaStandardError[thetaIndex] << ','
+                        << options.mcSamples << '\n';
+                }
+            }
             ++acceptedEvents;
         }
-        if (!output) {
-            throw std::runtime_error("failed while writing output CSV");
+        if (!output || !jointOutput) {
+            throw std::runtime_error("failed while writing benchmark CSV");
         }
 
         double directIntegral = 0.0;
@@ -687,6 +894,28 @@ int main(int argc, char** argv) {
                        static_cast<double>(totalAcceptedJets)
                 << " lowmc_mc_standard_error="
                 << std::sqrt(mcVarianceTotal[index]) /
+                       static_cast<double>(totalAcceptedJets)
+                << '\n';
+        }
+        for (int bin = 0; bin < ThetaBinCount; ++bin) {
+            const std::size_t index = static_cast<std::size_t>(bin);
+            std::cout
+                << "theta_bin_index=" << bin
+                << " theta_min_rad="
+                << static_cast<double>(bin) * ThetaBinWidth
+                << " theta_max_rad="
+                << static_cast<double>(bin + 1) * ThetaBinWidth
+                << " direct_per_jet="
+                << directThetaTotal[index] /
+                       static_cast<double>(totalAcceptedJets)
+                << " direct_coarse_per_jet="
+                << coarseThetaTotal[index] /
+                       static_cast<double>(totalAcceptedJets)
+                << " lowmc_mc_per_jet="
+                << mcThetaTotal[index] /
+                       static_cast<double>(totalAcceptedJets)
+                << " lowmc_mc_standard_error="
+                << std::sqrt(mcThetaVarianceTotal[index]) /
                        static_cast<double>(totalAcceptedJets)
                 << '\n';
         }

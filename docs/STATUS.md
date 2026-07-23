@@ -1248,6 +1248,19 @@ small pilot is not the published-result validation. The next nominal block is
 three seeds with `500` accepted events each, followed by bounded jet and
 electron-veto variations. The reduced-probe review task remains unchanged.
 
+The same diagnostic now writes an event-level joint
+`pT`-versus-`theta_gamma` histogram for the Figure 4b angular cross-check.
+The paper's `25` angular `Brems` markers, in `16 mrad` bins through
+`0.4 rad`, were vector-digitized because no table or covariance is published.
+For the same `20`-event pilot, the direct angular integral is
+`0.035581 +/- 0.00266 photons/jet`, LowMC/direct is `1.00708`, and the
+digitized DELPHI sum is `0.031663 photons/jet`. The `12.4%` normalization
+offset matches the Table 4 offset, and the normalized angular shapes have L1
+distance `0.0313`. A separate high-resolution three-event convergence check
+gives angular `LowMC/direct = 0.99892`. The angular comparison is therefore
+implemented as a secondary shape/normalization check; it is not assigned a
+chi-square gate without published angular uncertainties.
+
 The command name decision is settled for now: keep
 `lowmc_hepmc3_afterburner_diagnostic` as the only executable name. A shorter
 production alias should wait until validation gates and output-mode conventions
