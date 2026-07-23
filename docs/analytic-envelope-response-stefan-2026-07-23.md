@@ -370,6 +370,67 @@ Further work on analytic proposals should be driven by a specific unresolved
 failure, a need for independent certification, or a planned Vincia comparison,
 not pursued as a sampler rewrite for its own sake.
 
+## 8. Proposed next steps
+
+The immediate LowMC priority is not another analytic-sampler branch. We plan
+to consolidate the first public afterburner workflow by defining a
+release-blocking validation matrix across:
+
+- the generator-independent Low-current and weighted-sampling tests;
+- event-yield and count-plus-shape validation;
+- shape-envelope failure detection and stress cases;
+- HepMC3 preservation, provenance, and round-trip tests;
+- direct Pythia and Pythia-to-HepMC3 consistency;
+- the completed DELPHI and PHOTOS physics benchmarks; and
+- optional performance and analytic-reference diagnostics.
+
+This inventory should distinguish correctness gates required for a release
+from scientific benchmarks and deliberately extreme stress tests. It may
+identify a missing validation gate, but it will not change physics cuts or
+sampler defaults by itself.
+
+For the analytic work specifically, the proposed policy is:
+
+1. keep the global and cell-local formulas as an opt-in audit;
+2. keep the PHOTOS-inspired leg proposal as an independent empirical
+   reference;
+3. do not implement the cosh-cos inverse-CDF or a Vincia-inspired pair
+   proposal without a concrete validation or performance need;
+4. revisit a hybrid analytic/empirical envelope only if it can certify
+   suspicious cells without inflating the full event envelope; and
+5. treat a controlled VinciaQED comparison as a later physics-validation
+   project, separate from release preparation.
+
+### Specific points where Stefan's input would be useful
+
+No additional large calculation is needed from Stefan at this stage. The most
+useful contribution would be an independent judgment on three bounded
+questions:
+
+1. **Interpretation of the no-go result:** Does he agree that zero violations
+   together with analytic/current envelope ratios of `8.34` and `40.5`
+   supports retaining the construction as an audit, but not pursuing it as a
+   standalone rejection sampler?
+2. **Possibility of a materially tighter proof:** Does he see a realistic way
+   to preserve some interference cancellation or build a positive
+   cancellation-aware decomposition, rather than summing absolute pair terms?
+   A useful suggestion would need to remain practical at high charged
+   multiplicity and to bound the complete `g/q_eta_phi` weight.
+3. **Hybrid certification:** Would it be mathematically sensible to apply an
+   analytic bound only to empirically suspicious or under-resolved cells,
+   leaving the validated empirical envelope elsewhere? If so, what condition
+   would he regard as sufficient to claim that the hybrid removes the relevant
+   finite-probe risk?
+
+If Stefan has direct VinciaQED experience, one additional practical
+recommendation would be valuable: the minimal Vincia configuration that most
+cleanly isolates the one-photon scalar-eikonal limit for a future controlled
+comparison. This is optional and should not hold up the current LowMC work.
+
+Unless these questions reveal a substantially tighter analytic construction,
+our proposed decision is to close this sampler branch after review and proceed
+with release-validation consolidation.
+
 ## Reproducibility and project records
 
 The main implementation revisions are:
