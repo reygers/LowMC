@@ -1217,6 +1217,23 @@ does not emit photons. These results make factor `1.2` a reasonable opt-in
 stress-test candidate, not a guaranteed majorant or a production-default
 change. The grid envelope and reduced-probe settings are untouched.
 
+The contract for the next central physics validation is now documented in
+`docs/DELPHI_HADRONIC_BENCHMARK_PLAN.md`. The target is DELPHI's
+efficiency-corrected inner-bremsstrahlung prediction for hadronic `Z` decays:
+ten `8 MeV` bins below `pT_jet = 80 MeV` and an integrated rate of
+`17.10e-3 photons` per accepted jet for `0.2 < E_gamma < 1 GeV`. The published
+Table 4 values are stored in
+`fixtures/reference/delphi_hadronic_bremsstrahlung_table4.csv`.
+
+Review of the existing exploratory Pythia/ROOT source found that it is useful
+for the LUCLUS `3 GeV` joining scale, cuts, closest-jet definition, and
+per-jet normalization, but its active configuration is not the published
+benchmark: it uses only `Z -> u ubar`, a primary-quark current, ten events,
+`16 MeV` bins, and an arbitrary plot scaling. The planned primary LowMC
+comparison instead uses incoming beams plus all final stable charged hadrons
+and the unscaled published spectrum. No DELPHI event production has been run,
+and the reduced-probe review task remains unchanged.
+
 The command name decision is settled for now: keep
 `lowmc_hepmc3_afterburner_diagnostic` as the only executable name. A shorter
 production alias should wait until validation gates and output-mode conventions

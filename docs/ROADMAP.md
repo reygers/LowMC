@@ -274,6 +274,30 @@ Goal: compare LowMC output against analytic and event-level expectations.
   stable charged particles is an adequate approximation for the intended
   experimental soft-photon observables
 
+### DELPHI Hadronic Bremsstrahlung Benchmark
+
+The next central physics-validation target is the efficiency-corrected
+inner-bremsstrahlung spectrum in DELPHI hadronic `Z` decays. The publication
+provides ten `8 MeV` bins for photon transverse momentum relative to the
+closest accepted jet and an integrated prediction of
+`17.10e-3 photons / accepted jet` for `0.2 < E_gamma < 1 GeV` and
+`pT_jet < 80 MeV`.
+
+The first benchmark must compare the paper's practical per-jet
+forward-hemisphere construction with a complete charge-conserving current made
+from incoming beams plus final charged hadrons, using LUCLUS-like jets with
+`djoin = 3 GeV`. LowMC's general beams-plus-all-stable-charged selection should
+be reported as a further diagnostic alternative.
+The existing exploratory analysis source supplies useful Pythia and jet
+definitions, but its active primary-quark-only configuration and arbitrary
+plot rescaling are not normalization references.
+
+The implementation and predeclared gates are recorded in
+`docs/DELPHI_HADRONIC_BENCHMARK_PLAN.md`. This work should first prove that
+LowMC reproduces the calculated bremsstrahlung baseline. Comparison with the
+measured excess comes only afterward and must not be described as an
+explanation of that excess.
+
 ### PHOTOS Soft-Decay Benchmark
 
 Add a direct `Z -> mu+ mu-` comparison with PHOTOS as the first external
