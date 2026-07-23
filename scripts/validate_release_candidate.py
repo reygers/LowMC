@@ -124,6 +124,7 @@ def build_plan(config: ReleaseConfig) -> list[Step]:
     output = config.output_dir
     default_build = output / "build-default"
     default_install = output / "install-default"
+    install_consumer_build = output / "build-install-consumer"
     evidence = output / "evidence"
     python = sys.executable
     parallel = str(config.parallel)
@@ -162,6 +163,29 @@ def build_plan(config: ReleaseConfig) -> list[Step]:
             "default-install",
             "R1",
             ("cmake", "--install", str(default_build), "--prefix", str(default_install)),
+        ),
+        Step(
+            "installed-core-configure",
+            "R1",
+            (
+                "cmake",
+                "-S",
+                str(source / "tests" / "install_consumer"),
+                "-B",
+                str(install_consumer_build),
+                "-DCMAKE_BUILD_TYPE=Release",
+                f"-DCMAKE_PREFIX_PATH={default_install}",
+            ),
+        ),
+        Step(
+            "installed-core-build",
+            "R1",
+            ("cmake", "--build", str(install_consumer_build), "--parallel", parallel),
+        ),
+        Step(
+            "installed-core-tests",
+            "R1",
+            ("ctest", "--test-dir", str(install_consumer_build), "--output-on-failure"),
         ),
         Step(
             "count-shape",

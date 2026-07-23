@@ -11,12 +11,17 @@ add_library(lowmc_core STATIC
     src/WeightedPhotonSampler.cpp
 )
 
+add_library(LowMC::core ALIAS lowmc_core)
+
 target_compile_features(lowmc_core PUBLIC cxx_std_17)
 
 target_include_directories(lowmc_core
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
+
+set_target_properties(lowmc_core PROPERTIES EXPORT_NAME core)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(lowmc_core PRIVATE -Wall -Wextra -pedantic)

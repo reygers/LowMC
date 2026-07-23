@@ -51,7 +51,11 @@ The default build has no HepMC3 or Pythia8 dependency.
 cmake -S . -B build
 cmake --build build
 ctest --test-dir build --output-on-failure
+cmake --install build --prefix /path/to/lowmc
 ```
+
+Installed CMake consumers use `find_package(LowMC 0.1 CONFIG REQUIRED)` and
+link `LowMC::core`.
 
 Build the optional HepMC3 adapter:
 
@@ -115,6 +119,8 @@ See [docs/PHYSICS.md](docs/PHYSICS.md) for the full convention.
 - [docs/STATUS.md](docs/STATUS.md): current implementation status
 - [docs/RELEASE_VALIDATION_MATRIX.md](docs/RELEASE_VALIDATION_MATRIX.md):
   release-blocking and scientific validation gates
+- [docs/RELEASE_NOTES_0.1.0.md](docs/RELEASE_NOTES_0.1.0.md): first public
+  research-prototype release notes
 - [docs/NEXT_TASK.md](docs/NEXT_TASK.md): next planned development step
 
 ## License

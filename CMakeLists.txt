@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 project(LowMC VERSION 0.1.0 LANGUAGES CXX)
 
 include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
 option(LOWMC_ENABLE_HEPMC3 "Build the optional HepMC3 adapter target" OFF)
 option(LOWMC_ENABLE_PYTHIA8 "Build the optional Pythia8 adapter target" OFF)
@@ -76,6 +77,43 @@ if(LOWMC_ENABLE_PYTHIA8)
 endif()
 
 include(cmake/LowMCTargets.cmake)
+
+install(
+    TARGETS lowmc_core
+    EXPORT LowMCTargets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+install(
+    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(
+    EXPORT LowMCTargets
+    FILE LowMCTargets.cmake
+    NAMESPACE LowMC::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/LowMC
+)
+
+configure_package_config_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/LowMCConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/LowMCConfig.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/LowMC
+)
+
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/LowMCConfigVersion.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+install(
+    FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/LowMCConfig.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/LowMCConfigVersion.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/LowMC
+)
 
 if(Python3_Interpreter_FOUND)
     add_test(

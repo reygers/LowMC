@@ -41,12 +41,20 @@ cmake --build build-release-default --parallel
 ctest --test-dir build-release-default --output-on-failure
 cmake --install build-release-default \
   --prefix build-release-default/install
+cmake -S tests/install_consumer \
+  -B build-release-default/install-consumer \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_PREFIX_PATH=$PWD/build-release-default/install
+cmake --build build-release-default/install-consumer --parallel
+ctest --test-dir build-release-default/install-consumer --output-on-failure
 ```
 
 Pass criteria:
 
 - `git diff --check`, configure, build, test, and install all exit successfully;
 - every discovered CTest passes;
+- an external CMake consumer finds `LowMC 0.1`, links `LowMC::core` using only
+  the install prefix, includes `<lowmc/LowMC.h>`, and runs successfully;
 - no optional event-generator dependency is required by this configuration.
 
 This covers the Low current and density, phase-space conventions, weighted

@@ -116,9 +116,8 @@ full-event comparison exposes a specific discrepancy.
 
 ## What the Existing Analysis Code Provides
 
-The exploratory source at
-`/Users/reygers/uni/my_papers/published/Soft photon puzzle/Delphi/src_Low/delphi_soft_photons.cpp`
-provides useful implementation details:
+An earlier exploratory DELPHI analysis source outside this repository provided
+useful implementation details:
 
 - Pythia's `ClusterJet("Lund")` with `analyze(event, 0., 3.)`, corresponding
   to a `3 GeV` joining scale;

@@ -2090,6 +2090,17 @@ HepMC3/Pythia8 tests, and `98` PHOTOS-enabled tests. This check used a dirty
 development tree and is implementation evidence, not the clean-tree evidence
 for a tagged release.
 
+The release-preparation audit found that the previous default
+`cmake --install` command was a no-op. The core now installs
+`liblowmc_core`, all public `lowmc/` headers, and versioned CMake package files
+exporting `LowMC::core`. The release driver now configures, builds, and runs a
+separate installed-core consumer using only the install prefix. This packaging
+gate passed in the first implementation check.
+
+The public `0.1.0` release-candidate scope, validation conclusions, installation
+commands, and known limitations are collected in
+`docs/RELEASE_NOTES_0.1.0.md`.
+
 ## Analytic Low-Bound Audit
 
 Stefan's global and rectangular cell-local majorants are implemented as an

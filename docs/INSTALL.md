@@ -27,10 +27,20 @@ From the repository root:
 cmake -S . -B build
 cmake --build build
 ctest --test-dir build --output-on-failure
+cmake --install build --prefix /path/to/lowmc
 ```
 
 This should build the generator-independent core, core diagnostics, examples,
-and default tests.
+and default tests. The install step provides the static core library, public
+headers, and CMake package files. Downstream CMake projects can use:
+
+```cmake
+find_package(LowMC 0.1 CONFIG REQUIRED)
+target_link_libraries(my_target PRIVATE LowMC::core)
+```
+
+Pass the installation prefix through `CMAKE_PREFIX_PATH` when it is not in a
+standard search location.
 
 ## HepMC3 Adapter
 
