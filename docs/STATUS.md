@@ -2076,6 +2076,20 @@ Follow the single task in `docs/NEXT_TASK.md`.
 The release-gate classification and exact clean-candidate commands are in
 `docs/RELEASE_VALIDATION_MATRIX.md`.
 
+The dependency-free release-validation driver is implemented as
+`scripts/validate_release_candidate.py`. It creates fresh build directories,
+runs the mandatory gates, optionally adds combined HepMC3/Pythia8 and PHOTOS
+builds, stops on the first failure, and preserves per-step logs plus JSON and
+Markdown summaries. Its unit tests cover default and optional command
+construction, CTest-count parsing, and failure propagation without requiring
+optional dependencies.
+
+The first complete implementation check passed `95` default tests, the `18`-row
+count-plus-shape gate, the strict shape-envelope gate, `188` combined
+HepMC3/Pythia8 tests, and `98` PHOTOS-enabled tests. This check used a dirty
+development tree and is implementation evidence, not the clean-tree evidence
+for a tagged release.
+
 ## Analytic Low-Bound Audit
 
 Stefan's global and rectangular cell-local majorants are implemented as an

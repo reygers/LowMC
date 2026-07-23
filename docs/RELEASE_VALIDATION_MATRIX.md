@@ -199,21 +199,26 @@ requires investigation and documentation.
 
 ## Current Evidence Snapshot
 
-On 2026-07-23, after a fresh reconfigure against the current source:
+On 2026-07-23, the complete driver implementation check reported:
 
-- the dependency-free Release build passed all `93` tests and installed;
+- the dependency-free Release build passed all `95` tests and installed;
 - the `R2` count-plus-shape gate passed all `18` rows;
 - the `R3` strict shape-envelope gate passed;
-- the combined HepMC3 plus Pythia8 Release build passed all `186` tests;
-- the PHOTOS 3.64 Release build passed all `96` tests.
+- the combined HepMC3 plus Pythia8 Release build passed all `188` tests;
+- the PHOTOS 3.64 Release build passed all `98` tests.
 
 These counts are evidence, not permanent pass criteria; newly added tests must
-also pass.
+also pass. This implementation check used an uncommitted development tree; the
+tagged release candidate requires a retained clean-tree manifest.
 
-## Missing Automation
+## Validation Driver
 
-The repository has the individual gates but no single command that creates
-fresh build directories, selects applicable optional components, runs this
-matrix, and writes a revision/dependency/test manifest. Implementing that
-release-validation driver is the next task. It must orchestrate the existing
-commands without changing their physics criteria.
+`scripts/validate_release_candidate.py` implements this matrix without changing
+its physics criteria. By default it runs `R1`, `R2`, and `R3` in fresh
+timestamped build directories. Explicit switches add the combined `C1` gate
+and the optional PHOTOS build. Every run preserves command logs,
+`manifest.json`, and `summary.md`; it stops on the first blocking failure.
+
+The driver deliberately does not run the DELPHI or PHOTOS
+production-statistics studies. Their trigger conditions remain the `P2` and
+`P3` physics-change gates above.

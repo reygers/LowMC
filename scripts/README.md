@@ -548,6 +548,33 @@ simple correlations with event time, and the slowest event rows. These
 correlations are intended as compact manual diagnostics, not as a production
 performance model.
 
+## Release-validation driver
+
+Run the dependency-free release gates in fresh build directories with:
+
+```sh
+python3 scripts/validate_release_candidate.py
+```
+
+Each invocation creates a timestamped directory under
+`build/release-validation/`. It stops on the first blocking failure while
+preserving one log per step, `manifest.json`, and a compact `summary.md`.
+
+To include the currently advertised HepMC3 and Pythia8 integrations:
+
+```sh
+python3 scripts/validate_release_candidate.py \
+  --enable-integrations \
+  --hepmc3-prefix /path/to/hepmc3 \
+  --pythia-prefix /path/to/pythia8
+```
+
+The optional PHOTOS bridge is selected separately with `--enable-photos`,
+`--hepmc3-prefix`, and `--photos-root`. Use `--dry-run` to inspect and record
+the exact planned commands without executing them. The driver does not launch
+the DELPHI or PHOTOS production-statistics studies; their physics-change
+triggers remain in `docs/RELEASE_VALIDATION_MATRIX.md`.
+
 ## Grid-vs-weighted stress study
 
 The stress-study helper runs matching fixed-grid and weighted-sample

@@ -167,6 +167,14 @@ if(Python3_Interpreter_FOUND)
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/validate_count_shape.py --help
     )
     add_test(
+        NAME lowmc_validate_release_candidate_help
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/validate_release_candidate.py --help
+    )
+    add_test(
+        NAME lowmc_validate_release_candidate_tests
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_release_validation.py
+    )
+    add_test(
         NAME lowmc_generate_pythia_hepmc3_sample_help
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate_pythia_hepmc3_sample.py --help
     )

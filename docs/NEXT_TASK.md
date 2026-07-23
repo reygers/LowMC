@@ -4,24 +4,24 @@ This file should contain exactly one immediate task for Codex or another coding
 agent. Broader plans belong in `docs/ROADMAP.md`; project state belongs in
 `docs/STATUS.md`.
 
-Implement a single release-validation driver for the first public LowMC
-research-prototype release.
+Prepare the clean-tree evidence and release notes for the first public LowMC
+research-prototype release candidate.
 
 Requirements:
 
-- follow `docs/RELEASE_VALIDATION_MATRIX.md` exactly; do not redefine its
-  physics criteria
-- add one script that creates fresh Release build directories and runs `R1`,
-  `R2`, and `R3`
-- provide explicit switches and dependency-prefix arguments for the applicable
-  `C1` combined HepMC3/Pythia8 gate and the optional PHOTOS build
-- stop on a blocking failure, preserve the failing logs, and return nonzero
-- write a machine-readable manifest containing the LowMC revision, dirty-tree
-  state, compiler/CMake versions, enabled components, dependency paths or
-  reported versions, commands, exit statuses, durations, and discovered test
-  counts
-- write a concise Markdown summary suitable for attaching to a release
-- test command construction and failure propagation without requiring all
-  optional dependencies in the default CTest path
-- do not run DELPHI or PHOTOS production-statistics studies automatically
-- do not tune physics cuts, envelopes, or sampling defaults
+- start from a committed tree and use
+  `scripts/validate_release_candidate.py` with the combined HepMC3/Pythia8 and
+  optional PHOTOS switches
+- require `dirty_tree=false` and all applicable gates to pass in the retained
+  manifest
+- draft concise release notes for version `0.1.0` that distinguish the stable
+  generator-independent core from provisional diagnostic interfaces
+- state the no-recoil convention, leading-soft scope, envelope failure policy,
+  optional dependencies, and known boosted/high-multiplicity limitations
+- summarize the frozen DELPHI and PHOTOS validation conclusions without
+  rerunning their production-statistics studies
+- include build/install/quickstart commands and links to the release evidence
+- check that README, installation, license, version, and public header
+  information are mutually consistent
+- do not add a production HepMC3 alias, change physics defaults, or expand the
+  release scope
