@@ -2085,6 +2085,11 @@ construction is therefore retained for auditing or possible future cell
 certification, not as a standalone sampler. Detailed criteria and results are
 in `docs/ANALYTIC_BOUND_AUDIT_PLAN.md`.
 
+A consolidated response for Stefan, including the analytic-bound and
+rapidity-center results and their relation to the completed PHOTOS benchmark
+and planned VinciaQED comparison, is in
+`docs/analytic-envelope-response-stefan-2026-07-23.md`.
+
 ## Charged-Particle Eta-Center Audit
 
 A diagnostic-only `chargedParticleEtaCenter` option now selects
