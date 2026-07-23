@@ -221,6 +221,11 @@ separately labelled `pT < 80 MeV` projection and verifies that its integral
 matches the primary Table 4-phase-space result. The diagnostic does not emit
 photons or modify production defaults.
 
+The default jet algorithm is LUCLUS (`--jet-algorithm Lund`) with
+`djoin = 3 GeV`. The bounded DELPHI jet variations use
+`--jet-algorithm Durham` or `--jet-algorithm Jade`; both select
+`ycut = 0.01`. The chosen algorithm and scale are written to both CSV files.
+
 ## PHOTOS Benchmark
 
 PHOTOS remains an opt-in benchmark dependency and is not linked into the

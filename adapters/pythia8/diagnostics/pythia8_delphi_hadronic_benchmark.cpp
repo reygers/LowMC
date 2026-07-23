@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <cctype>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -41,6 +42,7 @@ constexpr double ThetaBinWidth = JetAngleMax / ThetaBinCount;
 struct Options {
     std::string outputPath = "pythia8_delphi_hadronic_benchmark.csv";
     std::string jointOutputPath;
+    std::string jetAlgorithm = "Lund";
     int events = 2;
     int firstEvent = 0;
     int mcSamples = 200000;
@@ -99,6 +101,7 @@ void printUsage(std::ostream& output) {
         << "Options:\n"
         << "  --events N --first-event N\n"
         << "  --joint-output PATH\n"
+        << "  --jet-algorithm Lund|Durham|Jade\n"
         << "  --mc-samples N\n"
         << "  --direct-loge-bins N\n"
         << "  --direct-eta-bins N --direct-phi-bins N\n"
@@ -149,6 +152,36 @@ double parseFraction(const std::string& text, const std::string& optionName) {
     return value;
 }
 
+std::string parseJetAlgorithm(
+    const std::string& text,
+    const std::string& optionName) {
+    std::string lower;
+    lower.reserve(text.size());
+    for (const char character : text) {
+        lower.push_back(static_cast<char>(
+            std::tolower(static_cast<unsigned char>(character))));
+    }
+    if (lower == "lund" || lower == "luclus") {
+        return "Lund";
+    }
+    if (lower == "durham") {
+        return "Durham";
+    }
+    if (lower == "jade") {
+        return "Jade";
+    }
+    throw std::invalid_argument(
+        optionName + " expects Lund, Durham, or Jade");
+}
+
+double jetYScale(const Options& options) {
+    return options.jetAlgorithm == "Lund" ? 0.0 : 0.01;
+}
+
+double jetPtScale(const Options& options) {
+    return options.jetAlgorithm == "Lund" ? 3.0 : 0.0;
+}
+
 Options parseOptions(int argc, char** argv) {
     Options options;
     bool outputSpecified = false;
@@ -167,6 +200,9 @@ Options parseOptions(int argc, char** argv) {
         } else if (argument == "--joint-output") {
             options.jointOutputPath =
                 readOption(index, argc, argv, argument);
+        } else if (argument == "--jet-algorithm") {
+            options.jetAlgorithm = parseJetAlgorithm(
+                readOption(index, argc, argv, argument), argument);
         } else if (argument == "--mc-samples") {
             options.mcSamples = parseInteger(
                 readOption(index, argc, argv, argument), argument, false);
@@ -285,6 +321,8 @@ EventSelection selectEvent(
     const Pythia8::Event& event,
     Pythia8::Thrust& thrust,
     Pythia8::ClusterJet& clustering,
+    double yScale,
+    double ptScale,
     bool electronVeto) {
     EventSelection result;
     for (int index = 0; index < event.size(); ++index) {
@@ -306,7 +344,8 @@ EventSelection selectEvent(
     if (thrustAbsCosine > std::cos(30.0 * pi() / 180.0)) {
         return result;
     }
-    if (!clustering.analyze(event, 0.0, 3.0) || clustering.size() < 2) {
+    if (!clustering.analyze(event, yScale, ptScale) ||
+        clustering.size() < 2) {
         return result;
     }
     result.totalJets = clustering.size();
@@ -671,7 +710,8 @@ int main(int argc, char** argv) {
                 options.jointOutputPath);
         }
         output
-            << "seed,event_index,sampling_seed,hard_flavor,charged_multiplicity,"
+            << "seed,event_index,sampling_seed,jet_algorithm,jet_y_scale,"
+               "jet_pt_scale_GeV,hard_flavor,charged_multiplicity,"
                "visible_energy,total_jets,accepted_jets,selected_charged,"
                "selected_outgoing,signed_charge_sum,electron_veto,"
                "generator_qed_radiation,theta_gamma_jet_max,bin_index,"
@@ -683,7 +723,8 @@ int main(int argc, char** argv) {
                "direct_coarse_milliseconds,lowmc_mc_milliseconds\n";
         output << std::setprecision(17);
         jointOutput
-            << "seed,event_index,sampling_seed,accepted_jets,"
+            << "seed,event_index,sampling_seed,jet_algorithm,jet_y_scale,"
+               "jet_pt_scale_GeV,accepted_jets,"
                "pt_bin_index,pt_min_GeV,pt_max_GeV,"
                "theta_bin_index,theta_min_rad,theta_max_rad,"
                "direct_yield_event,direct_coarse_yield_event,"
@@ -694,7 +735,7 @@ int main(int argc, char** argv) {
         Pythia8::Pythia pythia(LOWMC_PYTHIA8_XMLDOC, false);
         initializePythia(pythia, options);
         Pythia8::Thrust thrust;
-        Pythia8::ClusterJet clustering("Lund");
+        Pythia8::ClusterJet clustering(options.jetAlgorithm);
 
         std::array<double, BinCount> directTotal{};
         std::array<double, BinCount> coarseTotal{};
@@ -724,6 +765,8 @@ int main(int argc, char** argv) {
                     pythia.event,
                     thrust,
                     clustering,
+                    jetYScale(options),
+                    jetPtScale(options),
                     options.electronVeto);
             if (!eventSelection.accepted) {
                 continue;
@@ -795,6 +838,9 @@ int main(int argc, char** argv) {
                     << options.seed << ','
                     << eventIndex << ','
                     << eventSamplingSeed << ','
+                    << options.jetAlgorithm << ','
+                    << jetYScale(options) << ','
+                    << jetPtScale(options) << ','
                     << hardFlavor(pythia.event) << ','
                     << eventSelection.chargedMultiplicity << ','
                     << eventSelection.visibleEnergy << ','
@@ -846,6 +892,9 @@ int main(int argc, char** argv) {
                         << options.seed << ','
                         << eventIndex << ','
                         << eventSamplingSeed << ','
+                        << options.jetAlgorithm << ','
+                        << jetYScale(options) << ','
+                        << jetPtScale(options) << ','
                         << eventSelection.acceptedJets.size() << ','
                         << ptBinIndex << ','
                         << static_cast<double>(ptBinIndex) * PtBinWidth
@@ -934,6 +983,9 @@ int main(int argc, char** argv) {
             << "aggregate_status=ok"
             << " accepted_events=" << acceptedEvents
             << " accepted_jets=" << totalAcceptedJets
+            << " jet_algorithm=" << options.jetAlgorithm
+            << " jet_y_scale=" << jetYScale(options)
+            << " jet_pt_scale_GeV=" << jetPtScale(options)
             << " theta_gamma_jet_max=0.4"
             << " direct_per_jet=" << directPerJet
             << " direct_coarse_per_jet=" << coarsePerJet

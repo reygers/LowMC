@@ -323,6 +323,36 @@ set_tests_properties(
             "aggregate_status=ok accepted_events=1"
 )
 
+foreach(LOWMC_DELPHI_JET_ALGORITHM IN ITEMS Durham Jade)
+    string(
+        TOLOWER
+        ${LOWMC_DELPHI_JET_ALGORITHM}
+        LOWMC_DELPHI_JET_ALGORITHM_LOWER
+    )
+    add_test(
+        NAME
+            lowmc_pythia8_delphi_hadronic_benchmark_${LOWMC_DELPHI_JET_ALGORITHM_LOWER}_smoke
+        COMMAND
+            lowmc_pythia8_delphi_hadronic_benchmark
+            ${CMAKE_CURRENT_BINARY_DIR}/pythia8_delphi_hadronic_${LOWMC_DELPHI_JET_ALGORITHM_LOWER}_smoke.csv
+            --events 1
+            --mc-samples 64
+            --direct-loge-bins 2
+            --direct-eta-bins 4
+            --direct-phi-bins 4
+            --direct-refinement-levels 0
+            --direct-subbins 1
+            --jet-algorithm ${LOWMC_DELPHI_JET_ALGORITHM}
+            --seed 12345
+    )
+    set_tests_properties(
+        lowmc_pythia8_delphi_hadronic_benchmark_${LOWMC_DELPHI_JET_ALGORITHM_LOWER}_smoke
+        PROPERTIES
+            PASS_REGULAR_EXPRESSION
+                "aggregate_status=ok accepted_events=1 accepted_jets=.*jet_algorithm=${LOWMC_DELPHI_JET_ALGORITHM}"
+    )
+endforeach()
+
 if(Python3_Interpreter_FOUND)
     add_test(
         NAME lowmc_pythia8_delphi_hadronic_summary_smoke
