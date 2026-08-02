@@ -369,6 +369,32 @@ the primary pT integral and is not compared with Figure 4b. Since the paper
 does not tabulate angular errors, this remains a secondary graphical
 cross-check rather than a separate fit criterion.
 
+### WA102 Fixed-Target Soft-Photon Benchmark
+
+The WA102 benchmark is complete. Its fixed-target Pythia 8 configuration
+models a `450 GeV/c` proton beam on a stationary proton and applies fewer than
+eight truth-level final charged particles as a proxy for the reconstructed
+track selection. The current contains both incoming protons and every final
+stable charged particle. The detailed contract and frozen results are in
+`docs/WA102_BENCHMARK_PLAN.md`.
+
+Across six seeds and `1800` selected events, weighted LowMC agrees with direct
+integration at `LowMC/direct = 1.000268` in the primary `2-18 MeV/c` window.
+After convolution with the quoted average `2.9 MeV/c` resolution, the
+normalized shape L1 distance from the digitized WA102 bremsstrahlung curve is
+`0.03096`. The absolute direct rate is `0.7388` of the digitized WA102 value
+in that window. This is treated as generator and event-selection dependence,
+not a LowMC integration discrepancy.
+
+The primary paper comparison does not impose the approximate isolation model.
+The literal `66 cm` lead-sheet, `3 mm` separation from every truth-level track
+is kept as a separately labelled sensitivity diagnostic because it has a
+strong vertex-distance dependence and cannot reproduce reconstructed-track
+acceptance convincingly. The first and last transverse-momentum bins are
+excluded from the primary external comparison for isolation sensitivity and
+an unstable near-zero reference value, respectively. No further WA102
+production run is planned.
+
 ### PHOTOS Soft-Decay Benchmark
 
 Add a direct `Z -> mu+ mu-` comparison with PHOTOS as the first external

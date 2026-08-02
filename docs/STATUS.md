@@ -1362,6 +1362,35 @@ region to about `0.80` near `0.4 rad`. With no published angular covariance,
 this remains a secondary diagnostic difference to follow through the bounded
 jet-definition study rather than a formal chi-square failure.
 
+The WA102 fixed-target benchmark is now complete. It generates Pythia 8
+inelastic `pp` interactions for a `450 GeV/c` proton beam on a stationary
+proton, selects events with fewer than eight truth-level final charged
+particles, and evaluates the charge-conserving current of both incoming
+protons plus every final stable charged particle. The frozen six-seed sample
+contains `1800` selected events, with `200000` weighted photons per event. The
+no-isolation spectrum is convolved with WA102's quoted average `2.9 MeV/c`
+transverse-momentum resolution.
+
+Direct integration and weighted LowMC sampling agree at
+`LowMC/direct = 1.000321` over the displayed `0-20 MeV/c` range and
+`1.000268` in the paper-facing `2-18 MeV/c` window. The normalized shape L1
+distance to the digitized WA102 bremsstrahlung curve is `0.03096` in that
+window. The absolute direct result is `0.7388` times the digitized WA102
+bremsstrahlung integral there. This normalization difference is recorded as
+generator/event-selection dependence: WA102 used data-tuned FRITIOF events
+and reconstructed tracks, whereas the benchmark uses Pythia 8 and every
+truth-level charged particle.
+
+The approximate `66 cm` lead-sheet and `3 mm` all-truth-track isolation model
+is retained only as a separate sensitivity diagnostic. Its large dependence
+on the assumed vertex-to-sheet distance shows that it is not a credible
+detector correction. The paper-facing WA102 comparison therefore omits this
+proxy, excludes the isolation-sensitive first bin and the nearly zero final
+bremsstrahlung marker, and does not claim that the unavailable unisolated
+WA102 curve would differ only at low transverse momentum. The implementation,
+frozen result, and interpretation are documented in
+`docs/WA102_BENCHMARK_PLAN.md`.
+
 The command name decision is settled for now: keep
 `lowmc_hepmc3_afterburner_diagnostic` as the only executable name. A shorter
 production alias should wait until validation gates and output-mode conventions

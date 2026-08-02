@@ -11,6 +11,15 @@
   Local working note:
   `literature/Balek-Pisutova-Pisut-1991-soft-dileptons/balek-pisutova-pisut-soft-dileptons-summary.md`
 
+## Experimental Benchmarks
+
+- A. Belogianni et al. (WA102 Collaboration), "Observation of a soft photon
+  signal in excess of QED expectations in pp interactions", Physics Letters B
+  548 (2002) 129-139, DOI: 10.1016/S0370-2693(02)02837-X.
+- J. Abdallah et al. (DELPHI Collaboration), "Evidence for an excess of soft
+  photons in hadronic decays of Z0", European Physical Journal C 47 (2006)
+  273-294, DOI: 10.1140/epjc/s2006-02568-8.
+
 ## Related Concepts
 
 - Soft-photon theorem

@@ -92,6 +92,30 @@ theta summary retains the `pT < 80 MeV` projection in explicitly labelled
 diagnostic columns and checks that its integral reproduces the primary pT
 benchmark.
 
+## WA102 fixed-target bremsstrahlung summary
+
+Aggregate one or more event-level CSV files from
+`lowmc_pythia8_wa102_benchmark` and compare the no-isolation,
+resolution-smeared result with digitized WA102 Figure 2d:
+
+```sh
+MPLCONFIGDIR=build-pythia8/matplotlib \
+python3 scripts/summarize_wa102_benchmark.py \
+  build-pythia8/wa102_seed*.csv \
+  --summary build-pythia8/wa102_summary.csv \
+  --plot build-pythia8/wa102_comparison.png \
+  --isolation-plot build-pythia8/wa102_isolation_diagnostic.png
+```
+
+The plot includes the digitized WA102 inner-bremsstrahlung triangles and the
+background-subtracted data. The data are contextual and are not a LowMC
+validation target. Event-to-event jackknife uncertainty remains separate from
+the conditional LowMC integration uncertainty. The primary external shape
+window is `2 < pT < 18 MeV/c`; the plot shades the excluded first and last
+bins. The nominal `66 cm / 3 mm` isolation calculation is shown only in the
+separate diagnostic plot. Summarize the `36 cm` and `96 cm` variations
+separately because the script rejects mixed geometry inputs.
+
 ## Direction and acceptance examples
 
 The first toy particle direction can be changed with `--particle-eta` and

@@ -356,6 +356,52 @@ set_tests_properties(
             "aggregate_status=ok accepted_events=1"
 )
 
+add_executable(lowmc_pythia8_wa102_benchmark
+    diagnostics/pythia8_wa102_benchmark.cpp
+)
+
+target_link_libraries(lowmc_pythia8_wa102_benchmark
+    PRIVATE
+        lowmc_pythia8_adapter
+)
+
+target_compile_definitions(lowmc_pythia8_wa102_benchmark
+    PRIVATE
+        LOWMC_PYTHIA8_XMLDOC="${LOWMC_PYTHIA8_XMLDOC_DIR}"
+)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(
+        lowmc_pythia8_wa102_benchmark PRIVATE -Wall -Wextra -pedantic)
+elseif(MSVC)
+    target_compile_options(lowmc_pythia8_wa102_benchmark PRIVATE /W4)
+endif()
+
+add_test(
+    NAME lowmc_pythia8_wa102_benchmark_help
+    COMMAND lowmc_pythia8_wa102_benchmark --help
+)
+
+add_test(
+    NAME lowmc_pythia8_wa102_benchmark_smoke
+    COMMAND lowmc_pythia8_wa102_benchmark
+            ${CMAKE_CURRENT_BINARY_DIR}/pythia8_wa102_smoke.csv
+            --events 1
+            --mc-samples 64
+            --direct-loge-bins 2
+            --direct-eta-bins 4
+            --direct-phi-bins 4
+            --direct-refinement-levels 0
+            --direct-subbins 1
+            --seed 12345
+)
+set_tests_properties(
+    lowmc_pythia8_wa102_benchmark_smoke
+    PROPERTIES
+        PASS_REGULAR_EXPRESSION
+            "aggregate_status=ok accepted_events=1"
+)
+
 add_test(
     NAME lowmc_pythia8_delphi_hadronic_jet_accounting_smoke
     COMMAND lowmc_pythia8_delphi_hadronic_benchmark
@@ -483,6 +529,22 @@ if(Python3_Interpreter_FOUND)
             DEPENDS lowmc_pythia8_delphi_hadronic_benchmark_smoke
             PASS_REGULAR_EXPRESSION
                 "theta_events=1 theta_jets=.*theta_pt400_direct_per_jet=.*theta_pt80_diagnostic_direct_per_jet="
+    )
+
+    add_test(
+        NAME lowmc_pythia8_wa102_summary_smoke
+        COMMAND ${Python3_EXECUTABLE}
+                ${CMAKE_SOURCE_DIR}/scripts/summarize_wa102_benchmark.py
+                ${CMAKE_CURRENT_BINARY_DIR}/pythia8_wa102_smoke.csv
+                --summary
+                ${CMAKE_CURRENT_BINARY_DIR}/pythia8_wa102_smoke_summary.csv
+    )
+    set_tests_properties(
+        lowmc_pythia8_wa102_summary_smoke
+        PROPERTIES
+            DEPENDS lowmc_pythia8_wa102_benchmark_smoke
+            PASS_REGULAR_EXPRESSION
+                "events=1 .*lowmc_over_direct=.*comparison_lowmc_over_direct="
     )
 endif()
 

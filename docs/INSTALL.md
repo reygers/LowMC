@@ -318,6 +318,50 @@ The accounting mode selects events with the nominal LUCLUS-like Lund
 configuration and records Lund, Durham, and JADE results for each identical
 generated event.
 
+## WA102 Fixed-Target Bremsstrahlung Benchmark
+
+Build and run the paired direct-integral/LowMC diagnostic with the optional
+Pythia8 adapter:
+
+```sh
+cmake --build build-pythia8 \
+  --target lowmc_pythia8_wa102_benchmark
+./build-pythia8/adapters/pythia8/lowmc_pythia8_wa102_benchmark \
+  build-pythia8/wa102_seed24680.csv \
+  --events 300 \
+  --seed 24680 \
+  --mc-samples 200000
+```
+
+The default is a `450 GeV/c` fixed-target Pythia 8
+`SoftQCD:inelastic` sample with the WA102 photon cuts. It writes truth,
+isolated, and isolated-plus-resolution-smeared spectra in ten `2 MeV/c`
+bins. The nominal approximate detector geometry uses a `66 cm` lead distance,
+`3 mm` isolation radius, uniform `1.2 T` field, `25 cm` sheet half-size, and
+`2.9 MeV/c` folded-Gaussian transverse-momentum resolution.
+
+Make the comparison plot with:
+
+```sh
+MPLCONFIGDIR=build-pythia8/matplotlib \
+python3 scripts/summarize_wa102_benchmark.py \
+  build-pythia8/wa102_seed24680.csv \
+  --summary build-pythia8/wa102_summary.csv \
+  --plot build-pythia8/wa102_comparison.png \
+  --isolation-plot build-pythia8/wa102_isolation_diagnostic.png
+```
+
+The primary comparison uses the no-isolation spectrum with the quoted average
+resolution and evaluates the external WA102 shape over
+`2 < pT < 18 MeV/c`. The first bin is isolation-sensitive and the final
+digitized bremsstrahlung marker is too close to zero for a stable ratio. The
+isolation model is retained only in the separate diagnostic plot.
+
+Probe the unknown target vertex by repeating the benchmark with
+`--lead-distance-m 0.36` and `--lead-distance-m 0.96`. A zero-field diagnostic
+uses `--magnetic-field-t 0`. Full assumptions and interpretation are recorded
+in [WA102_BENCHMARK_PLAN.md](WA102_BENCHMARK_PLAN.md).
+
 ## PHOTOS Benchmark
 
 PHOTOS remains an opt-in benchmark dependency and is not linked into the
