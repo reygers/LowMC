@@ -63,6 +63,10 @@ struct Options {
     double magneticFieldT = 1.2;
     double sheetHalfSizeM = 0.25;
     double ptResolutionGeV = 0.0029;
+    double trackThetaMinRad = 0.0;
+    double trackThetaMaxRad = 3.14159265358979323846;
+    double trackPtMinGeV = 0.0;
+    double trackEfficiency = 1.0;
 };
 
 struct SheetHit {
@@ -72,6 +76,7 @@ struct SheetHit {
 
 struct EventSelection {
     bool accepted = false;
+    int truthChargedMultiplicity = 0;
     int chargedMultiplicity = 0;
     std::vector<SheetHit> trackHits;
 };
@@ -112,6 +117,10 @@ void printUsage(std::ostream& output) {
         << "  --magnetic-field-t B      (default 1.2)\n"
         << "  --sheet-half-size-m H     (default 0.25)\n"
         << "  --pt-resolution-gev S     (default 0.0029)\n"
+        << "  --track-theta-min-rad T   (default 0)\n"
+        << "  --track-theta-max-rad T   (default pi)\n"
+        << "  --track-pt-min-gev P      (default 0)\n"
+        << "  --track-efficiency E      (default 1)\n"
         << "  --help\n";
 }
 
@@ -223,6 +232,26 @@ Options parseOptions(int argc, char** argv) {
         } else if (argument == "--pt-resolution-gev") {
             options.ptResolutionGeV = parseFinite(
                 readOption(index, argc, argv, argument), argument, true);
+        } else if (argument == "--track-theta-min-rad") {
+            options.trackThetaMinRad = parseFinite(
+                readOption(index, argc, argv, argument), argument, true);
+        } else if (argument == "--track-theta-max-rad") {
+            options.trackThetaMaxRad = parseFinite(
+                readOption(index, argc, argv, argument), argument, false);
+            if (options.trackThetaMaxRad > pi()) {
+                throw std::invalid_argument(
+                    argument + " expects a value no greater than pi");
+            }
+        } else if (argument == "--track-pt-min-gev") {
+            options.trackPtMinGeV = parseFinite(
+                readOption(index, argc, argv, argument), argument, true);
+        } else if (argument == "--track-efficiency") {
+            options.trackEfficiency = parseFinite(
+                readOption(index, argc, argv, argument), argument, true);
+            if (options.trackEfficiency > 1.0) {
+                throw std::invalid_argument(
+                    argument + " expects a value no greater than one");
+            }
         } else if (!argument.empty() && argument.front() == '-') {
             throw std::invalid_argument("unknown option: " + argument);
         } else if (!outputSet) {
@@ -232,6 +261,10 @@ Options parseOptions(int argc, char** argv) {
             throw std::invalid_argument(
                 "unexpected positional argument: " + argument);
         }
+    }
+    if (options.trackThetaMinRad >= options.trackThetaMaxRad) {
+        throw std::invalid_argument(
+            "track theta minimum must be below track theta maximum");
     }
     return options;
 }
@@ -380,12 +413,57 @@ bool trackSheetHit(
     return false;
 }
 
+std::uint64_t mixBits(std::uint64_t value) {
+    value += 0x9e3779b97f4a7c15ULL;
+    value = (value ^ (value >> 30U)) * 0xbf58476d1ce4e5b9ULL;
+    value = (value ^ (value >> 27U)) * 0x94d049bb133111ebULL;
+    return value ^ (value >> 31U);
+}
+
+bool retainTrack(
+    const Pythia8::Particle& particle,
+    const Options& options,
+    int attemptIndex,
+    int particleIndex) {
+    const double momentum = particle.pAbs();
+    if (!(momentum > 0.0) || !std::isfinite(momentum)) {
+        return false;
+    }
+    const double cosineTheta =
+        std::clamp(particle.pz() / momentum, -1.0, 1.0);
+    const double theta = std::acos(cosineTheta);
+    if (theta < options.trackThetaMinRad ||
+        theta > options.trackThetaMaxRad ||
+        particle.pT() < options.trackPtMinGeV) {
+        return false;
+    }
+    if (options.trackEfficiency >= 1.0) {
+        return true;
+    }
+    const std::uint64_t key =
+        options.seed ^
+        (0xd6e8feb86659fd93ULL *
+         static_cast<std::uint64_t>(attemptIndex)) ^
+        (0xa5a3564e27f8862bULL *
+         static_cast<std::uint64_t>(particleIndex + 1));
+    constexpr double InverseTwoTo53 = 1.0 / 9007199254740992.0;
+    const double uniform =
+        static_cast<double>(mixBits(key) >> 11U) * InverseTwoTo53;
+    return uniform < options.trackEfficiency;
+}
+
 EventSelection selectEvent(
-    const Pythia8::Event& event, const Options& options) {
+    const Pythia8::Event& event,
+    const Options& options,
+    int attemptIndex) {
     EventSelection result;
     for (int index = 0; index < event.size(); ++index) {
         const Pythia8::Particle& particle = event[index];
         if (!particle.isFinal() || !particle.isCharged()) {
+            continue;
+        }
+        ++result.truthChargedMultiplicity;
+        if (!retainTrack(particle, options, attemptIndex, index)) {
             continue;
         }
         ++result.chargedMultiplicity;
@@ -709,10 +787,13 @@ int main(int argc, char** argv) {
         }
         output
             << "seed,event_index,sampling_seed,attempt_index,"
-               "charged_multiplicity,selected_charged,selected_incoming,"
+               "truth_charged_multiplicity,charged_multiplicity,"
+               "selected_charged,selected_incoming,"
                "selected_outgoing,signed_charge_sum,track_hits,"
                "beam_momentum_GeV,lead_distance_m,isolation_distance_m,"
                "magnetic_field_T,sheet_half_size_m,pt_resolution_GeV,"
+               "track_theta_min_rad,track_theta_max_rad,"
+               "track_pt_min_GeV,track_efficiency,"
                "bin_index,pt_min_GeV,pt_max_GeV,"
                "direct_truth_yield_event,direct_isolated_yield_event,"
                "direct_truth_smeared_yield_event,"
@@ -758,7 +839,7 @@ int main(int argc, char** argv) {
                 continue;
             }
             const EventSelection selection =
-                selectEvent(pythia.event, options);
+                selectEvent(pythia.event, options, attemptedEvents);
             if (!selection.accepted) {
                 continue;
             }
@@ -832,6 +913,7 @@ int main(int argc, char** argv) {
                     << eventIndex << ','
                     << eventSamplingSeed << ','
                     << attemptedEvents << ','
+                    << selection.truthChargedMultiplicity << ','
                     << selection.chargedMultiplicity << ','
                     << particles.diagnostic.selectedChargedCount() << ','
                     << particles.diagnostic.selectedIncomingCharged << ','
@@ -844,6 +926,10 @@ int main(int argc, char** argv) {
                     << options.magneticFieldT << ','
                     << options.sheetHalfSizeM << ','
                     << options.ptResolutionGeV << ','
+                    << options.trackThetaMinRad << ','
+                    << options.trackThetaMaxRad << ','
+                    << options.trackPtMinGeV << ','
+                    << options.trackEfficiency << ','
                     << bin << ','
                     << static_cast<double>(bin) * PtBinWidth << ','
                     << static_cast<double>(bin + 1) * PtBinWidth << ','
@@ -936,6 +1022,13 @@ int main(int argc, char** argv) {
             << " isolation_distance_m=" << options.isolationDistanceM
             << " magnetic_field_T=" << options.magneticFieldT
             << " pt_resolution_GeV=" << options.ptResolutionGeV
+            << " track_theta_min_rad=" << options.trackThetaMinRad
+            << " track_theta_max_rad=" << options.trackThetaMaxRad
+            << " track_pt_min_GeV=" << options.trackPtMinGeV
+            << " track_efficiency=" << options.trackEfficiency
+            << " event_selection_efficiency="
+            << static_cast<double>(acceptedEvents) /
+                   static_cast<double>(attemptedEvents)
             << " direct_truth_per_event=" << directTruth
             << " direct_isolated_per_event=" << directIsolated
             << " isolation_efficiency="
