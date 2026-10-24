@@ -499,15 +499,15 @@ skeleton.
 
 ### Dielectron extension
 
-No implementation path is chosen yet for virtual photons or dielectrons. The
-current tendency is to make the first prototype pragmatic and factorized:
-produce a soft virtual photon with the Low current, sample its invariant mass,
-apply the Kroll-Wada conversion factor, and decay it to an electron-positron
-pair. This should be treated as a first-prototype tendency, not as a final
-physics decision. A later fully differential implementation should revisit the
-full $J_\mu L^{\mu\nu}J_\nu$ tensor structure, especially for lepton-pair
-angular distributions, polarization information, and longitudinal virtual
-photon contributions.
+The first implementation is weighted and factorized: produce a timelike soft
+virtual photon with the leading Low current, sample in
+`dM^2 qT dqT dy dphi`, apply the angle-integrated Kroll--Wada factor, and decay
+it to an electron-positron pair. Isotropic decay proposals receive the
+normalized leading-current polarization weight obtained from
+$J_\mu L^{\mu\nu}J_\nu$. The implementation does not alter the hadronic event
+or include recoil, finite-$q$ external-line terms, form factors, or subleading
+process-dependent radiation. Those are separate, future physics modes rather
+than silent corrections to this baseline.
 
 ### Existing QED radiation
 

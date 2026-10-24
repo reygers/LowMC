@@ -1,7 +1,7 @@
 # LowMC
 
 LowMC is an early-development C++ Monte Carlo library for coherent soft-photon
-emission based on the leading Low theorem.
+and soft-dielectron emission based on the leading Low theorem.
 
 The project is designed as a generator-independent core with optional event
 generator adapters. The core works on selected charged particles and returns
@@ -17,6 +17,7 @@ Currently implemented:
 - generator-independent soft-photon core
 - coherent event-level Low current
 - weighted photon sampling
+- weighted soft-dielectron sampling through virtual photons and Kroll--Wada conversion
 - fixed- and full-phase-space diagnostics
 - HepMC3 adapter and provisional afterburner diagnostic
 - Pythia8 adapter diagnostics
@@ -27,7 +28,7 @@ Still under validation:
 - production unweighted-photon output
 - final HepMC3 command-line interface
 - broad physics and performance validation
-- virtual-photon and dielectron support
+- recoil and finite-mass corrections beyond the leading virtual Low current
 
 ## Repository Layout
 

@@ -5,7 +5,15 @@
 LowMC is in early development.
 
 The current project definition is a generator-independent C++ afterburner for
-coherent soft-photon emission based on the leading Low theorem.
+coherent soft-photon emission and weighted soft-dielectron production based on
+the leading Low theorem.
+
+The core now includes a first soft-dielectron baseline. It samples timelike
+virtual photons in `dM^2 qT dqT dy dphi`, applies the pointlike Kroll--Wada
+conversion factor, and returns on-shell electron-positron kinematics with a
+normalized leading-current polarization weight. This mode is weighted and
+does not yet include hadronic recoil, Lichard finite-$q$ corrections, or
+event-record output.
 
 The initial generator-independent core kernel skeleton exists under `src/`.
 It implements four-vector arithmetic, charged particles with `inOutSign`,

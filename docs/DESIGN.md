@@ -26,7 +26,8 @@ Low formula.
 - HepMC3 support
 - Pythia8 interface
 - weighted generation and provisional unweighted HepMC3 output
-- future support for virtual photons and dielectrons
+- weighted leading-soft virtual photons and dielectrons, with more complete
+  recoil and finite-$q$ treatments left as future modes
 
 ## Status
 

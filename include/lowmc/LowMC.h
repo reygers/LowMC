@@ -3,6 +3,7 @@
 #include "lowmc/AdapterSupport.h"
 #include "lowmc/AnalyticLowBound.h"
 #include "lowmc/ChargedParticle.h"
+#include "lowmc/Dielectron.h"
 #include "lowmc/EventYield.h"
 #include "lowmc/EtaPhiProposal.h"
 #include "lowmc/FixedKTWeightedSampler.h"
