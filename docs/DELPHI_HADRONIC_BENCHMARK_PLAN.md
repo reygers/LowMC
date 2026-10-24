@@ -429,6 +429,38 @@ The total-rate, spectral, implementation, and seed-stability gates pass. The
 Durham variation remains a literal non-pass of the predeclared few-percent
 expectation; no `ycut` or photon cut was tuned in response.
 
+### Jet-axis resolution audit
+
+DELPHI reports a mean reconstructed-jet displacement from the primary quark
+of about `40 mrad` for jets above `40 GeV`, increasing toward `50 mrad` at
+lower momentum. This number is not a detector-only resolution that should be
+added directly to the present particle-level axes. In a `600`-event
+same-sample accounting run, the `568` accepted LUCLUS-like jets above
+`40 GeV` already have a mean nearest-hard-quark displacement of `36.0 mrad`.
+If the two contributions are treated as independent isotropic angular errors,
+the residual needed to reach a `40 mrad` total is only about `17 mrad`.
+
+A paired `30`-event sensitivity scan applies an additional isotropic angular
+smearing to otherwise identical events and gives:
+
+| added mean displacement | pT direct / DELPHI | pT diagonal chi2 / 10 | theta direct / DELPHI | theta shape L1 |
+|---:|---:|---:|---:|---:|
+| `0 mrad` | 1.0284 | 1.223 | 0.9829 | 0.0352 |
+| `10 mrad` | 1.0268 | 1.046 | 0.9824 | 0.0415 |
+| `20 mrad` | 1.0212 | 2.988 | 0.9756 | 0.0449 |
+| `30 mrad` | 1.0117 | 7.915 | 0.9696 | 0.0565 |
+| `40 mrad` | 0.9983 | 15.374 | 0.9687 | 0.0675 |
+| `45 mrad` | 0.9901 | 19.885 | 0.9678 | 0.0729 |
+| `50 mrad` | 0.9813 | 24.696 | 0.9669 | 0.0774 |
+
+The plausible residual smearing has a modest effect and does not remove the
+visible angular-shape difference. Adding the full quoted DELPHI displacement
+again strongly degrades both shapes and demonstrably double-counts the
+quark-to-particle-level-jet decorrelation. The nominal figure should therefore
+retain the unsmeared particle-level axes, with the missing detector-level
+reconstruction recorded as a small residual systematic rather than modeled
+by an extra `40--50 mrad` rotation.
+
 A final accounting-only run applies all three algorithms to exactly the same
 `600` LUCLUS-selected Pythia events, without repeating a Low-current
 calculation:

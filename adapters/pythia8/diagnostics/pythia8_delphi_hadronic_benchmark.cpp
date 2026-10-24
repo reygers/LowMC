@@ -54,12 +54,14 @@ struct Options {
     std::uint64_t seed = 12345;
     std::uint64_t samplingSeed = 0;
     double legUniformFraction = 0.1;
+    double jetAxisMeanSmearingMrad = 0.0;
     bool electronVeto = true;
     bool jetAccountingOnly = false;
 };
 
 struct JetAxis {
     int clusterIndex = -1;
+    double momentumGeV = 0.0;
     double nx = 0.0;
     double ny = 0.0;
     double nz = 0.0;
@@ -109,6 +111,9 @@ void printUsage(std::ostream& output) {
         << "  --direct-refinement-levels N --direct-subbins N\n"
         << "  --seed N --sampling-seed N\n"
         << "  --leg-uniform-fraction F\n"
+        << "  --jet-axis-mean-smearing-mrad X\n"
+        << "      Isotropically smear each accepted jet axis with mean angular\n"
+        << "      displacement X mrad (default: 0, generator-level axes).\n"
         << "  --no-electron-veto\n"
         << "  --jet-accounting-only\n"
         << "      Write fast same-event Lund/Durham/JADE jet diagnostics only.\n"
@@ -151,6 +156,17 @@ double parseFraction(const std::string& text, const std::string& optionName) {
     if (parsed != text.size() || !std::isfinite(value) ||
         !(value > 0.0 && value < 1.0)) {
         throw std::invalid_argument(optionName + " expects 0 < value < 1");
+    }
+    return value;
+}
+
+double parseNonNegativeDouble(
+    const std::string& text, const std::string& optionName) {
+    std::size_t parsed = 0;
+    const double value = std::stod(text, &parsed);
+    if (parsed != text.size() || !std::isfinite(value) || value < 0.0) {
+        throw std::invalid_argument(
+            optionName + " expects a non-negative finite number");
     }
     return value;
 }
@@ -233,6 +249,9 @@ Options parseOptions(int argc, char** argv) {
         } else if (argument == "--leg-uniform-fraction") {
             options.legUniformFraction = parseFraction(
                 readOption(index, argc, argv, argument), argument);
+        } else if (argument == "--jet-axis-mean-smearing-mrad") {
+            options.jetAxisMeanSmearingMrad = parseNonNegativeDouble(
+                readOption(index, argc, argv, argument), argument);
         } else if (argument == "--no-electron-veto") {
             options.electronVeto = false;
         } else if (argument == "--jet-accounting-only") {
@@ -266,6 +285,52 @@ Options parseOptions(int argc, char** argv) {
 
 double pi() {
     return std::acos(-1.0);
+}
+
+void smearJetAxes(
+    std::vector<JetAxis>& jets,
+    double meanAngularDisplacementMrad,
+    std::uint64_t seed) {
+    if (!(meanAngularDisplacementMrad > 0.0)) {
+        return;
+    }
+    // An isotropic two-dimensional Gaussian angular error has a Rayleigh
+    // radial displacement. Convert its requested mean radius to the Gaussian
+    // width of either tangent-plane component.
+    const double componentSigma =
+        1.0e-3 * meanAngularDisplacementMrad /
+        std::sqrt(pi() / 2.0);
+    std::mt19937_64 engine(seed);
+    std::normal_distribution<double> normal(0.0, componentSigma);
+    for (JetAxis& jet : jets) {
+        const double referenceX = std::abs(jet.nz) < 0.9 ? 0.0 : 1.0;
+        const double referenceZ = std::abs(jet.nz) < 0.9 ? 1.0 : 0.0;
+        const double firstX = referenceZ * jet.ny;
+        const double firstY = referenceX * jet.nz - referenceZ * jet.nx;
+        const double firstZ = -referenceX * jet.ny;
+        const double firstMagnitude =
+            std::sqrt(firstX * firstX + firstY * firstY + firstZ * firstZ);
+        const double e1x = firstX / firstMagnitude;
+        const double e1y = firstY / firstMagnitude;
+        const double e1z = firstZ / firstMagnitude;
+        const double e2x = jet.ny * e1z - jet.nz * e1y;
+        const double e2y = jet.nz * e1x - jet.nx * e1z;
+        const double e2z = jet.nx * e1y - jet.ny * e1x;
+        const double offset1 = normal(engine);
+        const double offset2 = normal(engine);
+        const double angle = std::hypot(offset1, offset2);
+        if (!(angle > 0.0)) {
+            continue;
+        }
+        const double transverseScale = std::sin(angle) / angle;
+        const double longitudinalScale = std::cos(angle);
+        jet.nx = longitudinalScale * jet.nx +
+                 transverseScale * (offset1 * e1x + offset2 * e2x);
+        jet.ny = longitudinalScale * jet.ny +
+                 transverseScale * (offset1 * e1y + offset2 * e2y);
+        jet.nz = longitudinalScale * jet.nz +
+                 transverseScale * (offset1 * e1z + offset2 * e2z);
+    }
 }
 
 double thetaToEta(double theta) {
@@ -372,6 +437,7 @@ EventSelection selectEvent(
         }
         result.acceptedJets.push_back(JetAxis{
             jetIndex,
+            magnitude,
             momentum.px() / magnitude,
             momentum.py() / magnitude,
             momentum.pz() / magnitude,
@@ -698,20 +764,50 @@ int hardFlavor(const Pythia8::Event& event) {
     return 0;
 }
 
+std::vector<JetAxis> hardQuarkAxes(const Pythia8::Event& event) {
+    std::vector<JetAxis> result;
+    for (int index = 0; index < event.size(); ++index) {
+        const Pythia8::Particle& particle = event[index];
+        const int idAbs = std::abs(particle.id());
+        if (idAbs < 1 || idAbs > 5 ||
+            std::abs(particle.status()) != 23) {
+            continue;
+        }
+        const double magnitude = particle.pAbs();
+        if (!(magnitude > 0.0)) {
+            continue;
+        }
+        result.push_back(JetAxis{
+            index,
+            magnitude,
+            particle.px() / magnitude,
+            particle.py() / magnitude,
+            particle.pz() / magnitude,
+        });
+    }
+    return result;
+}
+
 struct NearestAxisSummary {
     double meanAngle = std::numeric_limits<double>::quiet_NaN();
     double maxAngle = std::numeric_limits<double>::quiet_NaN();
+    int sourceCount = 0;
 };
 
 NearestAxisSummary nearestAxisSummary(
     const std::vector<JetAxis>& from,
-    const std::vector<JetAxis>& to) {
+    const std::vector<JetAxis>& to,
+    double minimumSourceMomentumGeV = 0.0) {
     if (from.empty() || to.empty()) {
         return {};
     }
     double angleSum = 0.0;
     double maxAngle = 0.0;
+    int sourceCount = 0;
     for (const JetAxis& source : from) {
+        if (source.momentumGeV < minimumSourceMomentumGeV) {
+            continue;
+        }
         double closestCosine = -1.0;
         for (const JetAxis& target : to) {
             closestCosine = std::max(
@@ -724,10 +820,15 @@ NearestAxisSummary nearestAxisSummary(
             std::acos(std::clamp(closestCosine, -1.0, 1.0));
         angleSum += angle;
         maxAngle = std::max(maxAngle, angle);
+        ++sourceCount;
+    }
+    if (sourceCount == 0) {
+        return {};
     }
     return NearestAxisSummary{
-        angleSum / static_cast<double>(from.size()),
+        angleSum / static_cast<double>(sourceCount),
         maxAngle,
+        sourceCount,
     };
 }
 
@@ -741,7 +842,8 @@ void writeJetAccountingRow(
     double yScale,
     double ptScale,
     const EventSelection& selection,
-    const EventSelection& lundSelection) {
+    const EventSelection& lundSelection,
+    const std::vector<JetAxis>& hardQuarks) {
     const NearestAxisSummary algorithmToLund =
         nearestAxisSummary(
             selection.acceptedJets,
@@ -750,6 +852,10 @@ void writeJetAccountingRow(
         nearestAxisSummary(
             lundSelection.acceptedJets,
             selection.acceptedJets);
+    const NearestAxisSummary jetToQuark =
+        nearestAxisSummary(selection.acceptedJets, hardQuarks);
+    const NearestAxisSummary highMomentumJetToQuark =
+        nearestAxisSummary(selection.acceptedJets, hardQuarks, 40.0);
     output
         << options.seed << ','
         << eventIndex << ','
@@ -767,7 +873,10 @@ void writeJetAccountingRow(
         << algorithmToLund.meanAngle << ','
         << algorithmToLund.maxAngle << ','
         << lundToAlgorithm.meanAngle << ','
-        << lundToAlgorithm.maxAngle << '\n';
+        << lundToAlgorithm.maxAngle << ','
+        << jetToQuark.meanAngle << ','
+        << highMomentumJetToQuark.meanAngle << ','
+        << highMomentumJetToQuark.sourceCount << '\n';
 }
 
 int runJetAccounting(const Options& options) {
@@ -784,7 +893,10 @@ int runJetAccounting(const Options& options) {
            "mean_algorithm_to_lund_angle_rad,"
            "max_algorithm_to_lund_angle_rad,"
            "mean_lund_to_algorithm_angle_rad,"
-           "max_lund_to_algorithm_angle_rad\n";
+           "max_lund_to_algorithm_angle_rad,"
+           "mean_jet_to_hard_quark_angle_rad,"
+           "mean_p40_jet_to_hard_quark_angle_rad,"
+           "p40_jet_to_hard_quark_count\n";
     output << std::setprecision(17);
 
     Pythia8::Pythia pythia(LOWMC_PYTHIA8_XMLDOC, false);
@@ -848,6 +960,7 @@ int runJetAccounting(const Options& options) {
                 0.0,
                 options.electronVeto);
         const int flavor = hardFlavor(pythia.event);
+        const std::vector<JetAxis> hardQuarks = hardQuarkAxes(pythia.event);
         writeJetAccountingRow(
             output,
             options,
@@ -858,7 +971,8 @@ int runJetAccounting(const Options& options) {
             0.0,
             3.0,
             lundSelection,
-            lundSelection);
+            lundSelection,
+            hardQuarks);
         writeJetAccountingRow(
             output,
             options,
@@ -869,7 +983,8 @@ int runJetAccounting(const Options& options) {
             0.01,
             0.0,
             durhamSelection,
-            lundSelection);
+            lundSelection,
+            hardQuarks);
         writeJetAccountingRow(
             output,
             options,
@@ -880,7 +995,8 @@ int runJetAccounting(const Options& options) {
             0.01,
             0.0,
             jadeSelection,
-            lundSelection);
+            lundSelection,
+            hardQuarks);
         ++writtenEvents;
     }
     if (!output) {
@@ -917,7 +1033,8 @@ int main(int argc, char** argv) {
         }
         output
             << "seed,event_index,sampling_seed,jet_algorithm,jet_y_scale,"
-               "jet_pt_scale_GeV,hard_flavor,charged_multiplicity,"
+               "jet_pt_scale_GeV,jet_axis_mean_smearing_mrad,hard_flavor,"
+               "charged_multiplicity,"
                "visible_energy,total_jets,accepted_jets,selected_charged,"
                "selected_outgoing,signed_charge_sum,electron_veto,"
                "generator_qed_radiation,theta_gamma_jet_max,bin_index,"
@@ -930,7 +1047,7 @@ int main(int argc, char** argv) {
         output << std::setprecision(17);
         jointOutput
             << "seed,event_index,sampling_seed,jet_algorithm,jet_y_scale,"
-               "jet_pt_scale_GeV,accepted_jets,"
+               "jet_pt_scale_GeV,jet_axis_mean_smearing_mrad,accepted_jets,"
                "pt_bin_index,pt_min_GeV,pt_max_GeV,"
                "theta_bin_index,theta_min_rad,theta_max_rad,"
                "direct_yield_event,direct_coarse_yield_event,"
@@ -966,7 +1083,7 @@ int main(int argc, char** argv) {
             if (!pythia.next()) {
                 continue;
             }
-            const EventSelection eventSelection =
+            EventSelection eventSelection =
                 selectEvent(
                     pythia.event,
                     thrust,
@@ -988,6 +1105,11 @@ int main(int argc, char** argv) {
             if (eventIndex < options.firstEvent) {
                 continue;
             }
+            smearJetAxes(
+                eventSelection.acceptedJets,
+                options.jetAxisMeanSmearingMrad,
+                options.seed + 32452843ULL *
+                    static_cast<std::uint64_t>(eventIndex + 1));
 
             const lowmc::LowCurrent current(
                 particleSelection.selectedParticles);
@@ -1047,6 +1169,7 @@ int main(int argc, char** argv) {
                     << options.jetAlgorithm << ','
                     << jetYScale(options) << ','
                     << jetPtScale(options) << ','
+                    << options.jetAxisMeanSmearingMrad << ','
                     << hardFlavor(pythia.event) << ','
                     << eventSelection.chargedMultiplicity << ','
                     << eventSelection.visibleEnergy << ','
@@ -1101,6 +1224,7 @@ int main(int argc, char** argv) {
                         << options.jetAlgorithm << ','
                         << jetYScale(options) << ','
                         << jetPtScale(options) << ','
+                        << options.jetAxisMeanSmearingMrad << ','
                         << eventSelection.acceptedJets.size() << ','
                         << ptBinIndex << ','
                         << static_cast<double>(ptBinIndex) * PtBinWidth

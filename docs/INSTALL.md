@@ -298,6 +298,13 @@ The default jet algorithm is LUCLUS (`--jet-algorithm Lund`) with
 `--jet-algorithm Durham` or `--jet-algorithm Jade`; both select
 `ycut = 0.01`. The chosen algorithm and scale are written to both CSV files.
 
+For a detector-resolution sensitivity test,
+`--jet-axis-mean-smearing-mrad X` independently rotates every accepted jet
+axis with an isotropic two-dimensional angular error whose mean displacement
+is `X` mrad. The default is zero. This option is a diagnostic: DELPHI's quoted
+40--50 mrad is the total reconstructed-jet displacement from the primary
+quark, so it must not automatically be added to a particle-level jet axis.
+
 For a fast same-event comparison of jet counts and axes, without evaluating
 the Low current, run:
 
