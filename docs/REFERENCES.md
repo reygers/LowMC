@@ -10,6 +10,8 @@
   Production", Acta Physica Slovaca 41, no. 4 (1991).
   Local working note:
   `literature/Balek-Pisutova-Pisut-1991-soft-dileptons/balek-pisutova-pisut-soft-dileptons-summary.md`
+- P. Lichard, "Formalism for dilepton production via virtual photon
+  bremsstrahlung in hadronic reactions", Physical Review D 51 (1995) 6017.
 
 ## Experimental Benchmarks
 

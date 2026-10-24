@@ -1,5 +1,6 @@
 add_library(lowmc_core STATIC
     src/AnalyticLowBound.cpp
+    src/Dielectron.cpp
     src/EventYield.cpp
     src/FixedKTWeightedSampler.cpp
     src/GridEtaPhiProposal.cpp
@@ -949,6 +950,10 @@ lowmc_add_core_example(
     examples/basic/generate_weighted_photons.cpp
 )
 lowmc_add_core_example(
+    lowmc_example_weighted_dielectrons
+    examples/basic/generate_weighted_dielectrons.cpp
+)
+lowmc_add_core_example(
     lowmc_example_event_multiplicity
     examples/basic/sample_event_multiplicity.cpp
 )
@@ -967,6 +972,12 @@ add_test(NAME lowmc_example_weighted_photons COMMAND lowmc_example_weighted_phot
 set_tests_properties(
     lowmc_example_weighted_photons
     PROPERTIES PASS_REGULAR_EXPRESSION "weighted_photons=1000"
+)
+
+add_test(NAME lowmc_example_weighted_dielectrons COMMAND lowmc_example_weighted_dielectrons)
+set_tests_properties(
+    lowmc_example_weighted_dielectrons
+    PROPERTIES PASS_REGULAR_EXPRESSION "weighted_dielectrons=1000"
 )
 
 add_test(NAME lowmc_example_event_multiplicity COMMAND lowmc_example_event_multiplicity)

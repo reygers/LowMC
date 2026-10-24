@@ -2640,6 +2640,173 @@ void testInvalidPhotonPhaseSpacesAreRejected() {
         "non-finite bound");
 }
 
+lowmc::DielectronPhaseSpace testDielectronPhaseSpace() {
+    return lowmc::DielectronPhaseSpace{
+        0.002,
+        0.2,
+        0.01,
+        0.3,
+        -1.0,
+        1.0,
+        0.0,
+        2.0 * std::acos(-1.0),
+    };
+}
+
+lowmc::LowCurrent dielectronTestCurrent() {
+    return lowmc::LowCurrent({
+        {lowmc::FourVector{3.0, 1.0, 0.0, 2.0}, +1.0, lowmc::InOutSign::Outgoing},
+        {lowmc::FourVector{3.0, -1.0, 0.0, -2.0}, -1.0, lowmc::InOutSign::Outgoing},
+    });
+}
+
+void testVirtualPhotonKinematicsAndWardIdentity() {
+    const double mass = 0.08;
+    const double qT = 0.12;
+    const lowmc::FourVector q =
+        lowmc::virtualPhotonMomentumFromMassQTRapidityPhi(mass, qT, 0.7, 1.1);
+    requireNear(q.mass2(), mass * mass, 2.0e-16, "virtual photon invariant mass");
+    requireNear(q.pt(), qT, 1.0e-15, "virtual photon transverse momentum");
+
+    const lowmc::LowCurrent current = dielectronTestCurrent();
+    requireNear(q.dot(current.current(q)), 0.0, 1.0e-12,
+        "charge-conserving virtual Low current should satisfy q.J=0");
+    require(lowmc::lowVirtualPhotonDensity(current, q) > 0.0,
+        "virtual photon density should be positive for the conserved toy current");
+}
+
+void testKrollWadaThresholdAndNormalization() {
+    requireNear(
+        lowmc::krollWadaConversionDensityDMass2(2.0 * lowmc::ElectronMassGeV),
+        0.0,
+        0.0,
+        "Kroll-Wada density should vanish exactly at pair threshold");
+    const double mass = 0.02;
+    const double alpha = 0.01;
+    const double mass2 = mass * mass;
+    const double ratio = lowmc::ElectronMassGeV * lowmc::ElectronMassGeV / mass2;
+    const double expected = alpha / (3.0 * std::acos(-1.0) * mass2) *
+        std::sqrt(1.0 - 4.0 * ratio) * (1.0 + 2.0 * ratio);
+    requireNear(
+        lowmc::krollWadaConversionDensityDMass2(
+            mass, lowmc::ElectronMassGeV, alpha),
+        expected,
+        1.0e-14,
+        "Kroll-Wada density should use the dM^2 convention");
+}
+
+void testWeightedDielectronConservesFourMomentumAndMassShells() {
+    const lowmc::WeightedDielectronSample sample =
+        lowmc::makeWeightedDielectronSample(
+            dielectronTestCurrent(),
+            testDielectronPhaseSpace(),
+            0.3,
+            0.4,
+            0.6,
+            0.7,
+            0.2,
+            0.9);
+    const lowmc::FourVector pair = sample.dielectron.pairMomentum();
+    requireNear(pair.E, sample.virtualPhoton.E, 2.0e-14, "dielectron energy conservation");
+    requireNear(pair.px, sample.virtualPhoton.px, 2.0e-14, "dielectron px conservation");
+    requireNear(pair.py, sample.virtualPhoton.py, 2.0e-14, "dielectron py conservation");
+    requireNear(pair.pz, sample.virtualPhoton.pz, 2.0e-14, "dielectron pz conservation");
+    const double electronMass2 = lowmc::ElectronMassGeV * lowmc::ElectronMassGeV;
+    requireNear(sample.dielectron.electron.mass2(), electronMass2, 2.0e-15,
+        "electron should be on shell");
+    requireNear(sample.dielectron.positron.mass2(), electronMass2, 2.0e-15,
+        "positron should be on shell");
+    require(sample.dielectron.weight > 0.0 && std::isfinite(sample.dielectron.weight),
+        "weighted dielectron should have a positive finite weight");
+    requireNear(
+        sample.dielectron.weight,
+        sample.productionDensity * sample.conversionDensityDMass2 *
+            sample.decayAngularWeight / sample.proposalDensity,
+        1.0e-14 * sample.dielectron.weight,
+        "dielectron weight should combine production, conversion, decay, and proposal");
+}
+
+void testDielectronDecayAngularWeightIsNormalized() {
+    const lowmc::LowCurrent current = dielectronTestCurrent();
+    double sum = 0.0;
+    const int cosBins = 80;
+    const int phiBins = 96;
+    for (int cosIndex = 0; cosIndex < cosBins; ++cosIndex) {
+        for (int phiIndex = 0; phiIndex < phiBins; ++phiIndex) {
+            const lowmc::WeightedDielectronSample sample =
+                lowmc::makeWeightedDielectronSample(
+                    current,
+                    testDielectronPhaseSpace(),
+                    0.4,
+                    0.5,
+                    0.6,
+                    0.7,
+                    (static_cast<double>(cosIndex) + 0.5) / cosBins,
+                    (static_cast<double>(phiIndex) + 0.5) / phiBins);
+            sum += sample.decayAngularWeight;
+        }
+    }
+    requireNear(sum / static_cast<double>(cosBins * phiBins), 1.0, 2.0e-4,
+        "polarized decay correction should average to one over isotropic angles");
+}
+
+void testVirtualPhotonMasslessLimitMatchesRealPhotonDensity() {
+    const lowmc::LowCurrent current = dielectronTestCurrent();
+    const double qT = 0.1;
+    const double rapidity = 0.4;
+    const double phi = 1.3;
+    const lowmc::FourVector real =
+        lowmc::photonMomentumFromKTEtaPhi(qT, rapidity, phi);
+    const lowmc::FourVector almostReal =
+        lowmc::virtualPhotonMomentumFromMassQTRapidityPhi(
+            1.0e-7, qT, rapidity, phi);
+    const double realDensity = lowmc::lowPhotonDensity(current, real);
+    requireNear(
+        lowmc::lowVirtualPhotonDensity(current, almostReal),
+        realDensity,
+        2.0e-11 * realDensity,
+        "virtual Low density should approach the real-photon density as M approaches zero");
+}
+
+void testWeightedDielectronGeneratorIsReproducible() {
+    const std::vector<lowmc::ChargedParticle> particles =
+        dielectronTestCurrent().particles();
+    const lowmc::WeightedDielectronGeneratorConfig config{
+        testDielectronPhaseSpace(), 12, 98765, 2};
+    const lowmc::WeightedDielectronGenerationResult first =
+        lowmc::generateWeightedDielectrons(particles, config);
+    const lowmc::WeightedDielectronGenerationResult second =
+        lowmc::generateWeightedDielectrons(particles, config);
+    require(first.samples.size() == 24, "dielectron oversampling should increase sample count");
+    require(first.samples.size() == second.samples.size(),
+        "repeated dielectron generation should preserve sample count");
+    for (std::size_t index = 0; index < first.samples.size(); ++index) {
+        requireNear(first.samples[index].dielectron.weight,
+            second.samples[index].dielectron.weight, 0.0,
+            "dielectron generation should be reproducible for a fixed seed");
+        requireNear(first.samples[index].dielectron.electron.E,
+            second.samples[index].dielectron.electron.E, 0.0,
+            "dielectron decay should be reproducible for a fixed seed");
+    }
+    require(first.chargeConservation.conserved,
+        "dielectron generator should report charge conservation");
+    require(first.weightSummary.count == first.samples.size(),
+        "dielectron weight summary should include every generated pair");
+}
+
+void makeDielectronBelowThreshold() {
+    lowmc::DielectronPhaseSpace phaseSpace = testDielectronPhaseSpace();
+    phaseSpace.massMin = lowmc::ElectronMassGeV;
+    static_cast<void>(lowmc::makeWeightedDielectronSample(
+        dielectronTestCurrent(), phaseSpace, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5));
+}
+
+void testDielectronRejectsInvalidPhaseSpace() {
+    requireThrowsInvalidArgument(
+        makeDielectronBelowThreshold,
+        "dielectron generation should reject masses below pair threshold");
+}
+
 }  // namespace
 
 int main() {
@@ -2722,6 +2889,13 @@ int main() {
     testNonConservingChargeSelectionIsReported();
     testValidPhotonPhaseSpaceIsAccepted();
     testInvalidPhotonPhaseSpacesAreRejected();
+    testVirtualPhotonKinematicsAndWardIdentity();
+    testKrollWadaThresholdAndNormalization();
+    testWeightedDielectronConservesFourMomentumAndMassShells();
+    testDielectronDecayAngularWeightIsNormalized();
+    testVirtualPhotonMasslessLimitMatchesRealPhotonDensity();
+    testWeightedDielectronGeneratorIsReproducible();
+    testDielectronRejectsInvalidPhaseSpace();
 
     std::cout << "All LowMC core tests passed\n";
     return EXIT_SUCCESS;

@@ -124,6 +124,56 @@ A CSV-writing diagnostic executable is also available:
 It writes a CSV with photon four-vectors, sampled `k_T`, `eta`, `phi`, proposal
 density, and weight.
 
+## Weighted Soft Dielectrons
+
+The leading virtual-photon extension uses the same selected charged particles.
+It samples pair mass, pair transverse momentum, pair rapidity, azimuth, and the
+two decay angles:
+
+```cpp
+lowmc::WeightedDielectronGeneratorConfig pairConfig{
+    lowmc::DielectronPhaseSpace{
+        0.002,                  // M_min [GeV]
+        0.3,                    // M_max [GeV]
+        0.002,                  // qT_min [GeV]
+        0.2,                    // qT_max [GeV]
+        -1.0,                   // y_min
+        1.0,                    // y_max
+        0.0,
+        2.0 * std::acos(-1.0),
+    },
+    1000,
+    12345,
+    1,                         // oversamplingFactor
+};
+
+lowmc::WeightedDielectronGenerationResult pairs =
+    lowmc::generateWeightedDielectrons(selectedParticles, pairConfig);
+
+for (const lowmc::WeightedDielectronSample& sample : pairs.samples) {
+    // Fill pair or single-lepton histograms with sample.dielectron.weight.
+    const lowmc::FourVector& electron = sample.dielectron.electron;
+    const lowmc::FourVector& positron = sample.dielectron.positron;
+}
+```
+
+The weight is defined for the physical measure
+`dM^2 qT dqT dy dphi` and includes the leading virtual Low density, the
+angle-integrated Kroll--Wada density, the exact proposal density, and a
+normalized polarization-dependent decay-angle correction. The electron and
+positron sum exactly to `sample.virtualPhoton` up to floating-point precision.
+
+This mode is a weighted leading-soft baseline. It does not apply recoil to the
+hadronic event and does not implement Lichard finite-$q$ terms, form factors,
+or subleading process-dependent radiation. A charge-conserving selected
+current is required for its Ward identity and polarization interpretation.
+
+The compiled example is:
+
+```sh
+./build/lowmc_example_weighted_dielectrons
+```
+
 ## Shape-Unweighted Candidate API
 
 The shape-unweighting API uses the same direct charged-particle input, but

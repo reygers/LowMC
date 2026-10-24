@@ -12,6 +12,7 @@ default.
 |---|---|---|
 | `basic/evaluate_low_current.cpp` | Evaluate the coherent current, intensity, and density at one photon momentum | `lowmc_example_low_current` |
 | `basic/generate_weighted_photons.cpp` | Generate weighted photons from a hand-constructed charged event | `lowmc_example_weighted_photons` |
+| `basic/generate_weighted_dielectrons.cpp` | Generate weighted virtual photons and polarization-aware electron-positron decays | `lowmc_example_weighted_dielectrons` |
 | `basic/sample_event_multiplicity.cpp` | Integrate `lambda_event` and make one physical Poisson multiplicity draw | `lowmc_example_event_multiplicity` |
 
 ## Advanced
@@ -28,10 +29,11 @@ These examples introduce shape unweighting or optional event interfaces.
 
 1. `evaluate_low_current.cpp`
 2. `generate_weighted_photons.cpp`
-3. `sample_event_multiplicity.cpp`
-4. `shape_unweighting.cpp`
-5. `hepmc3_afterburner.py`
-6. `pythia8_weighted_photons.cpp`
+3. `generate_weighted_dielectrons.cpp`
+4. `sample_event_multiplicity.cpp`
+5. `shape_unweighting.cpp`
+6. `hepmc3_afterburner.py`
+7. `pythia8_weighted_photons.cpp`
 
 The examples use fixed, visible configurations and intentionally avoid general
 command-line parsing, CSV scans, plotting, and tuning. Programs for those tasks

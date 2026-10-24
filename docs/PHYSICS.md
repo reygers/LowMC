@@ -18,6 +18,7 @@ Current scope:
 
 * leading-order Low theorem
 * coherent soft-photon emission
+* leading-current soft virtual photons and weighted dielectron conversion
 * arbitrary charged external particles
 * event-by-event calculation
 
@@ -26,8 +27,8 @@ Not yet included:
 * multiple-photon exponentiation
 * recoil prescriptions
 * higher-order corrections
-* virtual photons
-* dielectron generation
+* virtual-photon recoil or finite-$q$ corrections
+* unweighted dielectron event-record output
 
 ---
 
@@ -304,16 +305,17 @@ The implementation should therefore make the particle selection configurable.
 
 ---
 
-# Future extensions
+# Extensions
 
 ## Multiple photons
 
 Soft-photon exponentiation.
 
-## Virtual photons
+## Virtual photons and dielectrons
 
-Virtual photons and dielectrons are not part of the first implementation, but
-they are a natural extension of the same coherent-current framework.
+The first weighted dielectron implementation uses the same coherent-current
+framework with a timelike virtual photon. It deliberately remains a leading
+soft, no-recoil approximation.
 
 Replace
 
@@ -327,7 +329,7 @@ $$
 q^2=M_{ee}^2.
 $$
 
-For each event, the same Low current would be evaluated at the virtual-photon
+For each event, the same Low current is evaluated at the virtual-photon
 momentum,
 
 $$
@@ -344,7 +346,7 @@ $$
 S_\mathrm{event}(q) = -J_\mathrm{event}^2(q).
 $$
 
-The virtual photon can then convert through
+The virtual photon converts through
 
 $$
 \gamma^\ast
@@ -374,31 +376,44 @@ virtual-photon contributions; the longitudinal term vanishes as
 $M_{ee} \rightarrow 0$ but should be revisited before a fully differential
 dielectron implementation is designed.
 
-The present tendency for a first dielectron prototype is to start with the
-factorized internally converting virtual-photon picture: sample the soft
-virtual photon from the Low current, sample its invariant mass, apply the
-Kroll-Wada conversion factor, and then decay the virtual photon to
-$e^+e^-$. This is not yet a final implementation decision. The full
-$J_\mu L^{\mu\nu}J_\nu$ tensor formulation should remain the reference path for
-later fully differential pair-angle, polarization, or longitudinal-component
-studies.
+`generateWeightedDielectrons` samples this factorized internally converting
+virtual-photon picture. Its density and proposal are defined with respect to
+
+$$
+dM_{ee}^2\,q_Tdq_T\,dy\,d\phi.
+$$
+
+Mass and transverse momentum are proposed logarithmically, while pair rapidity
+and azimuth are proposed uniformly. The returned Monte Carlo weight includes
+the exact proposal density in that measure.
+
+The two-body decay is proposed isotropically in the virtual-photon rest frame.
+For a conserved leading current, its angular weight is
+
+$$
+w_\Omega =
+\frac{1-\beta_e^2(\hat{J}\cdot\hat{n}_e)^2}
+     {1-\beta_e^2/3},
+\qquad
+\beta_e^2=1-\frac{4m_e^2}{M_{ee}^2},
+$$
+
+where $\vec J$ is evaluated in the pair rest frame. This is the normalized
+$J_\mu L^{\mu\nu}J_\nu$ angular dependence: it averages to one, so integrating
+the lepton angles reproduces the Kroll--Wada result. A charge-conserving input
+selection is required for the Ward identity and this polarization
+interpretation; the API reports the signed charge sum for every generation
+call.
 
 As for real photons, the hadronic event ensemble is supplied by the input event
-generator or event sample. LowMC would evaluate the event-level virtual-photon
+generator or event sample. LowMC evaluates the event-level virtual-photon
 factor, and inclusive dielectron spectra would be obtained by averaging over
 events.
 
-This would naturally extend LowMC into a general soft-electromagnetic event
-generator.
+This extends LowMC's weighted core to soft electromagnetic pair production.
 
-Open questions for this extension include:
+Limitations and open questions for this extension include:
 
-* exact differential variables and normalization conventions,
-* whether to sample in $M_{ee}$ or $M_{ee}^2$,
-* treatment of the lepton-pair angular distribution,
-* whether the first implementation should use an internally converting
-  virtual-photon approximation or the full $J_\mu L^{\mu\nu}J_\nu$ tensor
-  structure,
 * validity range in pair mass and pair transverse momentum,
 * possible source-dependent form factors or corrections.
 
@@ -411,8 +426,8 @@ Open questions for this extension include:
 * How should recoil be handled?
 * Can weighted generation be used throughout?
 * How should exponentiation be implemented?
-* What is the correct dielectron phase-space convention for a virtual-photon
-  extension?
+* Which recoil prescription and finite-$q$ current should define a later
+  beyond-leading-soft dielectron mode?
 * How should LowMC interface to existing QED radiation (e.g. shower photons or
   PHOTOS) without double counting?
 
