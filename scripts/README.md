@@ -80,9 +80,11 @@ python3 scripts/plot_alice_dielectron_comparison.py \
 ```
 
 The prediction CSV contains polarization-aware and isotropic-decay results,
-event-level standard errors, and weighted soft-limit diagnostics. The plot
-uses the ordinary published HEPData points; bins available only as upper
-limits are intentionally omitted.
+event-level standard errors, and weighted soft-limit diagnostics. Detector
+mode writes pair-mass, pair-transverse-momentum, and single-electron-
+transverse-momentum projections; the latter counts both leptons from every
+accepted pair. The plot uses the ordinary published HEPData points; bins
+available only as upper limits are intentionally omitted.
 
 Use `--current lichard` for the opt-in Lichard Eq. (2.8) finite-mass
 external-leg current. Keep leading and Lichard runs in separate CSV files so

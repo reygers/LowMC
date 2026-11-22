@@ -1,9 +1,12 @@
 #include "lowmc/LowMC.h"
 
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <iostream>
 #include <limits>
+#include <random>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -99,6 +102,186 @@ void testCurrentSquaredMatchesPairSum() {
         current.intensityPairSum(photon),
         1.0e-12,
         "current-squared intensity should match explicit pair sum");
+}
+
+long double longDoubleDot(
+    const lowmc::FourVector& first,
+    const lowmc::FourVector& second) {
+    return static_cast<long double>(first.E) * second.E -
+        static_cast<long double>(first.px) * second.px -
+        static_cast<long double>(first.py) * second.py -
+        static_cast<long double>(first.pz) * second.pz;
+}
+
+long double longDoublePairSum(
+    const std::vector<lowmc::ChargedParticle>& particles,
+    const lowmc::FourVector& photon) {
+    long double result = 0.0L;
+    for (const lowmc::ChargedParticle& first : particles) {
+        const long double firstCharge =
+            static_cast<long double>(lowmc::signValue(first.inOutSign)) *
+            first.charge;
+        const long double firstDenominator =
+            longDoubleDot(first.momentum, photon);
+        for (const lowmc::ChargedParticle& second : particles) {
+            const long double secondCharge =
+                static_cast<long double>(lowmc::signValue(second.inOutSign)) *
+                second.charge;
+            const long double secondDenominator =
+                longDoubleDot(second.momentum, photon);
+            result += firstCharge * secondCharge *
+                (-longDoubleDot(first.momentum, second.momentum)) /
+                (firstDenominator * secondDenominator);
+        }
+    }
+    return result;
+}
+
+void testRandomMultiparticleCurrentMatchesPairSum() {
+    std::mt19937_64 engine(0x51a7c0deULL);
+    std::uniform_real_distribution<double> momentum(-5.0, 5.0);
+    std::uniform_real_distribution<double> unit(0.0, 1.0);
+    constexpr int configurations = 256;
+
+    for (int configuration = 0; configuration < configurations; ++configuration) {
+        const int chargePairs = 2 + configuration % 5;
+        std::vector<lowmc::ChargedParticle> particles;
+        particles.reserve(static_cast<std::size_t>(2 * chargePairs));
+        for (int pair = 0; pair < chargePairs; ++pair) {
+            for (const int effectiveCharge : {+1, -1}) {
+                const lowmc::InOutSign inOut = unit(engine) < 0.5
+                    ? lowmc::InOutSign::Incoming
+                    : lowmc::InOutSign::Outgoing;
+                const double eta =
+                    static_cast<double>(lowmc::signValue(inOut));
+                const double px = momentum(engine);
+                const double py = momentum(engine);
+                const double pz = momentum(engine);
+                const double mass = 0.1 + 0.9 * unit(engine);
+                const double energy = std::sqrt(
+                    mass * mass + px * px + py * py + pz * pz);
+                particles.push_back({
+                    lowmc::FourVector{energy, px, py, pz},
+                    static_cast<double>(effectiveCharge) / eta,
+                    inOut,
+                });
+            }
+        }
+
+        const double cosTheta = -0.95 + 1.9 * unit(engine);
+        const double sinTheta = std::sqrt(1.0 - cosTheta * cosTheta);
+        const double phi = 2.0 * std::acos(-1.0) * unit(engine);
+        const double energy = 0.01 + 0.49 * unit(engine);
+        const lowmc::FourVector photon{
+            energy,
+            energy * sinTheta * std::cos(phi),
+            energy * sinTheta * std::sin(phi),
+            energy * cosTheta,
+        };
+
+        const lowmc::LowCurrent current(particles);
+        require(current.chargeConservation().conserved,
+            "random multiparticle fixture should conserve signed charge");
+        const double currentSquared = current.intensity(photon);
+        const double pairSum = current.intensityPairSum(photon);
+        const long double reference = longDoublePairSum(particles, photon);
+        const double scale = std::max(1.0, std::abs(static_cast<double>(reference)));
+        requireNear(currentSquared, pairSum, 5.0e-11 * scale,
+            "random multiparticle current should match the explicit pair sum");
+        requireNear(currentSquared, static_cast<double>(reference), 5.0e-11 * scale,
+            "random multiparticle current should match a long-double pair sum");
+    }
+}
+
+long double stableBackToBackDipoleIntensity(
+    long double mass,
+    long double momentum,
+    long double photonEnergy,
+    long double theta) {
+    const long double energy = std::sqrt(momentum * momentum + mass * mass);
+    const long double sinTheta = std::sin(theta);
+    const long double transverse2 =
+        momentum * momentum * sinTheta * sinTheta;
+    const long double denominator = mass * mass + transverse2;
+    return 4.0L * momentum * momentum * energy * energy *
+        sinTheta * sinTheta /
+        (photonEnergy * photonEnergy * denominator * denominator);
+}
+
+void testBoostedDipoleDoublePrecisionAgainstLongDoubleReference() {
+    struct Case {
+        double mass;
+        double momentum;
+        double angleScale;
+    };
+    const std::vector<Case> cases{
+        {0.13957, 1.0, 1.0},
+        {0.13957, 1000.0, 0.5},
+        {0.00051099895, 45.0, 0.5},
+    };
+    constexpr double photonEnergy = 0.1;
+
+    for (const Case& test : cases) {
+        const double particleEnergy = std::hypot(test.momentum, test.mass);
+        const double theta = test.angleScale * test.mass / particleEnergy;
+        const lowmc::LowCurrent current({
+            {lowmc::FourVector{particleEnergy, 0.0, 0.0, test.momentum},
+             +1.0, lowmc::InOutSign::Outgoing},
+            {lowmc::FourVector{particleEnergy, 0.0, 0.0, -test.momentum},
+             -1.0, lowmc::InOutSign::Outgoing},
+        });
+        const lowmc::FourVector photon{
+            photonEnergy,
+            photonEnergy * std::sin(theta),
+            0.0,
+            photonEnergy * std::cos(theta),
+        };
+        const long double reference = stableBackToBackDipoleIntensity(
+            test.mass, test.momentum, photonEnergy, theta);
+        const double relativeDifference = std::abs(
+            current.intensity(photon) / static_cast<double>(reference) - 1.0);
+        require(relativeDifference < 5.0e-6,
+            "boosted dipole double-precision intensity should match the stable reference");
+    }
+}
+
+void testBackToBackDipoleAngleIntegral() {
+    constexpr double mass = 1.0;
+    constexpr double beta = 0.8;
+    constexpr double photonEnergy = 0.2;
+    const double gamma = 1.0 / std::sqrt(1.0 - beta * beta);
+    const double particleEnergy = gamma * mass;
+    const double momentum = beta * particleEnergy;
+    const lowmc::LowCurrent current({
+        {lowmc::FourVector{particleEnergy, 0.0, 0.0, momentum},
+         +1.0, lowmc::InOutSign::Outgoing},
+        {lowmc::FourVector{particleEnergy, 0.0, 0.0, -momentum},
+         -1.0, lowmc::InOutSign::Outgoing},
+    });
+
+    constexpr int intervals = 20000;
+    const double step = 2.0 / intervals;
+    double simpson = 0.0;
+    for (int index = 0; index <= intervals; ++index) {
+        const double cosTheta = -1.0 + index * step;
+        const double sinTheta = std::sqrt(std::max(0.0, 1.0 - cosTheta * cosTheta));
+        const lowmc::FourVector photon{
+            photonEnergy,
+            photonEnergy * sinTheta,
+            0.0,
+            photonEnergy * cosTheta,
+        };
+        const double coefficient = index == 0 || index == intervals
+            ? 1.0
+            : (index % 2 == 0 ? 2.0 : 4.0);
+        simpson += coefficient * current.intensity(photon);
+    }
+    const double numerical = 2.0 * std::acos(-1.0) * step * simpson / 3.0;
+    const double analytic = 8.0 * std::acos(-1.0) /
+        (photonEnergy * photonEnergy) *
+        ((1.0 + beta * beta) / beta * std::atanh(beta) - 1.0);
+    requireNear(numerical, analytic, 2.0e-10 * analytic,
+        "back-to-back dipole angular integral should match the closed form");
 }
 
 std::vector<lowmc::ChargedParticle> analyticBoundToyParticles() {
@@ -2952,6 +3135,9 @@ int main() {
     testChargeNeutralTwoParticleCurrentIsTransverse();
     testFiniteMassCollinearRegularization();
     testCurrentSquaredMatchesPairSum();
+    testRandomMultiparticleCurrentMatchesPairSum();
+    testBoostedDipoleDoublePrecisionAgainstLongDoubleReference();
+    testBackToBackDipoleAngleIntegral();
     testAnalyticLowDenominatorAndFactorization();
     testAnalyticLowGlobalAndCellBoundsCoverDensePoints();
     testAnalyticLowWeightBoundIncludesProposalNormalization();

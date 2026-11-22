@@ -27,6 +27,8 @@ constexpr std::array<double, 7> MassEdges{
     0.15, 0.20, 0.25, 0.30, 0.40, 0.50, 0.60};
 constexpr std::array<double, 9> QTEdges{
     0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8};
+constexpr std::array<double, 7> ElectronPTEdges{
+    0.075, 0.10, 0.15, 0.20, 0.30, 0.50, 1.0};
 constexpr std::array<double, 11> AgreementMassEdges{
     0.02, 0.03, 0.04, 0.05, 0.07, 0.10, 0.15, 0.20, 0.30, 0.40, 0.60};
 constexpr std::array<double, 11> AgreementQTEdges{
@@ -114,6 +116,8 @@ struct BinAccumulator {
 
 using MassBins = std::array<BinAccumulator, MassEdges.size() - 1>;
 using QTBins = std::array<BinAccumulator, QTEdges.size() - 1>;
+using ElectronPTBins =
+    std::array<BinAccumulator, ElectronPTEdges.size() - 1>;
 using AgreementQTBins =
     std::array<BinAccumulator, AgreementQTEdges.size() - 1>;
 using AgreementBins =
@@ -122,12 +126,18 @@ using AgreementBins =
 struct Accumulators {
     std::array<std::array<MassBins, 2>, 2> mass;
     std::array<std::array<QTBins, 2>, 2> qT;
+    std::array<std::array<ElectronPTBins, 2>, 2> electronPT;
     std::array<std::array<AgreementBins, 2>, 2> agreement;
 };
 
 struct EventYields {
     std::array<std::array<std::array<double, MassEdges.size() - 1>, 2>, 2> mass{};
     std::array<std::array<std::array<double, QTEdges.size() - 1>, 2>, 2> qT{};
+    std::array<
+        std::array<
+            std::array<double, ElectronPTEdges.size() - 1>,
+            2>,
+        2> electronPT{};
     std::array<
         std::array<
             std::array<
@@ -143,7 +153,8 @@ void printUsage(std::ostream& output) {
         << "Generate non-diffractive 13 TeV pp events and compare ordinary\n"
         << "weighted dielectron sampling with a fixed six-dimensional Sobol\n"
         << "integration on the same events. Detector mode applies the ALICE\n"
-        << "single-electron cuts. Publication mode writes the angle-integrated\n"
+        << "single-electron cuts and writes pair and single-electron projections.\n"
+        << "Publication mode writes the angle-integrated\n"
         << "pair cross section used for comparison with corrected Fig. 4 data.\n\n"
         << "Options:\n"
         << "  --events N          Accepted Pythia events (default: 100)\n"
@@ -457,6 +468,20 @@ void recordSample(
             accumulator.softEpsilon.add(epsilon, weights[decay]);
             accumulator.energyFraction.add(energyFraction, weights[decay]);
         }
+        for (const lowmc::FourVector& lepton : {
+                 sample.dielectron.electron,
+                 sample.dielectron.positron}) {
+            const int electronPTBin = findBin(lepton.pt(), ElectronPTEdges);
+            if (electronPTBin >= 0) {
+                eventYields.electronPT[methodIndex][decay]
+                    [static_cast<std::size_t>(electronPTBin)] += eventContribution;
+                BinAccumulator& accumulator =
+                    accumulators.electronPT[methodIndex][decay]
+                        [static_cast<std::size_t>(electronPTBin)];
+                accumulator.softEpsilon.add(epsilon, weights[decay]);
+                accumulator.energyFraction.add(energyFraction, weights[decay]);
+            }
+        }
         if (agreementMassBin >= 0 && agreementQTBin >= 0) {
             const std::size_t massIndex =
                 static_cast<std::size_t>(agreementMassBin);
@@ -581,6 +606,14 @@ void finishEvent(const EventYields& eventYields, Accumulators& accumulators) {
             for (std::size_t bin = 0; bin + 1 < QTEdges.size(); ++bin) {
                 const double value = eventYields.qT[method][decay][bin];
                 BinAccumulator& accumulator = accumulators.qT[method][decay][bin];
+                accumulator.sumEventYield += value;
+                accumulator.sumEventYield2 += value * value;
+            }
+            for (std::size_t bin = 0;
+                 bin + 1 < ElectronPTEdges.size(); ++bin) {
+                const double value = eventYields.electronPT[method][decay][bin];
+                BinAccumulator& accumulator =
+                    accumulators.electronPT[method][decay][bin];
                 accumulator.sumEventYield += value;
                 accumulator.sumEventYield2 += value * value;
             }
@@ -778,6 +811,15 @@ void writeOutput(
         "qT",
         QTEdges,
         accumulators.qT,
+        eventCount,
+        attemptedEvents,
+        sigmaGen,
+        options);
+    writeObservable(
+        output,
+        "electron_pT",
+        ElectronPTEdges,
+        accumulators.electronPT,
         eventCount,
         attemptedEvents,
         sigmaGen,
