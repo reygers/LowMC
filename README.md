@@ -123,6 +123,8 @@ See [docs/PHYSICS.md](docs/PHYSICS.md) for the full convention.
 - [docs/PHYSICS.md](docs/PHYSICS.md): physics formulas and conventions
 - [docs/INSTALL.md](docs/INSTALL.md): fresh-clone build and smoke-test guide
 - [docs/USAGE.md](docs/USAGE.md): intended user workflows
+- [docs/ALICE_DIELECTRON_BENCHMARK.md](docs/ALICE_DIELECTRON_BENCHMARK.md):
+  ALICE Figure 4 data, Balek baseline, and LowMC comparison workflow
 - [docs/ALGORITHM.md](docs/ALGORITHM.md): sampling and algorithm notes
 - [docs/DECISIONS.md](docs/DECISIONS.md): recorded design decisions
 - [docs/STATUS.md](docs/STATUS.md): current implementation status

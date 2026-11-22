@@ -53,7 +53,99 @@ Suggested interpretation:
 - `p = 100 GeV`: high-energy case
 - `p = 1000 GeV`: stress test for angular resolution
 
-The plotting script requires matplotlib. The C++ core does not.
+The plotting scripts require Matplotlib and NumPy. Install them into the
+selected Python environment with:
+
+```sh
+python3 -m pip install matplotlib numpy
+```
+
+The C++ core does not require these Python packages.
+
+## ALICE soft-dielectron comparison
+
+With the optional Pythia8 build enabled, generate a pilot prediction and plot
+it together with the HEPData points and the analytic Balek baseline:
+
+```sh
+./build-pythia8/adapters/pythia8/lowmc_pythia8_alice_dielectron_benchmark \
+  build-pythia8/alice_dielectron_prediction.csv \
+  --events 100 --samples 20000 --direct-samples 32768 --seed 12345 \
+  --current leading
+
+MPLCONFIGDIR=build-pythia8/matplotlib \
+python3 scripts/plot_alice_dielectron_comparison.py \
+  --prediction build-pythia8/alice_dielectron_prediction.csv \
+  --output-prefix build-pythia8/alice_fig4_lowmc
+```
+
+The prediction CSV contains polarization-aware and isotropic-decay results,
+event-level standard errors, and weighted soft-limit diagnostics. The plot
+uses the ordinary published HEPData points; bins available only as upper
+limits are intentionally omitted.
+
+Use `--current lichard` for the opt-in Lichard Eq. (2.8) finite-mass
+external-leg current. Keep leading and Lichard runs in separate CSV files so
+the selected current remains explicit in plots and tables.
+
+For a matched comparison of the two currents, use the same event count,
+sampling settings, and seed for both runs, then create the spectrum and ratio
+figure with:
+
+```sh
+MPLCONFIGDIR=build-pythia8/matplotlib \
+python3 scripts/plot_alice_dielectron_current_comparison.py \
+  --leading output/alice_dielectron_prediction_1000.csv \
+  --lichard output/alice_dielectron_prediction_1000_lichard.csv \
+  --layout stacked \
+  --output-prefix output/alice_dielectron_current_comparison
+```
+
+The comparison uses the polarized direct-Sobol result. The ratio exposes the
+finite-mass prescription dependence; it is not a complete theory uncertainty.
+
+To map the agreement in pair mass and transverse momentum, first add
+`--extended-agreement-map` to matched leading and Lichard benchmark runs, then
+use:
+
+```sh
+MPLCONFIGDIR=build-pythia8/matplotlib \
+python3 scripts/plot_alice_dielectron_agreement_map.py \
+  --leading output/alice_dielectron_agreement_leading.csv \
+  --lichard output/alice_dielectron_agreement_lichard.csv \
+  --output-prefix output/alice_dielectron_agreement_map
+```
+
+The two-panel plot overlays 3%, 5%, and 10% current-agreement contours and
+shows the yield-weighted median of the strict `max_i(q0/E_i)` diagnostic. It
+also tests whether any bin satisfies both 5% current agreement and a median
+energy fraction below 0.3. Statistically weak cells are masked.
+
+For a talk-oriented single plot illustrating the benefit of low-field ALICE
+running, compare the Run 2 window with the same pair scales divided by two:
+
+```sh
+MPLCONFIGDIR=build-pythia8/matplotlib \
+python3 scripts/plot_alice_dielectron_low_field_reach.py \
+  --leading output/alice_dielectron_agreement_leading.csv \
+  --lichard output/alice_dielectron_agreement_lichard.csv \
+  --output-prefix output/alice_dielectron_low_field_reach
+```
+
+The color scale shows the absolute current difference. A single dashed contour
+shows the direction of improvement in the strict energy-softness diagnostic.
+
+For the publication-mode comparison, plot Lichard Eq. (2.8) as the nominal
+curve, leading Low as the soft-limit reference, and the curve published by
+ALICE as the historical Run 2 calculation:
+
+```sh
+MPLCONFIGDIR=build-pythia8/matplotlib \
+python3 scripts/plot_alice_dielectron_publication_comparison.py \
+  --lichard output/alice_dielectron_publication_1000_lichard.csv \
+  --leading output/alice_dielectron_publication_1000_leading.csv \
+  --output-prefix output/alice_fig4_lowmc
+```
 
 The fixed grid has configurable point counts. The defaults are unchanged at
 `101 x 121`; use finer grids for convergence checks:

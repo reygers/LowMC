@@ -131,6 +131,26 @@ set_tests_properties(
             "event_index=0 mode=softqcd selected_incoming_charged=2 .* signed_charge_sum=0"
 )
 
+add_executable(lowmc_pythia8_eta_phi_map
+    diagnostics/pythia8_eta_phi_map.cpp
+)
+
+target_link_libraries(lowmc_pythia8_eta_phi_map
+    PRIVATE
+        lowmc_pythia8_adapter
+)
+
+target_compile_definitions(lowmc_pythia8_eta_phi_map
+    PRIVATE
+        LOWMC_PYTHIA8_XMLDOC="${LOWMC_PYTHIA8_XMLDOC_DIR}"
+)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(lowmc_pythia8_eta_phi_map PRIVATE -Wall -Wextra -pedantic)
+elseif(MSVC)
+    target_compile_options(lowmc_pythia8_eta_phi_map PRIVATE /W4)
+endif()
+
 add_executable(lowmc_pythia8_weighted_photon_diagnostic
     diagnostics/pythia8_weighted_photon_diagnostic.cpp
 )
@@ -181,6 +201,62 @@ set_tests_properties(
 add_test(
     NAME lowmc_pythia8_weighted_photon_diagnostic_softqcd
     COMMAND lowmc_pythia8_weighted_photon_diagnostic --mode softqcd --events 1 --samples 4 --seed 12345
+)
+
+add_executable(lowmc_pythia8_alice_dielectron_benchmark
+    diagnostics/pythia8_alice_dielectron_benchmark.cpp
+)
+
+target_link_libraries(lowmc_pythia8_alice_dielectron_benchmark
+    PRIVATE
+        lowmc_pythia8_adapter
+)
+
+target_compile_definitions(lowmc_pythia8_alice_dielectron_benchmark
+    PRIVATE
+        LOWMC_PYTHIA8_XMLDOC="${LOWMC_PYTHIA8_XMLDOC_DIR}"
+)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(
+        lowmc_pythia8_alice_dielectron_benchmark PRIVATE -Wall -Wextra -pedantic)
+elseif(MSVC)
+    target_compile_options(lowmc_pythia8_alice_dielectron_benchmark PRIVATE /W4)
+endif()
+
+add_test(
+    NAME lowmc_pythia8_alice_dielectron_benchmark_help
+    COMMAND lowmc_pythia8_alice_dielectron_benchmark --help
+)
+
+add_test(
+    NAME lowmc_pythia8_alice_dielectron_benchmark_smoke
+    COMMAND lowmc_pythia8_alice_dielectron_benchmark
+            ${CMAKE_CURRENT_BINARY_DIR}/alice_dielectron_smoke.csv
+            --events 1
+            --samples 16
+            --direct-samples 16
+            --seed 12345
+)
+set_tests_properties(
+    lowmc_pythia8_alice_dielectron_benchmark_smoke
+    PROPERTIES PASS_REGULAR_EXPRESSION "aggregate_status=ok.*accepted_events=1"
+)
+
+add_test(
+    NAME lowmc_pythia8_alice_dielectron_benchmark_publication_smoke
+    COMMAND lowmc_pythia8_alice_dielectron_benchmark
+            ${CMAKE_CURRENT_BINARY_DIR}/alice_dielectron_publication_smoke.csv
+            --events 1
+            --samples 16
+            --direct-samples 16
+            --seed 12345
+            --comparison publication
+)
+set_tests_properties(
+    lowmc_pythia8_alice_dielectron_benchmark_publication_smoke
+    PROPERTIES PASS_REGULAR_EXPRESSION
+        "aggregate_status=ok.*comparison_mode=published_cross_section"
 )
 
 add_executable(

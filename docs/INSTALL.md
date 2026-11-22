@@ -18,6 +18,11 @@ Optional event interfaces:
 - HepMC3, only when `LOWMC_ENABLE_HEPMC3=ON`
 - Pythia8, only when `LOWMC_ENABLE_PYTHIA8=ON`
 
+Optional plotting scripts:
+
+- Matplotlib and NumPy, installable with
+  `python3 -m pip install matplotlib numpy`
+
 External validation benchmark:
 
 - PHOTOS with its HepMC3 interface, only for the fixed `Z -> mu+ mu-`

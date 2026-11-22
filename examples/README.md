@@ -25,6 +25,11 @@ These examples introduce shape unweighting or optional event interfaces.
 | `advanced/hepmc3_afterburner.py` | Run the provisional HepMC3 afterburner and summarize its output | `LOWMC_ENABLE_HEPMC3=ON` |
 | `advanced/pythia8_weighted_photons.cpp` | Select a generated Pythia event in memory and generate weighted Low photons | `LOWMC_ENABLE_PYTHIA8=ON` |
 
+The optional Pythia build also provides
+`lowmc_pythia8_alice_dielectron_benchmark`. It generates 13 TeV
+`SoftQCD:nonDiffractive` events and writes the ALICE Fig. 4 mass and pair-pT
+projections for ordinary weighted sampling and fixed Sobol integration.
+
 ## Suggested Order
 
 1. `evaluate_low_current.cpp`

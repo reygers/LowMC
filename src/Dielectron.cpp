@@ -73,6 +73,83 @@ FourVector boostToRestFrame(const FourVector& vector, const FourVector& parent) 
     };
 }
 
+WeightedDielectronSample makeWeightedDielectronAtKinematics(
+    const LowCurrent& current,
+    double mass,
+    double qT,
+    double rapidity,
+    double phi,
+    double proposalDensity,
+    double unitDecayCosTheta,
+    double unitDecayPhi,
+    double electronMass,
+    double alpha,
+    VirtualCurrentModel virtualCurrentModel) {
+    const FourVector virtualPhoton =
+        virtualPhotonMomentumFromMassQTRapidityPhi(mass, qT, rapidity, phi);
+
+    const double leptonEnergy = 0.5 * mass;
+    const double leptonMomentum =
+        0.5 * std::sqrt(std::max(0.0, mass * mass - 4.0 * electronMass * electronMass));
+    const double cosTheta = 2.0 * unitDecayCosTheta - 1.0;
+    const double sinTheta = std::sqrt(std::max(0.0, 1.0 - cosTheta * cosTheta));
+    const double decayPhi = 2.0 * pi() * unitDecayPhi;
+    const double nx = sinTheta * std::cos(decayPhi);
+    const double ny = sinTheta * std::sin(decayPhi);
+    const double nz = cosTheta;
+    const FourVector electronRest{
+        leptonEnergy,
+        leptonMomentum * nx,
+        leptonMomentum * ny,
+        leptonMomentum * nz,
+    };
+    const FourVector positronRest{
+        leptonEnergy,
+        -leptonMomentum * nx,
+        -leptonMomentum * ny,
+        -leptonMomentum * nz,
+    };
+
+    const FourVector currentRest = boostToRestFrame(
+        current.current(virtualPhoton, virtualCurrentModel), virtualPhoton);
+    const double currentSpatial2 = currentRest.px * currentRest.px +
+        currentRest.py * currentRest.py + currentRest.pz * currentRest.pz;
+    const double beta2 = std::max(0.0, 1.0 -
+        4.0 * electronMass * electronMass / (mass * mass));
+    double decayAngularWeight = 1.0;
+    if (currentSpatial2 > 0.0) {
+        const double projection =
+            (currentRest.px * nx + currentRest.py * ny + currentRest.pz * nz);
+        const double cos2ToCurrent = projection * projection / currentSpatial2;
+        decayAngularWeight =
+            (1.0 - beta2 * cos2ToCurrent) / (1.0 - beta2 / 3.0);
+    }
+
+    const double productionDensity =
+        lowVirtualPhotonDensity(current, virtualPhoton, virtualCurrentModel, alpha);
+    const double conversionDensity =
+        krollWadaConversionDensityDMass2(mass, electronMass, alpha);
+    const double weight =
+        productionDensity * conversionDensity * decayAngularWeight / proposalDensity;
+
+    return WeightedDielectronSample{
+        Dielectron{
+            boostFromRestFrame(electronRest, virtualPhoton),
+            boostFromRestFrame(positronRest, virtualPhoton),
+            weight,
+        },
+        virtualPhoton,
+        mass,
+        qT,
+        rapidity,
+        phi,
+        proposalDensity,
+        productionDensity,
+        conversionDensity,
+        decayAngularWeight,
+    };
+}
+
 }  // namespace
 
 DielectronPhaseSpaceValidation validateDielectronPhaseSpace(
@@ -95,8 +172,8 @@ DielectronPhaseSpaceValidation validateDielectronPhaseSpace(
     if (phaseSpace.massMax <= phaseSpace.massMin) {
         return {DielectronPhaseSpaceValidationError::EmptyMassRange};
     }
-    if (phaseSpace.qTMin <= 0.0) {
-        return {DielectronPhaseSpaceValidationError::NonPositiveQTMin};
+    if (phaseSpace.qTMin < 0.0) {
+        return {DielectronPhaseSpaceValidationError::NegativeQTMin};
     }
     if (phaseSpace.qTMax <= phaseSpace.qTMin) {
         return {DielectronPhaseSpaceValidationError::EmptyQTRange};
@@ -152,6 +229,18 @@ double lowVirtualPhotonDensity(
     const LowCurrent& current,
     const FourVector& virtualPhotonMomentum,
     double alpha) {
+    return lowVirtualPhotonDensity(
+        current,
+        virtualPhotonMomentum,
+        VirtualCurrentModel::LeadingLow,
+        alpha);
+}
+
+double lowVirtualPhotonDensity(
+    const LowCurrent& current,
+    const FourVector& virtualPhotonMomentum,
+    VirtualCurrentModel model,
+    double alpha) {
     if (!std::isfinite(virtualPhotonMomentum.mass2()) ||
         virtualPhotonMomentum.mass2() <= 0.0) {
         throw std::invalid_argument("virtual-photon momentum must be timelike");
@@ -160,7 +249,8 @@ double lowVirtualPhotonDensity(
         throw std::invalid_argument("fine-structure constant must be positive and finite");
     }
     const double twoPi = 2.0 * pi();
-    return alpha / (twoPi * twoPi) * current.intensity(virtualPhotonMomentum);
+    return alpha / (twoPi * twoPi) *
+        current.intensity(virtualPhotonMomentum, model);
 }
 
 WeightedDielectronSample makeWeightedDielectronSample(
@@ -173,7 +263,8 @@ WeightedDielectronSample makeWeightedDielectronSample(
     double unitDecayCosTheta,
     double unitDecayPhi,
     double electronMass,
-    double alpha) {
+    double alpha,
+    VirtualCurrentModel virtualCurrentModel) {
     validateConstants(electronMass, alpha);
     if (!validateDielectronPhaseSpace(phaseSpace, electronMass).valid()) {
         throw std::invalid_argument("invalid dielectron phase space");
@@ -184,6 +275,10 @@ WeightedDielectronSample makeWeightedDielectronSample(
     validateUnit(unitPhi, "phi unit value");
     validateUnit(unitDecayCosTheta, "decay cos(theta) unit value");
     validateUnit(unitDecayPhi, "decay phi unit value");
+    if (phaseSpace.qTMin <= 0.0) {
+        throw std::invalid_argument(
+            "logarithmic dielectron qT sampling requires qTMin > 0");
+    }
 
     const double logMassRange = std::log(phaseSpace.massMax / phaseSpace.massMin);
     const double mass = phaseSpace.massMin * std::exp(unitMass * logMassRange);
@@ -193,9 +288,6 @@ WeightedDielectronSample makeWeightedDielectronSample(
         unitRapidity * (phaseSpace.rapidityMax - phaseSpace.rapidityMin);
     const double phi = phaseSpace.phiMin +
         unitPhi * (phaseSpace.phiMax - phaseSpace.phiMin);
-    const FourVector virtualPhoton =
-        virtualPhotonMomentumFromMassQTRapidityPhi(mass, qT, rapidity, phi);
-
     const double massProposalDensity = 1.0 / (2.0 * mass * mass * logMassRange);
     const double qTProposalDensity = 1.0 / (qT * qT * logQTRange);
     const double rapidityPhiProposalDensity =
@@ -203,66 +295,75 @@ WeightedDielectronSample makeWeightedDielectronSample(
                (phaseSpace.phiMax - phaseSpace.phiMin));
     const double proposalDensity =
         massProposalDensity * qTProposalDensity * rapidityPhiProposalDensity;
-
-    const double leptonEnergy = 0.5 * mass;
-    const double leptonMomentum =
-        0.5 * std::sqrt(std::max(0.0, mass * mass - 4.0 * electronMass * electronMass));
-    const double cosTheta = 2.0 * unitDecayCosTheta - 1.0;
-    const double sinTheta = std::sqrt(std::max(0.0, 1.0 - cosTheta * cosTheta));
-    const double decayPhi = 2.0 * pi() * unitDecayPhi;
-    const double nx = sinTheta * std::cos(decayPhi);
-    const double ny = sinTheta * std::sin(decayPhi);
-    const double nz = cosTheta;
-    const FourVector electronRest{
-        leptonEnergy,
-        leptonMomentum * nx,
-        leptonMomentum * ny,
-        leptonMomentum * nz,
-    };
-    const FourVector positronRest{
-        leptonEnergy,
-        -leptonMomentum * nx,
-        -leptonMomentum * ny,
-        -leptonMomentum * nz,
-    };
-
-    const FourVector currentRest = boostToRestFrame(current.current(virtualPhoton), virtualPhoton);
-    const double currentSpatial2 = currentRest.px * currentRest.px +
-        currentRest.py * currentRest.py + currentRest.pz * currentRest.pz;
-    const double beta2 = std::max(0.0, 1.0 -
-        4.0 * electronMass * electronMass / (mass * mass));
-    double decayAngularWeight = 1.0;
-    if (currentSpatial2 > 0.0) {
-        const double projection =
-            (currentRest.px * nx + currentRest.py * ny + currentRest.pz * nz);
-        const double cos2ToCurrent = projection * projection / currentSpatial2;
-        decayAngularWeight =
-            (1.0 - beta2 * cos2ToCurrent) / (1.0 - beta2 / 3.0);
-    }
-
-    const double productionDensity =
-        lowVirtualPhotonDensity(current, virtualPhoton, alpha);
-    const double conversionDensity =
-        krollWadaConversionDensityDMass2(mass, electronMass, alpha);
-    const double weight =
-        productionDensity * conversionDensity * decayAngularWeight / proposalDensity;
-
-    return WeightedDielectronSample{
-        Dielectron{
-            boostFromRestFrame(electronRest, virtualPhoton),
-            boostFromRestFrame(positronRest, virtualPhoton),
-            weight,
-        },
-        virtualPhoton,
+    return makeWeightedDielectronAtKinematics(
+        current,
         mass,
         qT,
         rapidity,
         phi,
         proposalDensity,
-        productionDensity,
-        conversionDensity,
-        decayAngularWeight,
-    };
+        unitDecayCosTheta,
+        unitDecayPhi,
+        electronMass,
+        alpha,
+        virtualCurrentModel);
+}
+
+WeightedDielectronSample makeUniformMassSquaredQT2DielectronSample(
+    const LowCurrent& current,
+    const DielectronPhaseSpace& phaseSpace,
+    double unitMassSquared,
+    double unitQT2,
+    double unitRapidity,
+    double unitPhi,
+    double unitDecayCosTheta,
+    double unitDecayPhi,
+    double electronMass,
+    double alpha,
+    VirtualCurrentModel virtualCurrentModel) {
+    validateConstants(electronMass, alpha);
+    if (!validateDielectronPhaseSpace(phaseSpace, electronMass).valid()) {
+        throw std::invalid_argument("invalid dielectron phase space");
+    }
+    validateUnit(unitMassSquared, "mass-squared unit value");
+    validateUnit(unitQT2, "qT-squared unit value");
+    validateUnit(unitRapidity, "rapidity unit value");
+    validateUnit(unitPhi, "phi unit value");
+    validateUnit(unitDecayCosTheta, "decay cos(theta) unit value");
+    validateUnit(unitDecayPhi, "decay phi unit value");
+
+    const double massMin2 = phaseSpace.massMin * phaseSpace.massMin;
+    const double massMax2 = phaseSpace.massMax * phaseSpace.massMax;
+    const double mass2 = massMin2 + unitMassSquared * (massMax2 - massMin2);
+    const double mass = std::sqrt(mass2);
+    const double qTMin2 = phaseSpace.qTMin * phaseSpace.qTMin;
+    const double qTMax2 = phaseSpace.qTMax * phaseSpace.qTMax;
+    const double qT2 = qTMin2 + unitQT2 * (qTMax2 - qTMin2);
+    const double qT = std::sqrt(qT2);
+    const double rapidity = phaseSpace.rapidityMin +
+        unitRapidity * (phaseSpace.rapidityMax - phaseSpace.rapidityMin);
+    const double phi = phaseSpace.phiMin +
+        unitPhi * (phaseSpace.phiMax - phaseSpace.phiMin);
+
+    const double massProposalDensity = 1.0 / (massMax2 - massMin2);
+    const double qTProposalDensity = 2.0 / (qTMax2 - qTMin2);
+    const double rapidityPhiProposalDensity =
+        1.0 / ((phaseSpace.rapidityMax - phaseSpace.rapidityMin) *
+               (phaseSpace.phiMax - phaseSpace.phiMin));
+    const double proposalDensity =
+        massProposalDensity * qTProposalDensity * rapidityPhiProposalDensity;
+    return makeWeightedDielectronAtKinematics(
+        current,
+        mass,
+        qT,
+        rapidity,
+        phi,
+        proposalDensity,
+        unitDecayCosTheta,
+        unitDecayPhi,
+        electronMass,
+        alpha,
+        virtualCurrentModel);
 }
 
 WeightedDielectronGenerationResult generateWeightedDielectrons(
@@ -303,17 +404,35 @@ WeightedDielectronGenerationResult generateWeightedDielectrons(
         const double unitPhi = unit();
         const double unitDecayCosTheta = unit();
         const double unitDecayPhi = unit();
-        WeightedDielectronSample sample = makeWeightedDielectronSample(
-            current,
-            config.phaseSpace,
-            unitMass,
-            unitQT,
-            unitRapidity,
-            unitPhi,
-            unitDecayCosTheta,
-            unitDecayPhi,
-            electronMass,
-            alpha);
+        WeightedDielectronSample sample;
+        if (config.kinematicProposal ==
+            DielectronKinematicProposal::UniformMassSquaredQT2) {
+            sample = makeUniformMassSquaredQT2DielectronSample(
+                current,
+                config.phaseSpace,
+                unitMass,
+                unitQT,
+                unitRapidity,
+                unitPhi,
+                unitDecayCosTheta,
+                unitDecayPhi,
+                electronMass,
+                alpha,
+                config.virtualCurrentModel);
+        } else {
+            sample = makeWeightedDielectronSample(
+                current,
+                config.phaseSpace,
+                unitMass,
+                unitQT,
+                unitRapidity,
+                unitPhi,
+                unitDecayCosTheta,
+                unitDecayPhi,
+                electronMass,
+                alpha,
+                config.virtualCurrentModel);
+        }
         sample.dielectron.weight *= inverseOversampling;
         weights.push_back(sample.dielectron.weight);
         result.samples.push_back(sample);

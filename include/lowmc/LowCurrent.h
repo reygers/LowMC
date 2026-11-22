@@ -14,6 +14,14 @@ struct ChargeConservationDiagnostic {
     bool conserved = true;
 };
 
+// The real-photon path and the default dielectron path use the strict
+// leading-power Low current.  LichardEq2_8 is an opt-in finite-M external-leg
+// current for timelike virtual photons.
+enum class VirtualCurrentModel {
+    LeadingLow,
+    LichardEq2_8,
+};
+
 class LowCurrent {
 public:
     explicit LowCurrent(std::vector<ChargedParticle> particles);
@@ -21,7 +29,13 @@ public:
     [[nodiscard]] const std::vector<ChargedParticle>& particles() const;
 
     [[nodiscard]] FourVector current(const FourVector& photonMomentum) const;
+    [[nodiscard]] FourVector current(
+        const FourVector& photonMomentum,
+        VirtualCurrentModel model) const;
     [[nodiscard]] double intensity(const FourVector& photonMomentum) const;
+    [[nodiscard]] double intensity(
+        const FourVector& photonMomentum,
+        VirtualCurrentModel model) const;
     [[nodiscard]] double intensityPairSum(const FourVector& photonMomentum) const;
 
     [[nodiscard]] ChargeConservationDiagnostic chargeConservation(

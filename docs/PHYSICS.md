@@ -340,6 +340,27 @@ J^\mu(q)
 \frac{p_i^\mu}{p_i\cdot q}.
 $$
 
+This strict leading-power current remains the default.  For finite pair mass,
+the weighted dielectron generator also provides the opt-in external-leg
+current from Lichard Eq. (2.8),
+
+$$
+J^\mu_\mathrm{Lichard}(q)
+=
+\sum_i
+\eta_i Q_i
+\frac{(2p_i+\eta_i q)^\mu}
+     {2p_i\cdot q+\eta_i M_{ee}^2}.
+$$
+
+Each term obeys
+$q\cdot(2p_i+\eta_iq)/(2p_i\cdot q+\eta_iM_{ee}^2)=1$, so charge
+conservation gives $q\cdot J_\mathrm{Lichard}=0$.  The associated physical
+intensity approaches the leading Low result as $M_{ee}\to0$.  This option is a
+finite-mass external-leg model, not an exact finite-energy or recoil
+correction: it retains Lichard's assumption that the non-radiative amplitude
+is unchanged when the radiating leg is taken slightly off shell.
+
 The corresponding coherent factor is
 
 $$
@@ -426,8 +447,8 @@ Limitations and open questions for this extension include:
 * How should recoil be handled?
 * Can weighted generation be used throughout?
 * How should exponentiation be implemented?
-* Which recoil prescription and finite-$q$ current should define a later
-  beyond-leading-soft dielectron mode?
+* Should the opt-in Lichard Eq. (2.8) current remain a comparison model or
+  become part of a later finite-$q$ default together with a recoil prescription?
 * How should LowMC interface to existing QED radiation (e.g. shower photons or
   PHOTOS) without double counting?
 

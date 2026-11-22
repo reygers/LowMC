@@ -30,7 +30,10 @@ enum class DielectronPhaseSpaceValidationError {
     NonFiniteBound,
     BelowPairThreshold,
     EmptyMassRange,
-    NonPositiveQTMin,
+    NegativeQTMin,
+    // Backward-compatible name from the log-qT-only API. Zero is valid for
+    // the uniform qT^2 proposal.
+    NonPositiveQTMin = NegativeQTMin,
     EmptyQTRange,
     EmptyRapidityRange,
     EmptyPhiRange,
@@ -70,11 +73,20 @@ struct WeightedDielectronSample {
     double decayAngularWeight = 1.0;
 };
 
+enum class DielectronKinematicProposal {
+    LogMassLogQT,
+    UniformMassSquaredQT2,
+};
+
 struct WeightedDielectronGeneratorConfig {
     DielectronPhaseSpace phaseSpace;
     int samples = 1;
     std::uint64_t seed = 12345;
     int oversamplingFactor = 1;
+    DielectronKinematicProposal kinematicProposal =
+        DielectronKinematicProposal::LogMassLogQT;
+    VirtualCurrentModel virtualCurrentModel =
+        VirtualCurrentModel::LeadingLow;
 };
 
 struct WeightedDielectronGenerationResult {
@@ -105,6 +117,12 @@ struct WeightedDielectronGenerationResult {
     const FourVector& virtualPhotonMomentum,
     double alpha = FineStructureConstant);
 
+[[nodiscard]] double lowVirtualPhotonDensity(
+    const LowCurrent& current,
+    const FourVector& virtualPhotonMomentum,
+    VirtualCurrentModel model,
+    double alpha = FineStructureConstant);
+
 // Unit inputs are independent uniform values in [0, 1).  Mass and qT are
 // sampled logarithmically.  Decay angles are proposed isotropically and the
 // returned weight contains the leading-current polarization correction.
@@ -118,7 +136,26 @@ struct WeightedDielectronGenerationResult {
     double unitDecayCosTheta,
     double unitDecayPhi,
     double electronMass = ElectronMassGeV,
-    double alpha = FineStructureConstant);
+    double alpha = FineStructureConstant,
+    VirtualCurrentModel virtualCurrentModel =
+        VirtualCurrentModel::LeadingLow);
+
+// Uniform sampling in M^2 and qT^2.  Unlike the logarithmic proposal, this
+// proposal supports qTMin == 0 and therefore covers bins that start at qT=0
+// without an artificial cutoff.
+[[nodiscard]] WeightedDielectronSample makeUniformMassSquaredQT2DielectronSample(
+    const LowCurrent& current,
+    const DielectronPhaseSpace& phaseSpace,
+    double unitMassSquared,
+    double unitQT2,
+    double unitRapidity,
+    double unitPhi,
+    double unitDecayCosTheta,
+    double unitDecayPhi,
+    double electronMass = ElectronMassGeV,
+    double alpha = FineStructureConstant,
+    VirtualCurrentModel virtualCurrentModel =
+        VirtualCurrentModel::LeadingLow);
 
 [[nodiscard]] WeightedDielectronGenerationResult generateWeightedDielectrons(
     const std::vector<ChargedParticle>& selectedParticles,

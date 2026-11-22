@@ -201,6 +201,14 @@ if(Python3_Interpreter_FOUND)
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/plot_sampler_validation.py --help
     )
     add_test(
+        NAME lowmc_plot_alice_dielectron_comparison_help
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/plot_alice_dielectron_comparison.py --help
+    )
+    add_test(
+        NAME lowmc_plot_alice_dielectron_publication_comparison_help
+        COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/plot_alice_dielectron_publication_comparison.py --help
+    )
+    add_test(
         NAME lowmc_scan_unweighting_envelope_help
         COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/scan_unweighting_envelope.py --help
     )

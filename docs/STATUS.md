@@ -12,8 +12,9 @@ The core now includes a first soft-dielectron baseline. It samples timelike
 virtual photons in `dM^2 qT dqT dy dphi`, applies the pointlike Kroll--Wada
 conversion factor, and returns on-shell electron-positron kinematics with a
 normalized leading-current polarization weight. This mode is weighted and
-does not yet include hadronic recoil, Lichard finite-$q$ corrections, or
-event-record output.
+now offers Lichard Eq. (2.8) as an opt-in finite-mass external-leg current;
+the strict leading Low current remains the default. It does not yet include
+hadronic recoil or event-record output.
 
 The initial generator-independent core kernel skeleton exists under `src/`.
 It implements four-vector arithmetic, charged particles with `inOutSign`,
@@ -2085,6 +2086,7 @@ milestone, or known open questions change.
 - generator-independent event representation
 - charged external particles with physical four-momenta
 - coherent Low current `J^mu(k)`
+- opt-in Lichard Eq. (2.8) current for weighted timelike virtual photons
 - photon intensity `S(k) = -J^2`
 - photon phase-space bounds for `k_T`, `eta`, and `phi`
 - unit tests for the basic physics and scaling properties
@@ -2103,7 +2105,7 @@ milestone, or known open questions change.
 - a stable production HepMC3 command name and production-readiness claim
 - recoil prescription
 - multiple-photon exponentiation
-- virtual photons and dielectrons
+- production-ready virtual-photon and dielectron event-record generation
 - VinciaQED integration and general QED-tool interoperability
 - ROOT-dependent plotting or analysis
 - production guarantees for all boosted and high-multiplicity event topologies
