@@ -76,7 +76,7 @@ cmake --build build-pythia8
 
 ## Examples
 
-The repository contains a six-example learning path under
+The repository contains a seven-example learning path under
 [examples/](examples/README.md). Descriptive filenames are grouped into
 `basic/` core examples and `advanced/` shape-unweighting, HepMC3, and Pythia8
 examples. The basic executables are built by default; optional examples are

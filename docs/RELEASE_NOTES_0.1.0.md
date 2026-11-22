@@ -16,11 +16,13 @@ programs deliberately keep their `*_diagnostic` names in this release.
 
 - coherent event-level leading-Low current and photon density;
 - weighted fixed- and full-phase-space photon sampling;
+- weighted soft-dielectron sampling with leading-Low or Lichard virtual
+  currents, Kroll--Wada conversion, and polarization-aware two-body decay;
 - adaptive event-yield integration and Poisson multiplicity sampling;
 - corrected event-specific shape unweighting with explicit envelope failure
   diagnostics;
 - direct `ChargedParticle` C++ interface;
-- a six-example learning path with descriptive filenames, split into
+- a seven-example learning path with descriptive filenames, split into
   dependency-free basic examples and advanced shape/HepMC3/Pythia8 examples;
 - installed static core library, public headers, and CMake package target
   `LowMC::core`;
@@ -93,7 +95,7 @@ applicable gates. The exact gate policy is in
 
 The expected current test inventory is:
 
-- `98` dependency-free tests;
+- `102` dependency-free tests;
 - the `18`-row count-plus-shape gate;
 - the strict shape-envelope gate;
 - `192` tests with HepMC3 and Pythia8 enabled;
@@ -125,8 +127,10 @@ for every code-only release.
 
 ## Known Limitations
 
-- LowMC 0.1.0 implements the leading real soft-photon approximation. It does
-  not provide virtual corrections, exponentiation, or dielectron production.
+- LowMC 0.1.0 implements the leading real and virtual soft-photon
+  approximations. Weighted dielectron production is available; dielectron
+  event-record output is not. Virtual corrections and exponentiation are not
+  included.
 - HepMC3 output adds stable photons without recoil and preserves the original
   event record. This is an explicit convention, not exact event-level
   four-momentum conservation after photon insertion.
