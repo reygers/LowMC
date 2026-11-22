@@ -18,6 +18,11 @@ The release is component based:
   studies are retained as scientific evidence rather than being rerun for every
   code-only release.
 
+The checked-in GitHub Actions workflow runs the dependency-free R1 core and
+installed-consumer gate with GCC on Ubuntu for every push and pull request.
+The optional integration and scientific gates below remain explicit release
+checks because they require external packages or frozen benchmark inputs.
+
 ## Gate Classes
 
 | Class | Meaning | Failure consequence |

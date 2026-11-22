@@ -130,6 +130,8 @@ See [docs/PHYSICS.md](docs/PHYSICS.md) for the full convention.
 - [docs/STATUS.md](docs/STATUS.md): current implementation status
 - [docs/RELEASE_VALIDATION_MATRIX.md](docs/RELEASE_VALIDATION_MATRIX.md):
   release-blocking and scientific validation gates
+- [docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md): software environment,
+  random-number portability, units, concurrency, and benchmark settings
 - [docs/RELEASE_NOTES_0.1.0.md](docs/RELEASE_NOTES_0.1.0.md): first public
   research-prototype release notes
 - [examples/README.md](examples/README.md): basic and advanced examples
