@@ -2,6 +2,7 @@
 
 #include "lowmc/AdapterSupport.h"
 #include "lowmc/AnalyticLowBound.h"
+#include "lowmc/Balek.h"
 #include "lowmc/ChargedParticle.h"
 #include "lowmc/Dielectron.h"
 #include "lowmc/EventYield.h"

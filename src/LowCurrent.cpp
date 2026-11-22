@@ -1,6 +1,7 @@
 #include "lowmc/LowCurrent.h"
 
 #include <cmath>
+#include <stdexcept>
 #include <utility>
 
 namespace lowmc {
@@ -13,20 +14,45 @@ const std::vector<ChargedParticle>& LowCurrent::particles() const {
 }
 
 FourVector LowCurrent::current(const FourVector& photonMomentum) const {
+    return current(photonMomentum, VirtualCurrentModel::LeadingLow);
+}
+
+FourVector LowCurrent::current(
+    const FourVector& photonMomentum,
+    VirtualCurrentModel model) const {
     FourVector result;
 
     for (const ChargedParticle& particle : particles_) {
-        const double denominator = particle.momentum.dot(photonMomentum);
-        const double coefficient =
-            static_cast<double>(signValue(particle.inOutSign)) * particle.charge / denominator;
-        result += coefficient * particle.momentum;
+        const double sign = static_cast<double>(signValue(particle.inOutSign));
+        if (model == VirtualCurrentModel::LichardEq2_8) {
+            const double denominator =
+                2.0 * particle.momentum.dot(photonMomentum) +
+                sign * photonMomentum.mass2();
+            if (!std::isfinite(denominator) || denominator == 0.0) {
+                throw std::invalid_argument(
+                    "Lichard virtual-current denominator must be finite and nonzero");
+            }
+            const FourVector numerator =
+                2.0 * particle.momentum + sign * photonMomentum;
+            result += sign * particle.charge / denominator * numerator;
+        } else {
+            const double denominator = particle.momentum.dot(photonMomentum);
+            const double coefficient = sign * particle.charge / denominator;
+            result += coefficient * particle.momentum;
+        }
     }
 
     return result;
 }
 
 double LowCurrent::intensity(const FourVector& photonMomentum) const {
-    const FourVector J = current(photonMomentum);
+    return intensity(photonMomentum, VirtualCurrentModel::LeadingLow);
+}
+
+double LowCurrent::intensity(
+    const FourVector& photonMomentum,
+    VirtualCurrentModel model) const {
+    const FourVector J = current(photonMomentum, model);
     return -J.dot(J);
 }
 

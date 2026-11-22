@@ -1,5 +1,6 @@
 add_library(lowmc_core STATIC
     src/AnalyticLowBound.cpp
+    src/Balek.cpp
     src/Dielectron.cpp
     src/EventYield.cpp
     src/FixedKTWeightedSampler.cpp

@@ -11,3 +11,9 @@ cmake-build-*/
 /*.root
 
 install/
+
+# Locally rendered documentation and benchmark products.
+/README.html
+/README_files/
+/output/
+/tmp/

@@ -2675,6 +2675,47 @@ void testVirtualPhotonKinematicsAndWardIdentity() {
         "virtual photon density should be positive for the conserved toy current");
 }
 
+void testLichardEq2_8CurrentAndWardIdentity() {
+    const std::vector<lowmc::ChargedParticle> particles = {
+        {lowmc::FourVector{5.0, 0.2, -0.1, 4.7}, +1.0, lowmc::InOutSign::Incoming},
+        {lowmc::FourVector{4.0, -0.4, 0.3, 3.5}, +1.0, lowmc::InOutSign::Outgoing},
+    };
+    const lowmc::LowCurrent current(particles);
+    const lowmc::FourVector q =
+        lowmc::virtualPhotonMomentumFromMassQTRapidityPhi(0.25, 0.18, 0.3, 0.7);
+    const double mass2 = q.mass2();
+    const lowmc::FourVector expected =
+        -1.0 * (2.0 * particles[0].momentum - q) /
+            (2.0 * particles[0].momentum.dot(q) - mass2) +
+        (2.0 * particles[1].momentum + q) /
+            (2.0 * particles[1].momentum.dot(q) + mass2);
+    const lowmc::FourVector actual =
+        current.current(q, lowmc::VirtualCurrentModel::LichardEq2_8);
+
+    requireNear(actual.E, expected.E, 1.0e-14, "Lichard Eq. 2.8 current energy");
+    requireNear(actual.px, expected.px, 1.0e-14, "Lichard Eq. 2.8 current px");
+    requireNear(actual.py, expected.py, 1.0e-14, "Lichard Eq. 2.8 current py");
+    requireNear(actual.pz, expected.pz, 1.0e-14, "Lichard Eq. 2.8 current pz");
+    requireNear(q.dot(actual), 0.0, 1.0e-13,
+        "charge-conserving Lichard Eq. 2.8 current should satisfy q.J=0");
+}
+
+void evaluateLichardCurrentAtPole() {
+    const lowmc::LowCurrent current({
+        {lowmc::FourVector{1.0, 0.0, 0.0, 0.0}, +1.0,
+         lowmc::InOutSign::Incoming},
+    });
+    static_cast<void>(current.current(
+        lowmc::FourVector{2.0, 0.0, 0.0, 0.0},
+        lowmc::VirtualCurrentModel::LichardEq2_8));
+}
+
+void testLichardEq2_8RejectsPole() {
+    requireThrowsInvalidArgument(
+        evaluateLichardCurrentAtPole,
+        "Lichard Eq. 2.8 current should reject a vanishing external-leg denominator");
+}
+
 void testKrollWadaThresholdAndNormalization() {
     requireNear(
         lowmc::krollWadaConversionDensityDMass2(2.0 * lowmc::ElectronMassGeV),
@@ -2693,6 +2734,41 @@ void testKrollWadaThresholdAndNormalization() {
         expected,
         1.0e-14,
         "Kroll-Wada density should use the dM^2 convention");
+}
+
+void testBalekDifferentialAndProjectionFormulas() {
+    const lowmc::BalekParameters parameters{
+        60.0,
+        1.25,
+        lowmc::ElectronMassGeV,
+        0.01,
+    };
+    const double mass = 0.2;
+    const double qT = 0.1;
+    const double pi = std::acos(-1.0);
+    const double ratio = parameters.electronMass * parameters.electronMass /
+        (mass * mass);
+    const double leptonFactor =
+        (1.0 + 2.0 * ratio) * std::sqrt(1.0 - 4.0 * ratio);
+    const double normalization = parameters.sigmaInelastic * 4.0 *
+        parameters.alpha * parameters.alpha * parameters.meanChargeTransferSquared /
+        (3.0 * pi * pi);
+    const double expectedDifferential = normalization * leptonFactor * qT /
+        (mass * (qT * qT + mass * mass));
+    requireNear(
+        lowmc::balekDifferentialCrossSection(mass, qT, parameters),
+        expectedDifferential,
+        1.0e-14 * expectedDifferential,
+        "Balek differential cross section should implement BPP Eq. (9a)");
+
+    const double qTMax = 0.4;
+    const double expectedMassProjection = normalization * leptonFactor /
+        (2.0 * mass) * std::log(1.0 + qTMax * qTMax / (mass * mass));
+    requireNear(
+        lowmc::balekMassProjection(mass, 0.0, qTMax, parameters),
+        expectedMassProjection,
+        1.0e-14 * expectedMassProjection,
+        "Balek mass projection should integrate the qT spectrum analytically");
 }
 
 void testWeightedDielectronConservesFourMomentumAndMassShells() {
@@ -2724,6 +2800,27 @@ void testWeightedDielectronConservesFourMomentumAndMassShells() {
             sample.decayAngularWeight / sample.proposalDensity,
         1.0e-14 * sample.dielectron.weight,
         "dielectron weight should combine production, conversion, decay, and proposal");
+}
+
+void testUniformMassSquaredQT2ProposalIncludesZeroQT() {
+    lowmc::DielectronPhaseSpace phaseSpace = testDielectronPhaseSpace();
+    phaseSpace.qTMin = 0.0;
+    const lowmc::WeightedDielectronSample sample =
+        lowmc::makeUniformMassSquaredQT2DielectronSample(
+            dielectronTestCurrent(),
+            phaseSpace,
+            0.25,
+            0.0,
+            0.5,
+            0.5,
+            0.25,
+            0.75);
+    requireNear(sample.qT, 0.0, 0.0,
+        "uniform qT-squared proposal should include qT=0 exactly");
+    require(sample.proposalDensity > 0.0 && std::isfinite(sample.proposalDensity),
+        "uniform M-squared/qT-squared proposal density should be finite at qT=0");
+    require(sample.dielectron.weight >= 0.0 && std::isfinite(sample.dielectron.weight),
+        "uniform M-squared/qT-squared sample weight should be finite at qT=0");
 }
 
 void testDielectronDecayAngularWeightIsNormalized() {
@@ -2768,6 +2865,22 @@ void testVirtualPhotonMasslessLimitMatchesRealPhotonDensity() {
         "virtual Low density should approach the real-photon density as M approaches zero");
 }
 
+void testLichardEq2_8MasslessLimitMatchesLeadingIntensity() {
+    const lowmc::LowCurrent current = dielectronTestCurrent();
+    const lowmc::FourVector almostReal =
+        lowmc::virtualPhotonMomentumFromMassQTRapidityPhi(
+            1.0e-7, 0.1, 0.4, 1.3);
+    const double leading = current.intensity(
+        almostReal, lowmc::VirtualCurrentModel::LeadingLow);
+    const double lichard = current.intensity(
+        almostReal, lowmc::VirtualCurrentModel::LichardEq2_8);
+    requireNear(
+        lichard,
+        leading,
+        2.0e-11 * leading,
+        "Lichard Eq. 2.8 intensity should approach leading Low as M approaches zero");
+}
+
 void testWeightedDielectronGeneratorIsReproducible() {
     const std::vector<lowmc::ChargedParticle> particles =
         dielectronTestCurrent().particles();
@@ -2792,6 +2905,32 @@ void testWeightedDielectronGeneratorIsReproducible() {
         "dielectron generator should report charge conservation");
     require(first.weightSummary.count == first.samples.size(),
         "dielectron weight summary should include every generated pair");
+}
+
+void testWeightedDielectronGeneratorSelectsLichardCurrent() {
+    const std::vector<lowmc::ChargedParticle> particles =
+        dielectronTestCurrent().particles();
+    lowmc::WeightedDielectronGeneratorConfig leadingConfig;
+    leadingConfig.phaseSpace = testDielectronPhaseSpace();
+    leadingConfig.samples = 1;
+    leadingConfig.seed = 24680;
+    lowmc::WeightedDielectronGeneratorConfig lichardConfig = leadingConfig;
+    lichardConfig.virtualCurrentModel =
+        lowmc::VirtualCurrentModel::LichardEq2_8;
+
+    const lowmc::WeightedDielectronGenerationResult leadingResult =
+        lowmc::generateWeightedDielectrons(particles, leadingConfig);
+    const lowmc::WeightedDielectronGenerationResult lichardResult =
+        lowmc::generateWeightedDielectrons(particles, lichardConfig);
+    const lowmc::WeightedDielectronSample& leading = leadingResult.samples.front();
+    const lowmc::WeightedDielectronSample& lichard = lichardResult.samples.front();
+    requireNear(leading.mass, lichard.mass, 0.0,
+        "virtual-current selection should not change sampled mass");
+    requireNear(leading.qT, lichard.qT, 0.0,
+        "virtual-current selection should not change sampled qT");
+    require(std::abs(leading.productionDensity - lichard.productionDensity) >
+            1.0e-12 * leading.productionDensity,
+        "Lichard current option should change the finite-mass production density");
 }
 
 void makeDielectronBelowThreshold() {
@@ -2890,11 +3029,17 @@ int main() {
     testValidPhotonPhaseSpaceIsAccepted();
     testInvalidPhotonPhaseSpacesAreRejected();
     testVirtualPhotonKinematicsAndWardIdentity();
+    testLichardEq2_8CurrentAndWardIdentity();
+    testLichardEq2_8RejectsPole();
     testKrollWadaThresholdAndNormalization();
+    testBalekDifferentialAndProjectionFormulas();
     testWeightedDielectronConservesFourMomentumAndMassShells();
+    testUniformMassSquaredQT2ProposalIncludesZeroQT();
     testDielectronDecayAngularWeightIsNormalized();
     testVirtualPhotonMasslessLimitMatchesRealPhotonDensity();
+    testLichardEq2_8MasslessLimitMatchesLeadingIntensity();
     testWeightedDielectronGeneratorIsReproducible();
+    testWeightedDielectronGeneratorSelectsLichardCurrent();
     testDielectronRejectsInvalidPhaseSpace();
 
     std::cout << "All LowMC core tests passed\n";
