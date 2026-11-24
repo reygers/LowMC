@@ -47,6 +47,7 @@ enum class Method : std::size_t { Sampled = 0, Direct = 1 };
 enum class Decay : std::size_t { Polarized = 0, Isotropic = 1 };
 enum class Observable : std::size_t { Mass = 0, QT = 1 };
 enum class ComparisonMode { DetectorAcceptance, PublishedCrossSection };
+enum class ChargedState { FinalStable, PreWeakDecay };
 
 struct Options {
     std::string outputPath = "alice_dielectron_prediction.csv";
@@ -57,6 +58,8 @@ struct Options {
     double eCM = 13000.0;
     bool extendedAgreementMap = false;
     ComparisonMode comparisonMode = ComparisonMode::DetectorAcceptance;
+    ChargedState chargedState = ChargedState::FinalStable;
+    double weakDecayCTauMm = 10.0;
     lowmc::VirtualCurrentModel virtualCurrentModel =
         lowmc::VirtualCurrentModel::LeadingLow;
 };
@@ -107,9 +110,18 @@ struct LogQuantileHistogram {
     }
 };
 
-struct BinAccumulator {
+struct EventYieldMoments {
     double sumEventYield = 0.0;
     double sumEventYield2 = 0.0;
+
+    void add(double yield) {
+        sumEventYield += yield;
+        sumEventYield2 += yield * yield;
+    }
+};
+
+struct BinAccumulator : EventYieldMoments {
+    EventYieldMoments pairedDifference;
     LogQuantileHistogram softEpsilon;
     LogQuantileHistogram energyFraction;
 };
@@ -164,6 +176,11 @@ void printUsage(std::ostream& output) {
         << "  --ecm GEV           Center-of-mass energy (default: 13000)\n"
         << "  --current MODEL     leading (default) or lichard\n"
         << "  --comparison MODE  detector (default) or publication\n"
+        << "  --charged-state MODE final (default) or pre-weak\n"
+        << "                      pre-weak replaces descendants of particles with\n"
+        << "                      nominal c*tau >= the configured boundary\n"
+        << "  --weak-decay-ctau-mm X\n"
+        << "                      Nominal c*tau boundary for pre-weak mode (default: 10)\n"
         << "  --extended-agreement-map\n"
         << "                      Sample 0.02 < M < 0.60 GeV and pT < 2 GeV\n"
         << "                      for joint current-agreement rows\n"
@@ -179,6 +196,22 @@ ComparisonMode parseComparisonMode(const std::string& text) {
     }
     throw std::invalid_argument(
         "--comparison expects detector or publication");
+}
+
+ChargedState parseChargedState(const std::string& text) {
+    if (text == "final") {
+        return ChargedState::FinalStable;
+    }
+    if (text == "pre-weak") {
+        return ChargedState::PreWeakDecay;
+    }
+    throw std::invalid_argument("--charged-state expects final or pre-weak");
+}
+
+const char* chargedStateName(ChargedState state) {
+    return state == ChargedState::PreWeakDecay
+        ? "pre_weak_decay"
+        : "final_stable";
 }
 
 const char* comparisonModeName(ComparisonMode mode) {
@@ -269,6 +302,12 @@ Options parseOptions(int argc, char** argv) {
         } else if (argument == "--comparison") {
             options.comparisonMode = parseComparisonMode(
                 readOption(index, argc, argv, argument));
+        } else if (argument == "--charged-state") {
+            options.chargedState = parseChargedState(
+                readOption(index, argc, argv, argument));
+        } else if (argument == "--weak-decay-ctau-mm") {
+            options.weakDecayCTauMm = parsePositiveDouble(
+                readOption(index, argc, argv, argument), argument);
         } else if (argument == "--extended-agreement-map") {
             options.extendedAgreementMap = true;
         } else if (!argument.empty() && argument.front() == '-') {
@@ -293,6 +332,7 @@ void initializePythia(Pythia8::Pythia& pythia, const Options& options) {
     pythia.readString("Beams:idB = 2212");
     pythia.readString("Beams:eCM = " + std::to_string(options.eCM));
     pythia.readString("Tune:pp = 14");
+    pythia.readString("PDF:pSet = 13");
     pythia.readString("SoftQCD:nonDiffractive = on");
     pythia.readString("Random:setSeed = on");
     pythia.readString("Random:seed = " + std::to_string(options.seed));
@@ -306,6 +346,66 @@ void initializePythia(Pythia8::Pythia& pythia, const Options& options) {
     if (!pythia.init()) {
         throw std::runtime_error("Pythia initialization failed");
     }
+}
+
+lowmc::AdapterParticleSelectionResult selectPreWeakDecayChargedState(
+    const Pythia8::Event& event,
+    double lifetimeBoundaryMm) {
+    std::vector<int> boundaryIndices;
+    for (int index = 3; index < event.size(); ++index) {
+        const Pythia8::Particle& particle = event[index];
+        if (particle.isFinal() || particle.iBotCopy() != index ||
+            particle.daughterList().empty() ||
+            particle.tau0() < lifetimeBoundaryMm) {
+            continue;
+        }
+        boundaryIndices.push_back(index);
+    }
+
+    auto hasBoundaryAncestor = [&event, &boundaryIndices](int index) {
+        for (int boundary : boundaryIndices) {
+            if (boundary != index && event[index].isAncestor(boundary)) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    std::vector<lowmc::AdapterParticleCandidate> candidates;
+    for (int index = 0; index < event.size(); ++index) {
+        const Pythia8::Particle& particle = event[index];
+        const bool incomingBeam = index == 1 || index == 2;
+        const bool preWeakBoundary =
+            std::find(boundaryIndices.begin(), boundaryIndices.end(), index) !=
+                boundaryIndices.end() &&
+            !hasBoundaryAncestor(index);
+        const bool retainedFinal =
+            particle.isFinal() && !hasBoundaryAncestor(index);
+        if (!incomingBeam && !preWeakBoundary && !retainedFinal) {
+            continue;
+        }
+        candidates.push_back(lowmc::pythia8::makeAdapterParticleCandidate(
+            particle,
+            lowmc::pythia8::Pythia8ParticleClassification{
+                incomingBeam,
+                !incomingBeam,
+                false,
+                "pythia8:index=" + std::to_string(index) +
+                    ",id=" + std::to_string(particle.id()) +
+                    (preWeakBoundary ? ",state=pre-weak" : ""),
+            }));
+    }
+    return lowmc::selectAdapterParticles(candidates);
+}
+
+lowmc::AdapterParticleSelectionResult selectChargedState(
+    const Pythia8::Event& event,
+    const Options& options) {
+    if (options.chargedState == ChargedState::PreWeakDecay) {
+        return selectPreWeakDecayChargedState(
+            event, options.weakDecayCTauMm);
+    }
+    return lowmc::pythia8::selectChargedParticles(event);
 }
 
 class Sobol6 {
@@ -595,6 +695,18 @@ void sampleEvent(
 }
 
 void finishEvent(const EventYields& eventYields, Accumulators& accumulators) {
+    const auto recordPairedDifferences = [](const auto& yields, auto& bins) {
+        for (std::size_t decay = 0; decay < yields[0].size(); ++decay) {
+            for (std::size_t bin = 0; bin < yields[0][decay].size(); ++bin) {
+                bins[1][decay][bin].pairedDifference.add(
+                    yields[0][decay][bin] - yields[1][decay][bin]);
+            }
+        }
+    };
+    recordPairedDifferences(eventYields.mass, accumulators.mass);
+    recordPairedDifferences(eventYields.qT, accumulators.qT);
+    recordPairedDifferences(eventYields.electronPT, accumulators.electronPT);
+
     for (std::size_t method = 0; method < 2; ++method) {
         for (std::size_t decay = 0; decay < 2; ++decay) {
             for (std::size_t bin = 0; bin + 1 < MassEdges.size(); ++bin) {
@@ -633,7 +745,7 @@ void finishEvent(const EventYields& eventYields, Accumulators& accumulators) {
     }
 }
 
-double standardError(const BinAccumulator& accumulator, int eventCount) {
+double standardError(const EventYieldMoments& accumulator, int eventCount) {
     if (eventCount < 2) {
         return 0.0;
     }
@@ -707,8 +819,15 @@ void writeObservable(
                     << sigmaGen << ','
                     << options.seed << ','
                     << virtualCurrentModelName(options.virtualCurrentModel) << ','
-                    << comparisonModeName(options.comparisonMode)
-                    << ",,,,,,,mb_per_gev_per_y\n";
+                    << comparisonModeName(options.comparisonMode) << ','
+                    << chargedStateName(options.chargedState) << ','
+                    << options.weakDecayCTauMm
+                    << ",,,,,,,mb_per_gev_per_y,";
+                if (method == static_cast<std::size_t>(Method::Direct)) {
+                    output << standardError(accumulator.pairedDifference, eventCount)
+                        * sigmaGen / (rapidityWidth * binWidth);
+                }
+                output << '\n';
             }
         }
     }
@@ -762,6 +881,8 @@ void writeAgreementObservable(
                         << options.seed << ','
                         << virtualCurrentModelName(options.virtualCurrentModel) << ','
                         << comparisonModeName(options.comparisonMode) << ','
+                        << chargedStateName(options.chargedState) << ','
+                        << options.weakDecayCTauMm << ','
                         << AgreementMassEdges[mass] << ','
                         << AgreementMassEdges[mass + 1] << ','
                         << 0.5 * (AgreementMassEdges[mass] +
@@ -770,7 +891,7 @@ void writeAgreementObservable(
                         << AgreementQTEdges[qT + 1] << ','
                         << 0.5 * (AgreementQTEdges[qT] +
                             AgreementQTEdges[qT + 1]) << ','
-                        << "mb_per_gev2_per_y" << '\n';
+                        << "mb_per_gev2_per_y," << '\n';
                 }
             }
         }
@@ -794,9 +915,10 @@ void writeOutput(
         << "max_soft_epsilon_p50,max_soft_epsilon_p90,max_soft_epsilon_p99,"
         << "max_energy_fraction_p50,max_energy_fraction_p90,max_energy_fraction_p99,"
         << "accepted_events,attempted_events,samples_per_event,sigma_gen_mb,seed,"
-        << "virtual_current_model,comparison_mode,"
+        << "virtual_current_model,comparison_mode,charged_state,weak_decay_ctau_mm,"
         << "mass_bin_low,mass_bin_high,mass_bin_center,"
-        << "qT_bin_low,qT_bin_high,qT_bin_center,density_units\n";
+        << "qT_bin_low,qT_bin_high,qT_bin_center,density_units,"
+        << "paired_difference_se_mb_per_gev_per_y\n";
     writeObservable(
         output,
         "mass",
@@ -853,7 +975,7 @@ int main(int argc, char** argv) {
                 continue;
             }
             const lowmc::AdapterParticleSelectionResult selection =
-                lowmc::pythia8::selectChargedParticles(pythia.event);
+                selectChargedState(pythia.event, options);
             if (std::abs(selection.diagnostic.signedChargeSum) > 1.0e-12) {
                 continue;
             }
@@ -885,6 +1007,8 @@ int main(int argc, char** argv) {
                   << virtualCurrentModelName(options.virtualCurrentModel)
                   << " comparison_mode="
                   << comparisonModeName(options.comparisonMode)
+                  << " charged_state=" << chargedStateName(options.chargedState)
+                  << " weak_decay_ctau_mm=" << options.weakDecayCTauMm
                   << " sigma_gen_mb=" << sigmaGen
                   << " output=" << options.outputPath << '\n';
     } catch (const std::exception& error) {

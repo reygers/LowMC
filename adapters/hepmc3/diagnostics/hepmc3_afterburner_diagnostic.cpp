@@ -2,6 +2,7 @@
 #include "lowmc/hepmc3/HepMC3Adapter.h"
 
 #include <HepMC3/GenEvent.h>
+#include <HepMC3/Attribute.h>
 #include <HepMC3/ReaderAscii.h>
 #include <HepMC3/Units.h>
 #include <HepMC3/WriterAscii.h>
@@ -16,6 +17,7 @@
 #include <cstdio>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -54,7 +56,7 @@ struct Options {
     double phiMax = 2.0 * std::acos(-1.0);
     double shapeSafetyFactor = 3.0;
     double boostedShapeSafetyFactor = 5.0;
-    FailurePolicy failurePolicy = FailurePolicy::Skip;
+    FailurePolicy failurePolicy = FailurePolicy::Fail;
     bool atomicOutput = false;
 };
 
@@ -63,8 +65,8 @@ void printUsage(std::ostream& out) {
         << "\n"
         << "Reads HepMC3 ASCII events, runs the current LowMC count-plus-shape path,\n"
         << "and writes a new HepMC3 ASCII file with Low photons appended\n"
-        << "for events that pass all gates. Failed events are written unchanged by\n"
-        << "default and reported in the text diagnostics.\n"
+        << "for events that pass all gates. Failures stop the run by default;\n"
+        << "explicit skip mode writes the input event with a LowMC status attribute.\n"
         << "\n"
         << "Options:\n"
         << "  --max-events N                  Maximum events to process (default: all)\n"
@@ -91,7 +93,7 @@ void printUsage(std::ostream& out) {
         << "  --phi-max X                     Maximum photon phi (default: 2 pi)\n"
         << "  --shape-safety-factor X         Diagnostic envelope safety factor (default: 3)\n"
         << "  --boosted-shape-safety-factor X  Diagnostic boosted-cell safety factor (default: 5)\n"
-        << "  --failure-policy skip|fail      Failed-event policy (default: skip)\n"
+        << "  --failure-policy skip|fail      Failed-event policy (default: fail)\n"
         << "  --atomic-output                 Write to <output>.tmp and publish only on success\n";
 }
 
@@ -460,6 +462,7 @@ int main(int argc, char** argv) {
 
         int eventsRead = 0;
         int eventsWritten = 0;
+        int eventsSkipped = 0;
         int totalPhotonsAdded = 0;
         while (eventsRead < options.maxEvents && !reader.failed()) {
             HepMC3::GenEvent event;
@@ -679,6 +682,13 @@ int main(int argc, char** argv) {
                 }
             }
 
+            if (status.rfind("skipped_", 0) == 0) {
+                ++eventsSkipped;
+                event.add_attribute(
+                    "LowMC:status",
+                    std::make_shared<HepMC3::StringAttribute>(status));
+            }
+
             const auto writeStart = std::chrono::steady_clock::now();
             writer.write_event(event);
             if (writer.failed()) {
@@ -802,6 +812,7 @@ int main(int argc, char** argv) {
 
         std::cerr << "events_read=" << eventsRead
                   << " events_written=" << eventsWritten
+                  << " events_skipped=" << eventsSkipped
                   << " photons_added=" << totalPhotonsAdded
                   << " output=" << options.outputPath << '\n';
     } catch (const std::exception& error) {

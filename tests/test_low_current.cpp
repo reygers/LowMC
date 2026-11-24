@@ -284,6 +284,60 @@ void testBackToBackDipoleAngleIntegral() {
         "back-to-back dipole angular integral should match the closed form");
 }
 
+void testIncomingOutgoingScatteringAngleIntegral() {
+    const double mass = 0.5;
+    const double incomingMomentum = 1.0;
+    const double outgoingMomentum = 2.0;
+    const double incomingEnergy = std::hypot(mass, incomingMomentum);
+    const double outgoingEnergy = std::hypot(mass, outgoingMomentum);
+    const lowmc::FourVector incoming{
+        incomingEnergy, 0.0, 0.0, incomingMomentum};
+    const lowmc::FourVector outgoing{
+        outgoingEnergy, 0.0, 0.0, outgoingMomentum};
+    const lowmc::LowCurrent current({
+        {incoming, +1.0, lowmc::InOutSign::Incoming},
+        {outgoing, +1.0, lowmc::InOutSign::Outgoing},
+    });
+
+    const double photonEnergy = 0.1;
+    constexpr int intervals = 20000;
+    const double step = 2.0 / static_cast<double>(intervals);
+    double simpson = 0.0;
+    for (int index = 0; index <= intervals; ++index) {
+        const double cosTheta = -1.0 + step * static_cast<double>(index);
+        const double sinTheta = std::sqrt(std::max(0.0, 1.0 - cosTheta * cosTheta));
+        const lowmc::FourVector photon{
+            photonEnergy,
+            photonEnergy * sinTheta,
+            0.0,
+            photonEnergy * cosTheta,
+        };
+        const double coefficient = (index == 0 || index == intervals)
+            ? 1.0
+            : (index % 2 == 0 ? 2.0 : 4.0);
+        simpson += coefficient * current.intensity(photon);
+    }
+    const double angularIntegral =
+        2.0 * std::acos(-1.0) * step * simpson / 3.0;
+    const double numerical = lowmc::FineStructureConstant /
+        (4.0 * std::acos(-1.0) * std::acos(-1.0)) *
+        photonEnergy * angularIntegral;
+
+    const double relativeGamma = incoming.dot(outgoing) / (mass * mass);
+    const double relativeBeta =
+        std::sqrt(1.0 - 1.0 / (relativeGamma * relativeGamma));
+    const double analytic = lowmc::FineStructureConstant /
+        (std::acos(-1.0) * photonEnergy) *
+        (std::log((1.0 + relativeBeta) / (1.0 - relativeBeta)) /
+             relativeBeta -
+         2.0);
+    requireNear(
+        numerical,
+        analytic,
+        2.0e-10 * analytic,
+        "incoming-outgoing current should reproduce single-scattering radiation");
+}
+
 std::vector<lowmc::ChargedParticle> analyticBoundToyParticles() {
     const double mass = 0.35;
     const double px = 1.2;
@@ -3030,6 +3084,34 @@ void testDielectronDecayAngularWeightIsNormalized() {
         "polarized decay correction should average to one over isotropic angles");
 }
 
+void testDielectronDecayAngularWeightMatchesCovariantContraction() {
+    const lowmc::LowCurrent current = dielectronTestCurrent();
+    std::mt19937_64 engine(21937);
+    const auto unit = [&engine] {
+        return std::generate_canonical<double, 53>(engine);
+    };
+    for (const auto model : {lowmc::VirtualCurrentModel::LeadingLow,
+                             lowmc::VirtualCurrentModel::LichardEq2_8}) {
+        for (int point = 0; point < 64; ++point) {
+            const double mass = unit(), qT = unit(), rapidity = unit();
+            const double phi = unit(), decayCos = unit(), decayPhi = unit();
+            const auto sample = lowmc::makeUniformMassSquaredQT2DielectronSample(
+                current, testDielectronPhaseSpace(),
+                mass, qT, rapidity, phi, decayCos, decayPhi,
+                lowmc::ElectronMassGeV, lowmc::FineStructureConstant, model);
+            const auto j = current.current(sample.virtualPhoton, model);
+            const auto l = sample.dielectron.positron - sample.dielectron.electron;
+            const double massSquared = sample.virtualPhoton.mass2();
+            const double betaSquared = 1.0 -
+                4.0 * lowmc::ElectronMassGeV * lowmc::ElectronMassGeV / massSquared;
+            const double contraction = -j.mass2() - std::pow(l.dot(j), 2) / massSquared;
+            const double angularMean = -j.mass2() * (1.0 - betaSquared / 3.0);
+            requireNear(sample.decayAngularWeight, contraction / angularMean, 2.0e-11,
+                "decay angular weight should match normalized Lichard Eq. (2.13)");
+        }
+    }
+}
+
 void testVirtualPhotonMasslessLimitMatchesRealPhotonDensity() {
     const lowmc::LowCurrent current = dielectronTestCurrent();
     const double qT = 0.1;
@@ -3138,6 +3220,7 @@ int main() {
     testRandomMultiparticleCurrentMatchesPairSum();
     testBoostedDipoleDoublePrecisionAgainstLongDoubleReference();
     testBackToBackDipoleAngleIntegral();
+    testIncomingOutgoingScatteringAngleIntegral();
     testAnalyticLowDenominatorAndFactorization();
     testAnalyticLowGlobalAndCellBoundsCoverDensePoints();
     testAnalyticLowWeightBoundIncludesProposalNormalization();
@@ -3222,6 +3305,7 @@ int main() {
     testWeightedDielectronConservesFourMomentumAndMassShells();
     testUniformMassSquaredQT2ProposalIncludesZeroQT();
     testDielectronDecayAngularWeightIsNormalized();
+    testDielectronDecayAngularWeightMatchesCovariantContraction();
     testVirtualPhotonMasslessLimitMatchesRealPhotonDensity();
     testLichardEq2_8MasslessLimitMatchesLeadingIntensity();
     testWeightedDielectronGeneratorIsReproducible();

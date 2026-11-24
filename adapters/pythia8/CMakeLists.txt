@@ -229,6 +229,32 @@ add_test(
     COMMAND lowmc_pythia8_alice_dielectron_benchmark --help
 )
 
+add_executable(lowmc_pythia8_yield_convergence
+    diagnostics/pythia8_yield_convergence.cpp
+)
+
+target_link_libraries(lowmc_pythia8_yield_convergence
+    PRIVATE
+        lowmc_pythia8_adapter
+)
+
+target_compile_definitions(lowmc_pythia8_yield_convergence
+    PRIVATE
+        LOWMC_PYTHIA8_XMLDOC="${LOWMC_PYTHIA8_XMLDOC_DIR}"
+)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(
+        lowmc_pythia8_yield_convergence PRIVATE -Wall -Wextra -pedantic)
+elseif(MSVC)
+    target_compile_options(lowmc_pythia8_yield_convergence PRIVATE /W4)
+endif()
+
+add_test(
+    NAME lowmc_pythia8_yield_convergence_help
+    COMMAND lowmc_pythia8_yield_convergence --help
+)
+
 add_test(
     NAME lowmc_pythia8_alice_dielectron_benchmark_smoke
     COMMAND lowmc_pythia8_alice_dielectron_benchmark

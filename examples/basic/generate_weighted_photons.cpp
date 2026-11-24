@@ -30,11 +30,18 @@ int main() {
 
     const lowmc::WeightedEventGenerationResult result =
         lowmc::generateWeightedPhotons(selectedParticles, config);
+    double weightSum = 0.0;
+    for (const lowmc::WeightedEventPhotonSample& sample : result.samples) {
+        weightSum += sample.photon.weight;
+    }
+    const double eventYieldEstimate =
+        weightSum / static_cast<double>(config.samples);
 
     std::cout << "Example: generate weighted Low photons\n";
     std::cout << "selected_particles=" << selectedParticles.size() << '\n';
     std::cout << "weighted_photons=" << result.samples.size() << '\n';
     std::cout << "mean_weight=" << result.weightSummary.meanWeight << '\n';
+    std::cout << "event_yield_estimate=" << eventYieldEstimate << '\n';
     std::cout << "effective_sample_size=" << result.weightSummary.effectiveSampleSize << '\n';
     std::cout << "signed_charge_sum=" << result.chargeConservation.netCharge << '\n';
 

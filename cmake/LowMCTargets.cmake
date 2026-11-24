@@ -48,6 +48,58 @@ endif()
 
 add_test(NAME lowmc_core_tests COMMAND lowmc_core_tests)
 
+add_executable(lowmc_rho_dielectron_validation
+    diagnostics/rho_dielectron_validation.cpp
+)
+
+target_link_libraries(lowmc_rho_dielectron_validation
+    PRIVATE
+        lowmc_core
+)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(
+        lowmc_rho_dielectron_validation PRIVATE -Wall -Wextra -pedantic)
+elseif(MSVC)
+    target_compile_options(lowmc_rho_dielectron_validation PRIVATE /W4)
+endif()
+
+add_test(
+    NAME lowmc_rho_dielectron_validation
+    COMMAND lowmc_rho_dielectron_validation
+            ${CMAKE_CURRENT_BINARY_DIR}/rho_dielectron_validation.csv
+)
+set_tests_properties(
+    lowmc_rho_dielectron_validation
+    PROPERTIES PASS_REGULAR_EXPRESSION "rho_dielectron_validation=ok"
+)
+
+add_executable(lowmc_yield_convergence_validation
+    diagnostics/yield_convergence_validation.cpp
+)
+
+target_link_libraries(lowmc_yield_convergence_validation
+    PRIVATE
+        lowmc_core
+)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(
+        lowmc_yield_convergence_validation PRIVATE -Wall -Wextra -pedantic)
+elseif(MSVC)
+    target_compile_options(lowmc_yield_convergence_validation PRIVATE /W4)
+endif()
+
+add_test(
+    NAME lowmc_yield_convergence_validation
+    COMMAND lowmc_yield_convergence_validation
+            ${CMAKE_CURRENT_BINARY_DIR}/yield_convergence_validation.csv
+)
+set_tests_properties(
+    lowmc_yield_convergence_validation
+    PROPERTIES PASS_REGULAR_EXPRESSION "yield_convergence_validation=ok"
+)
+
 add_executable(lowmc_two_particle_diagnostic
     diagnostics/two_particle_eta_phi.cpp
 )

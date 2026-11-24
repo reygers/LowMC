@@ -131,6 +131,8 @@ def check_run(
     output_path = output_dir / output_name(input_path, enhancement_factor, seed)
     afterburner_command = [
         str(afterburner),
+        "--failure-policy",
+        "skip",
         "--multiplicity-seed",
         str(seed),
         "--shape-seed",

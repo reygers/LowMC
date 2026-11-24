@@ -389,6 +389,7 @@ set_tests_properties(
 add_test(
     NAME lowmc_hepmc3_afterburner_neutral_only_skip
     COMMAND lowmc_hepmc3_afterburner_diagnostic
+            --failure-policy skip
             ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/neutral_only_event.hepmc3
             ${CMAKE_CURRENT_BINARY_DIR}/neutral_only_skip_output.hepmc3
 )
@@ -439,6 +440,7 @@ set_tests_properties(
 add_test(
     NAME lowmc_hepmc3_afterburner_insufficient_candidates_skip
     COMMAND lowmc_hepmc3_afterburner_diagnostic
+            --failure-policy skip
             --enhancement-factor 100
             --multiplicity-seed 2
             --shape-seed 67890
@@ -649,6 +651,7 @@ set_tests_properties(
 add_test(
     NAME lowmc_hepmc3_afterburner_shape_envelope_failure_skip
     COMMAND lowmc_hepmc3_afterburner_diagnostic
+            --failure-policy skip
             --max-events 1
             --multiplicity-seed 2
             --shape-seed 67890
@@ -824,6 +827,7 @@ set_tests_properties(
 add_test(
     NAME lowmc_hepmc3_afterburner_multi_event_physical_fixture
     COMMAND lowmc_hepmc3_afterburner_diagnostic
+            --failure-policy skip
             --multiplicity-seed 2
             --shape-seed 67890
             --min-shape-trials 1000
@@ -835,7 +839,7 @@ set_tests_properties(
     lowmc_hepmc3_afterburner_multi_event_physical_fixture
     PROPERTIES
         PASS_REGULAR_EXPRESSION
-            "events_read=2 events_written=2 photons_added=1"
+            "events_read=2 events_written=2 events_skipped=1 photons_added=1"
 )
 
 add_test(
@@ -869,6 +873,7 @@ set_tests_properties(
 add_test(
     NAME lowmc_hepmc3_afterburner_multi_event_enhanced_fixture
     COMMAND lowmc_hepmc3_afterburner_diagnostic
+            --failure-policy skip
             --multiplicity-seed 2
             --shape-seed 67890
             --min-shape-trials 1000
@@ -881,7 +886,7 @@ set_tests_properties(
     lowmc_hepmc3_afterburner_multi_event_enhanced_fixture
     PROPERTIES
         PASS_REGULAR_EXPRESSION
-            "events_read=2 events_written=2 photons_added=4"
+            "events_read=2 events_written=2 events_skipped=1 photons_added=4"
 )
 
 add_test(
@@ -915,6 +920,7 @@ set_tests_properties(
 add_test(
     NAME lowmc_hepmc3_afterburner_realistic_multi_event_fixture
     COMMAND lowmc_hepmc3_afterburner_diagnostic
+            --failure-policy skip
             --multiplicity-seed 2
             --shape-seed 67890
             --min-shape-trials 1000
@@ -927,7 +933,7 @@ set_tests_properties(
     lowmc_hepmc3_afterburner_realistic_multi_event_fixture
     PROPERTIES
         PASS_REGULAR_EXPRESSION
-            "events_read=3 events_written=3 photons_added=7"
+            "events_read=3 events_written=3 events_skipped=1 photons_added=7"
 )
 
 add_test(
@@ -969,6 +975,7 @@ set_tests_properties(
 add_test(
     NAME lowmc_hepmc3_afterburner_generated_realistic_sample
     COMMAND lowmc_hepmc3_afterburner_diagnostic
+            --failure-policy skip
             --multiplicity-seed 2
             --shape-seed 67890
             --min-shape-trials 800
@@ -982,7 +989,7 @@ set_tests_properties(
     PROPERTIES
         DEPENDS lowmc_hepmc3_generated_realistic_sample_fixture
         PASS_REGULAR_EXPRESSION
-            "events_read=10 events_written=10 photons_added=36"
+            "events_read=10 events_written=10 events_skipped=1 photons_added=36"
 )
 
 add_test(
